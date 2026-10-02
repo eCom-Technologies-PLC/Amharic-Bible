@@ -4,6 +4,24 @@
 
 ---
 
+## Implementation status (MVP)
+
+The MVP (§13 phase 1) is implemented in `app/`, `pipeline/` and `server/audio-proxy/`. Where the code
+differs from this document, the code is current:
+
+- **License registry** is `content/versions.json` (JSON, so the pipeline needs only the Python standard library),
+  not `LICENSES.yaml`.
+- **Database access** uses `sqflite` with hand-written queries rather than `drift`, which avoids code generation.
+  The schemas match §6 with these small changes: footnotes are stored inline in `verse.markup` as `["n", text]`
+  tokens instead of a footnote table; a `verse.label` column holds bridged verse labels ("1-2"); `book.num` is the
+  fixed global book number used in verse keys; and `book_alias.alias` stores `aliasKey()` output.
+- **UI strings** live in `app/lib/core/strings.dart` (typed Dart, so a missing key is a compile error) rather than
+  ARB files.
+- **Audio** reaches Bible Brain only through the proxy. Its contract is
+  `GET /chapter?fileset&book&chapter → {url, duration, timestamps:[{verse,start}]}`.
+- **Prefix stripping** for search (§6.4) is already in v1: the index also stores words without በ/ለ/ከ/የ.
+- The app ships **sample content** until AMH1962's license is confirmed (see README).
+
 ## 1. Overview
 
 A free, offline-first mobile Bible app for Amharic speakers that combines readable

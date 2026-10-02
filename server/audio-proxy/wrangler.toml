@@ -1,0 +1,10 @@
+name = "amharic-bible-audio"
+main = "worker.mjs"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Comma-separated Bible Brain fileset IDs the app may request.
+ALLOWED_FILESETS = ""
+
+# Set the key as a secret, never in this file:
+#   wrangler secret put BIBLE_BRAIN_KEY

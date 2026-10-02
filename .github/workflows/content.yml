@@ -1,0 +1,53 @@
+name: Build full content
+
+# Downloads the source texts listed in content/versions.json, builds the full
+# content database and an APK that bundles it.
+on:
+  workflow_dispatch:
+    inputs:
+      allow_unverified:
+        description: "Package versions whose license is not yet confirmed (internal testing only)"
+        type: boolean
+        default: false
+      audio_proxy_url:
+        description: "Audio proxy base URL (optional)"
+        type: string
+        default: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fetch sources
+        run: python pipeline/fetch_sources.py
+      - name: Build content.db
+        run: |
+          python pipeline/build_db.py --sources content/sources --out build/content.db \
+            ${{ inputs.allow_unverified && '--allow-unverified' || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: content-db
+          path: build/content.db
+      - name: Bundle into the app
+        run: cp build/content.db app/assets/content/content.db
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build APK
+        working-directory: app
+        env:
+          AUDIO_PROXY_URL: ${{ inputs.audio_proxy_url }}
+        run: flutter build apk --release --dart-define=AUDIO_PROXY_URL="$AUDIO_PROXY_URL"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-full-content
+          path: app/build/app/outputs/flutter-apk/app-release.apk

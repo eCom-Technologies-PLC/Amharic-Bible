@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Pipeline tests
+        run: python -m unittest discover -s pipeline/tests -v
+      - name: Bundled sample DB is up to date
+        run: |
+          python pipeline/build_db.py --sources pipeline/tests/fixtures/usfm \
+            --out /tmp/content.db --sample --allow-unverified
+          python - <<'PY'
+          import sqlite3
+          q = "SELECT version_id, vkey, label, text, markup FROM verse ORDER BY 1, 2"
+          a = sqlite3.connect("/tmp/content.db").execute(q).fetchall()
+          b = sqlite3.connect("app/assets/content/content.db").execute(q).fetchall()
+          assert a == b, "app/assets/content/content.db is stale: rebuild it (see README)"
+          PY
+
+  audio-proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test server/audio-proxy/proxy.test.mjs
+
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze
+      - run: flutter test
+
+  android:
+    needs: app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-sample-content
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
