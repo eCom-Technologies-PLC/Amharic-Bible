@@ -123,6 +123,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           label: Text(
             book != null ? '${book.shortName} ${formatNumber(r.chapter, ref.watch(settingsProvider))}' : r.bookCode,
             style: Theme.of(context).textTheme.titleLarge,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         actions: [
@@ -355,7 +357,24 @@ class _PairView extends StatelessWidget {
             ],
           );
         }
-        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [primary, secondary]);
+        if (second == null) return primary;
+        // On phones the second version sits under the first, marked with an
+        // accent bar so the two are easy to tell apart.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            primary,
+            Container(
+              margin: const EdgeInsets.only(left: 20, top: 6),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), width: 3),
+                ),
+              ),
+              child: Transform.translate(offset: const Offset(-8, 0), child: secondary),
+            ),
+          ],
+        );
       },
     );
   }
@@ -473,9 +492,13 @@ class _VersionMenu extends ConsumerWidget {
       ],
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Chip(
-          label: Text(parallel == null ? current.abbrev : '${current.abbrev} + ${parallel.abbrev}'),
-          visualDensity: VisualDensity.compact,
+        child: Tooltip(
+          message: parallel == null ? current.localName : '${current.abbrev} + ${parallel.abbrev}',
+          child: Chip(
+            avatar: parallel == null ? null : const Icon(Icons.view_column_outlined, size: 18),
+            label: Text(current.abbrev),
+            visualDensity: VisualDensity.compact,
+          ),
         ),
       ),
     );

@@ -6,12 +6,15 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/config.dart';
 import 'data/audio_repository.dart';
 import 'data/databases.dart';
+import 'data/sync/account_service.dart';
 import 'data/user_repository.dart';
+import 'state/account.dart';
 import 'state/providers.dart';
 
 Future<void> main() async {
@@ -22,6 +25,12 @@ Future<void> main() async {
     androidNotificationOngoing: true,
   );
   await initializeDateFormatting();
+
+  AccountService? account;
+  if (AppConfig.accountsConfigured) {
+    await Supabase.initialize(url: AppConfig.supabaseUrl, publishableKey: AppConfig.supabasePublishableKey);
+    account = SupabaseAccountService(Supabase.instance.client);
+  }
 
   final contentDb = await openContentDb();
   final userDb = await openUserDb();
@@ -34,6 +43,7 @@ Future<void> main() async {
         contentDbProvider.overrideWithValue(contentDb),
         userDbProvider.overrideWithValue(userDb),
         initialSettingsProvider.overrideWithValue(settings),
+        accountServiceProvider.overrideWithValue(account),
         audioRepositoryProvider.overrideWithValue(
           AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support.path, 'audio'))),
         ),

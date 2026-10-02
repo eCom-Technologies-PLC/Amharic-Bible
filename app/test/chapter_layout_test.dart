@@ -70,7 +70,7 @@ void main() {
     final pairs = layout.blocks.whereType<PairBlock>().toList();
     expect(pairs.map((p) => p.vkey), [19023001, 19023002, 19023003]);
     // Poetry breaks are dropped inside a paired verse.
-    expect(pairs[0].primary.segs.map((s) => s.toString()), ['num:1', 't:one;', 't:two.']);
+    expect(pairs[0].primary.segs.map((s) => s.toString()), ['num:1', 't:one;', 't: ', 't:two.']);
     expect(pairs[0].secondary!.segs.map((s) => s.toString()), ['num:1', 't:uno']);
     expect(pairs[1].secondary, isNull);
     expect(pairs[2].primary.segs, isEmpty);

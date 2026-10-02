@@ -106,13 +106,19 @@ class PairBlock extends Block {
   final ParaBlock? secondary; // null when the verse is missing in that version
 }
 
-/// The verse as a single block: number plus text runs (structure breaks are
-/// dropped so the two columns line up verse by verse).
-ParaBlock verseBlock(Verse v) => ParaBlock([
-  Seg(v.vkey, 'num', v.displayNumber),
-  for (final t in v.markup)
-    if (!t.isBreak) Seg(v.vkey, t.kind, t.text),
-]);
+/// The verse as a single block: number plus text runs. Paragraph and poetry
+/// breaks become spaces so the two columns line up verse by verse.
+ParaBlock verseBlock(Verse v) {
+  final segs = [Seg(v.vkey, 'num', v.displayNumber)];
+  for (final t in v.markup) {
+    if (t.isBreak) {
+      if (segs.length > 1) segs.add(Seg(v.vkey, 't', ' '));
+    } else {
+      segs.add(Seg(v.vkey, t.kind, t.text));
+    }
+  }
+  return ParaBlock(segs);
+}
 
 /// Verse-by-verse layout of [primary] with [secondary] aligned by verse key.
 /// Verses only in the secondary version are appended after their neighbours

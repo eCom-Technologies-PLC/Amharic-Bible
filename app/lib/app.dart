@@ -15,10 +15,13 @@ import 'features/plans/plans_screen.dart';
 import 'features/reader/book_picker_screen.dart';
 import 'features/reader/reader_screen.dart';
 import 'features/search/search_screen.dart';
+import 'features/share/share_image_screen.dart';
 import 'features/settings/about_screen.dart';
+import 'features/settings/account_screen.dart';
 import 'features/settings/downloads_screen.dart';
 import 'features/settings/me_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'state/account.dart';
 import 'state/providers.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
@@ -56,6 +59,7 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
                       LibraryScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0),
                 ),
                 GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
+                GoRoute(path: 'account', builder: (_, _) => const AccountScreen()),
                 GoRoute(
                   path: 'plans',
                   builder: (_, _) => const PlansScreen(),
@@ -76,6 +80,13 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
     ),
     GoRoute(path: '/books', parentNavigatorKey: _rootKey, builder: (_, _) => const BookPickerScreen()),
     GoRoute(path: '/player', parentNavigatorKey: _rootKey, builder: (_, _) => const PlayerScreen()),
+    GoRoute(
+      path: '/share-image',
+      parentNavigatorKey: _rootKey,
+      builder: (_, state) => ShareImageScreen(
+        vkeys: (state.uri.queryParameters['keys'] ?? '').split(',').map(int.tryParse).whereType<int>().toList(),
+      ),
+    ),
     GoRoute(
       path: '/note',
       parentNavigatorKey: _rootKey,
@@ -98,6 +109,8 @@ class AmharicBibleApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keep the sync controller alive so it reacts to sign-in and edits.
+    ref.listen(syncControllerProvider, (_, _) {});
     final settings = ref.watch(settingsProvider);
     final brightness = MediaQuery.platformBrightnessOf(context);
     return MaterialApp.router(

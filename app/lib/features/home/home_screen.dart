@@ -131,6 +131,11 @@ class HomeScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 IconButton(
+                                  tooltip: s.shareImage,
+                                  icon: const Icon(Icons.image_outlined),
+                                  onPressed: () => context.push('/share-image?keys=${v.verse.vkey}'),
+                                ),
+                                IconButton(
                                   tooltip: s.share,
                                   icon: const Icon(Icons.share_outlined),
                                   onPressed: () => SharePlus.instance.share(

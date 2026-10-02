@@ -48,13 +48,21 @@ flutter analyze && flutter test
 flutter run --dart-define=AUDIO_PROXY_URL=https://your-proxy.example   # audio is optional
 ```
 
-The MVP covers the reader (paragraphs, poetry, headings, footnotes, words of Jesus in red), the book picker,
-themes (light, sepia, dark, black) and fonts, highlights, bookmarks and notes, offline search with reference
-jumps ("ዮሐ 3፥16", "Jn 3:16"), audio with follow-along highlighting, background playback, speed, sleep timer and
-book downloads, verse of the day, an Amharic or English UI, the Ethiopian calendar and Ge'ez numerals.
+Features:
 
-Not yet built (phase 2, per the design): accounts and sync (the outbox is already recorded), reading plans,
-share-as-image and parallel view. The app uses the 66-book canon only.
+- **Reading:** paragraphs, poetry, headings, footnotes, words of Jesus in red, light/sepia/dark/black themes,
+  serif or sans Ethiopic fonts, Ge'ez numerals.
+- **Side by side:** any two versions (e.g. Amharic + English), in columns on tablets and interleaved on phones.
+- **Study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16").
+- **Audio:** follow-along verse highlighting, background playback, speed, sleep timer and book downloads.
+- **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
+  60 days, with daily progress and a "today's reading" card on Home.
+- **Share:** verses as text, or as an image card (8 backgrounds, square or story size, 1080 px PNG).
+- **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes and plans across
+  devices. Export your data as JSON, or delete your account, from inside the app.
+- Verse of the day, an Amharic or English UI, and the Ethiopian calendar.
+
+The app uses the 66-book canon only. Still to come: notification reminders for plans.
 
 ## Audio
 
@@ -69,6 +77,23 @@ Audio comes from Bible Brain (Faith Comes By Hearing) through `server/audio-prox
 
 The proxy follows the Bible Brain v4 endpoint shapes. Verify them against the current Bible Brain docs before
 deploying.
+
+## Accounts and sync
+
+Sync uses Supabase (Postgres + Auth). Without it the app works fully offline and hides sign-in.
+
+1. Create a Supabase project and apply `server/supabase/migrations/*.sql` (`supabase db push`, or paste the
+   file into the SQL editor). The migration creates the `user_records` table with row-level security, the
+   `push_records()` function (last writer wins) and `delete_my_account()`.
+2. Under Authentication → Email templates, make the **Magic Link** template show the code: `{{ .Token }}`.
+   The app signs in with a 6-digit code, so no deep links are needed.
+3. Build the app with `--dart-define=SUPABASE_URL=https://<project>.supabase.co` and
+   `--dart-define=SUPABASE_PUBLISHABLE_KEY=<publishable key>`.
+
+How sync works: every local change is queued (`sync_outbox`). Sync runs at sign-in, every 15 minutes, and a few
+seconds after each change. It pulls first, then pushes. The newest edit wins per item, and a note edited on two
+devices keeps the losing text as a separate note, so no writing is lost. The SQL is tested against real
+Postgres (PGlite): `cd server/supabase/test && npm ci && npm test`.
 
 ## Licenses
 

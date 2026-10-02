@@ -146,6 +146,10 @@ class SelectionBar extends ConsumerWidget {
                     await SharePlus.instance.share(ShareParams(text: _shareText()));
                     onDone();
                   }),
+                  _Action(Icons.image_outlined, s.image, () {
+                    context.push('/share-image?keys=${selected.join(',')}');
+                    onDone();
+                  }),
                   _Action(Icons.headphones_outlined, s.listen, () async {
                     final controller = ref.read(audioControllerProvider.notifier);
                     await controller.playChapter(version, book, chapter, fromVerse: selected.first % 1000);

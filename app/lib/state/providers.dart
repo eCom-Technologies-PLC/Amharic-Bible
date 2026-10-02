@@ -39,6 +39,7 @@ class Settings {
     this.languageCode = 'am',
     this.versionId,
     this.parallelVersionId,
+    this.lastSyncedAt,
     this.lastRef,
     this.recentSearches = const [],
   });
@@ -56,6 +57,7 @@ class Settings {
 
   /// Second version shown side by side, or null for single-version reading.
   final String? parallelVersionId;
+  final DateTime? lastSyncedAt;
   final BibleRef? lastRef;
   final List<String> recentSearches;
 
@@ -75,6 +77,7 @@ class Settings {
     String? languageCode,
     String? versionId,
     String? Function()? parallelVersionId,
+    DateTime? Function()? lastSyncedAt,
     BibleRef? lastRef,
     List<String>? recentSearches,
   }) => Settings(
@@ -89,6 +92,7 @@ class Settings {
     languageCode: languageCode ?? this.languageCode,
     versionId: versionId ?? this.versionId,
     parallelVersionId: parallelVersionId != null ? parallelVersionId() : this.parallelVersionId,
+    lastSyncedAt: lastSyncedAt != null ? lastSyncedAt() : this.lastSyncedAt,
     lastRef: lastRef ?? this.lastRef,
     recentSearches: recentSearches ?? this.recentSearches,
   );
@@ -105,6 +109,7 @@ class Settings {
     'language': languageCode,
     'version': versionId,
     'parallel_version': parallelVersionId,
+    'last_synced': lastSyncedAt?.millisecondsSinceEpoch.toString(),
     'last_ref': lastRef?.encode(),
     'recent_searches': jsonEncode(recentSearches),
   };
@@ -124,6 +129,9 @@ class Settings {
       languageCode: m['language'] ?? d.languageCode,
       versionId: m['version'],
       parallelVersionId: m['parallel_version'],
+      lastSyncedAt: int.tryParse(m['last_synced'] ?? '') != null
+          ? DateTime.fromMillisecondsSinceEpoch(int.parse(m['last_synced']!))
+          : null,
       lastRef: BibleRef.decode(m['last_ref']),
       recentSearches: m['recent_searches'] != null
           ? List<String>.from(jsonDecode(m['recent_searches']!) as List)
@@ -253,8 +261,8 @@ final activePlansProvider = FutureProvider<List<PlanProgress>>((ref) async {
   return [for (final id in ids) ?await ref.watch(planProgressProvider(id).future)];
 });
 
-/// Call after any write to user data so open screens refresh.
-void invalidateUserData(WidgetRef ref) {
+/// Refresh every screen showing user data (after a sync pulled changes).
+void refreshUserData(Ref ref) {
   ref.invalidate(planProgressProvider);
   ref.invalidate(activePlansProvider);
   ref.invalidate(chapterMarksProvider);
@@ -262,3 +270,24 @@ void invalidateUserData(WidgetRef ref) {
   ref.invalidate(bookmarksListProvider);
   ref.invalidate(notesListProvider);
 }
+
+/// Call after any write to user data: refreshes open screens and schedules a
+/// sync when signed in.
+void invalidateUserData(WidgetRef ref) {
+  ref.read(userDataWrittenProvider.notifier).bump();
+  ref.invalidate(planProgressProvider);
+  ref.invalidate(activePlansProvider);
+  ref.invalidate(chapterMarksProvider);
+  ref.invalidate(highlightsListProvider);
+  ref.invalidate(bookmarksListProvider);
+  ref.invalidate(notesListProvider);
+}
+
+/// Counter bumped on every local write; the sync controller listens to it.
+class UserDataWritten extends Notifier<int> {
+  @override
+  int build() => 0;
+  void bump() => state++;
+}
+
+final userDataWrittenProvider = NotifierProvider<UserDataWritten, int>(UserDataWritten.new);
