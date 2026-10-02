@@ -1,0 +1,49 @@
+{
+  "_note": "License registry and source list. build_db.py refuses to package a version whose license.status is not 'confirmed' unless --allow-unverified is passed (dev and sample builds only).",
+  "versions": [
+    {
+      "id": "AMH1962",
+      "name": "Amharic Bible (1962)",
+      "local_name": "መጽሐፍ ቅዱስ (1954 ዓ.ም.)",
+      "abbrev": "አማ1954",
+      "language": "amh",
+      "canon": "protestant66",
+      "source": {
+        "type": "usfm_zip",
+        "url": "https://ebible.org/Scriptures/amh_usfm.zip",
+        "_verify": "Confirm the eBible.org ID for the 1962/1954 E.C. text on https://ebible.org/find/ before the first release build."
+      },
+      "license": {
+        "status": "verify",
+        "summary": "Widely distributed as free to copy; confirm the terms on the source page.",
+        "attribution": "መጽሐፍ ቅዱስ 1954 ዓ.ም. — Amharic Bible (1962)."
+      },
+      "bundle": true,
+      "audio": {
+        "provider": "biblebrain",
+        "fileset_id": null,
+        "_verify": "Set to the Bible Brain Amharic audio fileset ID (with timestamps if available).",
+        "allow_download": false
+      }
+    },
+    {
+      "id": "WEB",
+      "name": "World English Bible",
+      "local_name": "World English Bible",
+      "abbrev": "WEB",
+      "language": "eng",
+      "canon": "protestant66",
+      "source": {
+        "type": "usfm_zip",
+        "url": "https://ebible.org/Scriptures/eng-web_usfm.zip"
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "Public domain.",
+        "attribution": "World English Bible — public domain (eBible.org)."
+      },
+      "bundle": true,
+      "audio": null
+    }
+  ]
+}

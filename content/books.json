@@ -1,0 +1,929 @@
+{
+ "_note": "Global book numbers (num) are fixed forever; they are the BB part of verse keys. Amharic names follow the 1954 E.C. Bible's titles and must be proofread against the chosen source text.",
+ "books": [
+  {
+   "num": 1,
+   "code": "GEN",
+   "testament": "OT",
+   "chapters": 50,
+   "name": "ኦሪት ዘፍጥረት",
+   "short": "ዘፍጥረት",
+   "abbrev": "ዘፍ",
+   "en": "Genesis",
+   "en_abbrevs": [
+    "gen",
+    "gn"
+   ]
+  },
+  {
+   "num": 2,
+   "code": "EXO",
+   "testament": "OT",
+   "chapters": 40,
+   "name": "ኦሪት ዘጸአት",
+   "short": "ዘጸአት",
+   "abbrev": "ዘጸ",
+   "en": "Exodus",
+   "en_abbrevs": [
+    "exo",
+    "ex",
+    "exod"
+   ]
+  },
+  {
+   "num": 3,
+   "code": "LEV",
+   "testament": "OT",
+   "chapters": 27,
+   "name": "ኦሪት ዘሌዋውያን",
+   "short": "ዘሌዋውያን",
+   "abbrev": "ዘሌ",
+   "en": "Leviticus",
+   "en_abbrevs": [
+    "lev",
+    "lv"
+   ]
+  },
+  {
+   "num": 4,
+   "code": "NUM",
+   "testament": "OT",
+   "chapters": 36,
+   "name": "ኦሪት ዘኍልቍ",
+   "short": "ዘኍልቍ",
+   "abbrev": "ዘኍ",
+   "en": "Numbers",
+   "en_abbrevs": [
+    "num",
+    "nm"
+   ]
+  },
+  {
+   "num": 5,
+   "code": "DEU",
+   "testament": "OT",
+   "chapters": 34,
+   "name": "ኦሪት ዘዳግም",
+   "short": "ዘዳግም",
+   "abbrev": "ዘዳ",
+   "en": "Deuteronomy",
+   "en_abbrevs": [
+    "deu",
+    "dt",
+    "deut"
+   ]
+  },
+  {
+   "num": 6,
+   "code": "JOS",
+   "testament": "OT",
+   "chapters": 24,
+   "name": "መጽሐፈ ኢያሱ",
+   "short": "ኢያሱ",
+   "abbrev": "ኢያ",
+   "en": "Joshua",
+   "en_abbrevs": [
+    "jos",
+    "josh"
+   ]
+  },
+  {
+   "num": 7,
+   "code": "JDG",
+   "testament": "OT",
+   "chapters": 21,
+   "name": "መጽሐፈ መሣፍንት",
+   "short": "መሣፍንት",
+   "abbrev": "መሣ",
+   "en": "Judges",
+   "en_abbrevs": [
+    "jdg",
+    "judg"
+   ]
+  },
+  {
+   "num": 8,
+   "code": "RUT",
+   "testament": "OT",
+   "chapters": 4,
+   "name": "መጽሐፈ ሩት",
+   "short": "ሩት",
+   "abbrev": "ሩት",
+   "en": "Ruth",
+   "en_abbrevs": [
+    "rut",
+    "ru"
+   ]
+  },
+  {
+   "num": 9,
+   "code": "1SA",
+   "testament": "OT",
+   "chapters": 31,
+   "name": "መጽሐፈ ሳሙኤል ቀዳማዊ",
+   "short": "1ኛ ሳሙኤል",
+   "abbrev": "1ሳሙ",
+   "en": "1 Samuel",
+   "en_abbrevs": [
+    "1sa",
+    "1sam"
+   ]
+  },
+  {
+   "num": 10,
+   "code": "2SA",
+   "testament": "OT",
+   "chapters": 24,
+   "name": "መጽሐፈ ሳሙኤል ካልዕ",
+   "short": "2ኛ ሳሙኤል",
+   "abbrev": "2ሳሙ",
+   "en": "2 Samuel",
+   "en_abbrevs": [
+    "2sa",
+    "2sam"
+   ]
+  },
+  {
+   "num": 11,
+   "code": "1KI",
+   "testament": "OT",
+   "chapters": 22,
+   "name": "መጽሐፈ ነገሥት ቀዳማዊ",
+   "short": "1ኛ ነገሥት",
+   "abbrev": "1ነገ",
+   "en": "1 Kings",
+   "en_abbrevs": [
+    "1ki",
+    "1kgs"
+   ]
+  },
+  {
+   "num": 12,
+   "code": "2KI",
+   "testament": "OT",
+   "chapters": 25,
+   "name": "መጽሐፈ ነገሥት ካልዕ",
+   "short": "2ኛ ነገሥት",
+   "abbrev": "2ነገ",
+   "en": "2 Kings",
+   "en_abbrevs": [
+    "2ki",
+    "2kgs"
+   ]
+  },
+  {
+   "num": 13,
+   "code": "1CH",
+   "testament": "OT",
+   "chapters": 29,
+   "name": "መጽሐፈ ዜና መዋዕል ቀዳማዊ",
+   "short": "1ኛ ዜና መዋዕል",
+   "abbrev": "1ዜና",
+   "en": "1 Chronicles",
+   "en_abbrevs": [
+    "1ch",
+    "1chr"
+   ]
+  },
+  {
+   "num": 14,
+   "code": "2CH",
+   "testament": "OT",
+   "chapters": 36,
+   "name": "መጽሐፈ ዜና መዋዕል ካልዕ",
+   "short": "2ኛ ዜና መዋዕል",
+   "abbrev": "2ዜና",
+   "en": "2 Chronicles",
+   "en_abbrevs": [
+    "2ch",
+    "2chr"
+   ]
+  },
+  {
+   "num": 15,
+   "code": "EZR",
+   "testament": "OT",
+   "chapters": 10,
+   "name": "መጽሐፈ ዕዝራ",
+   "short": "ዕዝራ",
+   "abbrev": "ዕዝ",
+   "en": "Ezra",
+   "en_abbrevs": [
+    "ezr"
+   ]
+  },
+  {
+   "num": 16,
+   "code": "NEH",
+   "testament": "OT",
+   "chapters": 13,
+   "name": "መጽሐፈ ነህምያ",
+   "short": "ነህምያ",
+   "abbrev": "ነህ",
+   "en": "Nehemiah",
+   "en_abbrevs": [
+    "neh"
+   ]
+  },
+  {
+   "num": 17,
+   "code": "EST",
+   "testament": "OT",
+   "chapters": 10,
+   "name": "መጽሐፈ አስቴር",
+   "short": "አስቴር",
+   "abbrev": "አስ",
+   "en": "Esther",
+   "en_abbrevs": [
+    "est",
+    "esth"
+   ]
+  },
+  {
+   "num": 18,
+   "code": "JOB",
+   "testament": "OT",
+   "chapters": 42,
+   "name": "መጽሐፈ ኢዮብ",
+   "short": "ኢዮብ",
+   "abbrev": "ኢዮ",
+   "en": "Job",
+   "en_abbrevs": [
+    "job",
+    "jb"
+   ]
+  },
+  {
+   "num": 19,
+   "code": "PSA",
+   "testament": "OT",
+   "chapters": 150,
+   "name": "መዝሙረ ዳዊት",
+   "short": "መዝሙር",
+   "abbrev": "መዝ",
+   "en": "Psalms",
+   "en_abbrevs": [
+    "psa",
+    "ps",
+    "psalm"
+   ]
+  },
+  {
+   "num": 20,
+   "code": "PRO",
+   "testament": "OT",
+   "chapters": 31,
+   "name": "መጽሐፈ ምሳሌ",
+   "short": "ምሳሌ",
+   "abbrev": "ምሳ",
+   "en": "Proverbs",
+   "en_abbrevs": [
+    "pro",
+    "prov",
+    "prv"
+   ]
+  },
+  {
+   "num": 21,
+   "code": "ECC",
+   "testament": "OT",
+   "chapters": 12,
+   "name": "መጽሐፈ መክብብ",
+   "short": "መክብብ",
+   "abbrev": "መክ",
+   "en": "Ecclesiastes",
+   "en_abbrevs": [
+    "ecc",
+    "eccl",
+    "qoh"
+   ]
+  },
+  {
+   "num": 22,
+   "code": "SNG",
+   "testament": "OT",
+   "chapters": 8,
+   "name": "መኃልየ መኃልይ ዘሰሎሞን",
+   "short": "መኃልየ መኃልይ",
+   "abbrev": "መኃ",
+   "en": "Song of Songs",
+   "en_abbrevs": [
+    "sng",
+    "song",
+    "sos",
+    "song of solomon"
+   ]
+  },
+  {
+   "num": 23,
+   "code": "ISA",
+   "testament": "OT",
+   "chapters": 66,
+   "name": "ትንቢተ ኢሳይያስ",
+   "short": "ኢሳይያስ",
+   "abbrev": "ኢሳ",
+   "en": "Isaiah",
+   "en_abbrevs": [
+    "isa",
+    "is"
+   ]
+  },
+  {
+   "num": 24,
+   "code": "JER",
+   "testament": "OT",
+   "chapters": 52,
+   "name": "ትንቢተ ኤርምያስ",
+   "short": "ኤርምያስ",
+   "abbrev": "ኤር",
+   "en": "Jeremiah",
+   "en_abbrevs": [
+    "jer"
+   ]
+  },
+  {
+   "num": 25,
+   "code": "LAM",
+   "testament": "OT",
+   "chapters": 5,
+   "name": "ሰቆቃው ኤርምያስ",
+   "short": "ሰቆቃው",
+   "abbrev": "ሰቆ",
+   "en": "Lamentations",
+   "en_abbrevs": [
+    "lam"
+   ]
+  },
+  {
+   "num": 26,
+   "code": "EZK",
+   "testament": "OT",
+   "chapters": 48,
+   "name": "ትንቢተ ሕዝቅኤል",
+   "short": "ሕዝቅኤል",
+   "abbrev": "ሕዝ",
+   "en": "Ezekiel",
+   "en_abbrevs": [
+    "ezk",
+    "ezek"
+   ]
+  },
+  {
+   "num": 27,
+   "code": "DAN",
+   "testament": "OT",
+   "chapters": 12,
+   "name": "ትንቢተ ዳንኤል",
+   "short": "ዳንኤል",
+   "abbrev": "ዳን",
+   "en": "Daniel",
+   "en_abbrevs": [
+    "dan",
+    "dn"
+   ]
+  },
+  {
+   "num": 28,
+   "code": "HOS",
+   "testament": "OT",
+   "chapters": 14,
+   "name": "ትንቢተ ሆሴዕ",
+   "short": "ሆሴዕ",
+   "abbrev": "ሆሴ",
+   "en": "Hosea",
+   "en_abbrevs": [
+    "hos"
+   ]
+  },
+  {
+   "num": 29,
+   "code": "JOL",
+   "testament": "OT",
+   "chapters": 3,
+   "name": "ትንቢተ ኢዮኤል",
+   "short": "ኢዮኤል",
+   "abbrev": "ኢዮኤ",
+   "en": "Joel",
+   "en_abbrevs": [
+    "jol",
+    "joel",
+    "jl"
+   ]
+  },
+  {
+   "num": 30,
+   "code": "AMO",
+   "testament": "OT",
+   "chapters": 9,
+   "name": "ትንቢተ አሞጽ",
+   "short": "አሞጽ",
+   "abbrev": "አሞ",
+   "en": "Amos",
+   "en_abbrevs": [
+    "amo",
+    "am"
+   ]
+  },
+  {
+   "num": 31,
+   "code": "OBA",
+   "testament": "OT",
+   "chapters": 1,
+   "name": "ትንቢተ አብድዩ",
+   "short": "አብድዩ",
+   "abbrev": "አብ",
+   "en": "Obadiah",
+   "en_abbrevs": [
+    "oba",
+    "obad",
+    "ob"
+   ]
+  },
+  {
+   "num": 32,
+   "code": "JON",
+   "testament": "OT",
+   "chapters": 4,
+   "name": "ትንቢተ ዮናስ",
+   "short": "ዮናስ",
+   "abbrev": "ዮና",
+   "en": "Jonah",
+   "en_abbrevs": [
+    "jon",
+    "jnh"
+   ]
+  },
+  {
+   "num": 33,
+   "code": "MIC",
+   "testament": "OT",
+   "chapters": 7,
+   "name": "ትንቢተ ሚክያስ",
+   "short": "ሚክያስ",
+   "abbrev": "ሚክ",
+   "en": "Micah",
+   "en_abbrevs": [
+    "mic",
+    "mi"
+   ]
+  },
+  {
+   "num": 34,
+   "code": "NAM",
+   "testament": "OT",
+   "chapters": 3,
+   "name": "ትንቢተ ናሆም",
+   "short": "ናሆም",
+   "abbrev": "ናሆ",
+   "en": "Nahum",
+   "en_abbrevs": [
+    "nam",
+    "nah"
+   ]
+  },
+  {
+   "num": 35,
+   "code": "HAB",
+   "testament": "OT",
+   "chapters": 3,
+   "name": "ትንቢተ ዕንባቆም",
+   "short": "ዕንባቆም",
+   "abbrev": "ዕን",
+   "en": "Habakkuk",
+   "en_abbrevs": [
+    "hab"
+   ]
+  },
+  {
+   "num": 36,
+   "code": "ZEP",
+   "testament": "OT",
+   "chapters": 3,
+   "name": "ትንቢተ ሶፎንያስ",
+   "short": "ሶፎንያስ",
+   "abbrev": "ሶፎ",
+   "en": "Zephaniah",
+   "en_abbrevs": [
+    "zep",
+    "zeph"
+   ]
+  },
+  {
+   "num": 37,
+   "code": "HAG",
+   "testament": "OT",
+   "chapters": 2,
+   "name": "ትንቢተ ሐጌ",
+   "short": "ሐጌ",
+   "abbrev": "ሐጌ",
+   "en": "Haggai",
+   "en_abbrevs": [
+    "hag"
+   ]
+  },
+  {
+   "num": 38,
+   "code": "ZEC",
+   "testament": "OT",
+   "chapters": 14,
+   "name": "ትንቢተ ዘካርያስ",
+   "short": "ዘካርያስ",
+   "abbrev": "ዘካ",
+   "en": "Zechariah",
+   "en_abbrevs": [
+    "zec",
+    "zech"
+   ]
+  },
+  {
+   "num": 39,
+   "code": "MAL",
+   "testament": "OT",
+   "chapters": 4,
+   "name": "ትንቢተ ሚልክያ",
+   "short": "ሚልክያ",
+   "abbrev": "ሚል",
+   "en": "Malachi",
+   "en_abbrevs": [
+    "mal"
+   ]
+  },
+  {
+   "num": 40,
+   "code": "MAT",
+   "testament": "NT",
+   "chapters": 28,
+   "name": "የማቴዎስ ወንጌል",
+   "short": "ማቴዎስ",
+   "abbrev": "ማቴ",
+   "en": "Matthew",
+   "en_abbrevs": [
+    "mat",
+    "mt",
+    "matt"
+   ]
+  },
+  {
+   "num": 41,
+   "code": "MRK",
+   "testament": "NT",
+   "chapters": 16,
+   "name": "የማርቆስ ወንጌል",
+   "short": "ማርቆስ",
+   "abbrev": "ማር",
+   "en": "Mark",
+   "en_abbrevs": [
+    "mrk",
+    "mk",
+    "mar"
+   ]
+  },
+  {
+   "num": 42,
+   "code": "LUK",
+   "testament": "NT",
+   "chapters": 24,
+   "name": "የሉቃስ ወንጌል",
+   "short": "ሉቃስ",
+   "abbrev": "ሉቃ",
+   "en": "Luke",
+   "en_abbrevs": [
+    "luk",
+    "lk"
+   ]
+  },
+  {
+   "num": 43,
+   "code": "JHN",
+   "testament": "NT",
+   "chapters": 21,
+   "name": "የዮሐንስ ወንጌል",
+   "short": "ዮሐንስ",
+   "abbrev": "ዮሐ",
+   "en": "John",
+   "en_abbrevs": [
+    "jhn",
+    "jn",
+    "joh"
+   ]
+  },
+  {
+   "num": 44,
+   "code": "ACT",
+   "testament": "NT",
+   "chapters": 28,
+   "name": "የሐዋርያት ሥራ",
+   "short": "ሐዋርያት",
+   "abbrev": "ሐዋ",
+   "en": "Acts",
+   "en_abbrevs": [
+    "act",
+    "ac"
+   ]
+  },
+  {
+   "num": 45,
+   "code": "ROM",
+   "testament": "NT",
+   "chapters": 16,
+   "name": "ወደ ሮሜ ሰዎች",
+   "short": "ሮሜ",
+   "abbrev": "ሮሜ",
+   "en": "Romans",
+   "en_abbrevs": [
+    "rom",
+    "rm"
+   ]
+  },
+  {
+   "num": 46,
+   "code": "1CO",
+   "testament": "NT",
+   "chapters": 16,
+   "name": "1ኛ ወደ ቆሮንቶስ ሰዎች",
+   "short": "1ኛ ቆሮንቶስ",
+   "abbrev": "1ቆሮ",
+   "en": "1 Corinthians",
+   "en_abbrevs": [
+    "1co",
+    "1cor"
+   ]
+  },
+  {
+   "num": 47,
+   "code": "2CO",
+   "testament": "NT",
+   "chapters": 13,
+   "name": "2ኛ ወደ ቆሮንቶስ ሰዎች",
+   "short": "2ኛ ቆሮንቶስ",
+   "abbrev": "2ቆሮ",
+   "en": "2 Corinthians",
+   "en_abbrevs": [
+    "2co",
+    "2cor"
+   ]
+  },
+  {
+   "num": 48,
+   "code": "GAL",
+   "testament": "NT",
+   "chapters": 6,
+   "name": "ወደ ገላትያ ሰዎች",
+   "short": "ገላትያ",
+   "abbrev": "ገላ",
+   "en": "Galatians",
+   "en_abbrevs": [
+    "gal"
+   ]
+  },
+  {
+   "num": 49,
+   "code": "EPH",
+   "testament": "NT",
+   "chapters": 6,
+   "name": "ወደ ኤፌሶን ሰዎች",
+   "short": "ኤፌሶን",
+   "abbrev": "ኤፌ",
+   "en": "Ephesians",
+   "en_abbrevs": [
+    "eph"
+   ]
+  },
+  {
+   "num": 50,
+   "code": "PHP",
+   "testament": "NT",
+   "chapters": 4,
+   "name": "ወደ ፊልጵስዩስ ሰዎች",
+   "short": "ፊልጵስዩስ",
+   "abbrev": "ፊል",
+   "en": "Philippians",
+   "en_abbrevs": [
+    "php",
+    "phil"
+   ]
+  },
+  {
+   "num": 51,
+   "code": "COL",
+   "testament": "NT",
+   "chapters": 4,
+   "name": "ወደ ቆላስይስ ሰዎች",
+   "short": "ቆላስይስ",
+   "abbrev": "ቆላ",
+   "en": "Colossians",
+   "en_abbrevs": [
+    "col"
+   ]
+  },
+  {
+   "num": 52,
+   "code": "1TH",
+   "testament": "NT",
+   "chapters": 5,
+   "name": "1ኛ ወደ ተሰሎንቄ ሰዎች",
+   "short": "1ኛ ተሰሎንቄ",
+   "abbrev": "1ተሰ",
+   "en": "1 Thessalonians",
+   "en_abbrevs": [
+    "1th",
+    "1thess"
+   ]
+  },
+  {
+   "num": 53,
+   "code": "2TH",
+   "testament": "NT",
+   "chapters": 3,
+   "name": "2ኛ ወደ ተሰሎንቄ ሰዎች",
+   "short": "2ኛ ተሰሎንቄ",
+   "abbrev": "2ተሰ",
+   "en": "2 Thessalonians",
+   "en_abbrevs": [
+    "2th",
+    "2thess"
+   ]
+  },
+  {
+   "num": 54,
+   "code": "1TI",
+   "testament": "NT",
+   "chapters": 6,
+   "name": "1ኛ ወደ ጢሞቴዎስ",
+   "short": "1ኛ ጢሞቴዎስ",
+   "abbrev": "1ጢሞ",
+   "en": "1 Timothy",
+   "en_abbrevs": [
+    "1ti",
+    "1tim"
+   ]
+  },
+  {
+   "num": 55,
+   "code": "2TI",
+   "testament": "NT",
+   "chapters": 4,
+   "name": "2ኛ ወደ ጢሞቴዎስ",
+   "short": "2ኛ ጢሞቴዎስ",
+   "abbrev": "2ጢሞ",
+   "en": "2 Timothy",
+   "en_abbrevs": [
+    "2ti",
+    "2tim"
+   ]
+  },
+  {
+   "num": 56,
+   "code": "TIT",
+   "testament": "NT",
+   "chapters": 3,
+   "name": "ወደ ቲቶ",
+   "short": "ቲቶ",
+   "abbrev": "ቲቶ",
+   "en": "Titus",
+   "en_abbrevs": [
+    "tit"
+   ]
+  },
+  {
+   "num": 57,
+   "code": "PHM",
+   "testament": "NT",
+   "chapters": 1,
+   "name": "ወደ ፊልሞና",
+   "short": "ፊልሞና",
+   "abbrev": "ፊልሞ",
+   "en": "Philemon",
+   "en_abbrevs": [
+    "phm",
+    "phlm"
+   ]
+  },
+  {
+   "num": 58,
+   "code": "HEB",
+   "testament": "NT",
+   "chapters": 13,
+   "name": "ወደ ዕብራውያን",
+   "short": "ዕብራውያን",
+   "abbrev": "ዕብ",
+   "en": "Hebrews",
+   "en_abbrevs": [
+    "heb"
+   ]
+  },
+  {
+   "num": 59,
+   "code": "JAS",
+   "testament": "NT",
+   "chapters": 5,
+   "name": "የያዕቆብ መልእክት",
+   "short": "ያዕቆብ",
+   "abbrev": "ያዕ",
+   "en": "James",
+   "en_abbrevs": [
+    "jas",
+    "jm"
+   ]
+  },
+  {
+   "num": 60,
+   "code": "1PE",
+   "testament": "NT",
+   "chapters": 5,
+   "name": "1ኛ የጴጥሮስ መልእክት",
+   "short": "1ኛ ጴጥሮስ",
+   "abbrev": "1ጴጥ",
+   "en": "1 Peter",
+   "en_abbrevs": [
+    "1pe",
+    "1pet"
+   ]
+  },
+  {
+   "num": 61,
+   "code": "2PE",
+   "testament": "NT",
+   "chapters": 3,
+   "name": "2ኛ የጴጥሮስ መልእክት",
+   "short": "2ኛ ጴጥሮስ",
+   "abbrev": "2ጴጥ",
+   "en": "2 Peter",
+   "en_abbrevs": [
+    "2pe",
+    "2pet"
+   ]
+  },
+  {
+   "num": 62,
+   "code": "1JN",
+   "testament": "NT",
+   "chapters": 5,
+   "name": "1ኛ የዮሐንስ መልእክት",
+   "short": "1ኛ ዮሐንስ",
+   "abbrev": "1ዮሐ",
+   "en": "1 John",
+   "en_abbrevs": [
+    "1jn",
+    "1jo"
+   ]
+  },
+  {
+   "num": 63,
+   "code": "2JN",
+   "testament": "NT",
+   "chapters": 1,
+   "name": "2ኛ የዮሐንስ መልእክት",
+   "short": "2ኛ ዮሐንስ",
+   "abbrev": "2ዮሐ",
+   "en": "2 John",
+   "en_abbrevs": [
+    "2jn",
+    "2jo"
+   ]
+  },
+  {
+   "num": 64,
+   "code": "3JN",
+   "testament": "NT",
+   "chapters": 1,
+   "name": "3ኛ የዮሐንስ መልእክት",
+   "short": "3ኛ ዮሐንስ",
+   "abbrev": "3ዮሐ",
+   "en": "3 John",
+   "en_abbrevs": [
+    "3jn",
+    "3jo"
+   ]
+  },
+  {
+   "num": 65,
+   "code": "JUD",
+   "testament": "NT",
+   "chapters": 1,
+   "name": "የይሁዳ መልእክት",
+   "short": "ይሁዳ",
+   "abbrev": "ይሁ",
+   "en": "Jude",
+   "en_abbrevs": [
+    "jud",
+    "jude"
+   ]
+  },
+  {
+   "num": 66,
+   "code": "REV",
+   "testament": "NT",
+   "chapters": 22,
+   "name": "የዮሐንስ ራእይ",
+   "short": "ራእይ",
+   "abbrev": "ራእ",
+   "en": "Revelation",
+   "en_abbrevs": [
+    "rev",
+    "rv",
+    "apocalypse"
+   ]
+  }
+ ]
+}
