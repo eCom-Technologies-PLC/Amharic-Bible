@@ -1,0 +1,555 @@
+# Amharic Bible App — Design Document
+
+**Status:** Draft v0.1 · **Date:** 2026-10-02
+
+---
+
+## 1. Overview
+
+A free, offline-first mobile Bible app for Amharic speakers that combines readable
+Ge'ez-script text, synchronized audio, fast search and simple study tools, and
+that runs well on the low-end Android phones and patchy connections common in
+Ethiopia and the diaspora.
+
+### 1.1 Goals
+
+1. **Read anywhere.** The full text works offline after install with no account.
+2. **Listen anywhere.** Chapter audio can be streamed, or downloaded per book, with verse-by-verse highlighting.
+3. **Find anything.** Search in Amharic or English is instant and tolerates Ge'ez spelling variants.
+4. **Native Amharic experience.** Amharic UI by default, correct Ethiopic typography, and Ethiopian calendar dates.
+5. **Light and fast.** Install under ~40 MB, cold start under 2 s on a 2 GB RAM Android device.
+
+### 1.2 Non-goals for v1
+
+- Social features (public comments, groups, chat)
+- User-generated content shared between users
+- Commentaries or lexicons (planned for later; see the roadmap)
+- Desktop apps (a web reader is a phase-3 option)
+
+### 1.3 Target users
+
+| Persona | Needs |
+|---|---|
+| **Daily reader** (urban, mid-range Android) | Verse of the day, reading plans, bookmarks |
+| **Listener** (limited literacy, older users, commuters) | Big play button, background audio, offline downloads |
+| **Church leader / student** | Fast search, parallel Amharic–English view, notes, sharing verses |
+| **Diaspora user** (iOS/Android, strong data plan) | Amharic + English UI, sync across devices |
+| **Orthodox Tewahedo user** | 81-book canon, Orthodox book order and names |
+
+---
+
+## 2. Content sources and licensing
+
+The **content license decides what can ship.** Every text and audio version
+needs a recorded license before it is bundled or streamed.
+
+### 2.1 Text
+
+| Version | Likely source | License (verify) | Plan |
+|---|---|---|---|
+| Amharic 1962 / 1954 E.C. (Haile Selassie) | eBible.org USFM, Bible Brain | Widely distributed as free; confirm the terms on the source page | **Bundled default (v1)** |
+| Amharic Standard Version (1980 / 2000s revisions) | Ethiopian Bible Society | Copyrighted | Seek a license; ship only with permission |
+| New Amharic Standard Version and others | Bible Brain / YouVersion | Per-version terms | Optional streaming via API if licensed |
+| English (WEB, KJV) | eBible.org | Public domain | Bundled for the parallel view |
+| Deuterocanonical / Orthodox books (Enoch, Jubilees, Meqabyan, etc.) | Ethiopian Orthodox sources | Verify | Phase 2 (81-book canon) |
+
+### 2.2 Audio
+
+| Source | Access | Notes |
+|---|---|---|
+| **Bible Brain (Faith Comes By Hearing)** | Free API key, streaming URLs | Preferred source. Some filesets include **verse timestamps**. Caching or download rules are set by its terms. |
+| Wordproject | MP3 per chapter | Non-commercial terms; no timestamps |
+| Custom recording | Our own studio | Full rights; timestamps come from forced alignment (aeneas, Montreal Forced Aligner, or a CTC model fine-tuned for Amharic) |
+
+### 2.3 License registry
+
+All content is listed in `content/LICENSES.yaml` (version ID, owner, license,
+attribution text, allowed uses such as bundle, stream or offline download).
+The build pipeline refuses to package any version without an entry. The app's
+**About → Sources** screen shows the attribution strings from this file.
+
+---
+
+## 3. Feature specification
+
+Priority: **P0** = MVP, **P1** = v1.x, **P2** = later.
+
+### 3.1 Reading — P0
+- Navigate by book, chapter and verse with a grid picker, quick jump ("ዮሐ 3:16" / "John 3:16") and the last-read position remembered.
+- Continuous scrolling within a chapter; swipe to change chapters.
+- Font size (6 steps), line spacing, and serif or sans Ethiopic fonts.
+- Themes: light, sepia, dark and true-black (OLED, which saves battery).
+- Verse numbers can be shown or hidden; paragraph and poetry formatting comes from the USFM markers (`\p`, `\q1`, `\q2`).
+- Words of Jesus in red as an option, when the source marks them (`\wj`).
+- Footnotes and cross-references as tappable markers (P1, depending on the source data).
+
+### 3.2 Verse actions — P0
+Long-press a verse or select a range to get:
+- **Highlight** (5 colors), **bookmark** and **note**
+- **Copy** with the reference, and **Share** as text or as an **image card** (P1, with backgrounds that come with the app)
+- **Play from here** (audio)
+- **Compare** across installed versions (P1)
+
+### 3.3 Audio — P0
+- A persistent mini-player plus a full player screen.
+- Play, pause, ±10 s, previous or next chapter, speeds from 0.75× to 2×, and a sleep timer.
+- Background playback with lock-screen and notification controls (Android MediaSession / iOS Now Playing).
+- **Follow-along:** the current verse is highlighted and the view auto-scrolls when timestamps exist. Tapping a verse seeks to it.
+- Download per chapter or per book, with a storage indicator and "Wi-Fi only" downloads by default.
+- Continuous play runs into the next chapter automatically.
+
+### 3.4 Search — P0
+- Full-text search over all installed versions, fully offline.
+- **Ge'ez normalization** (see §6.4) so ሀ/ሐ/ኀ, ሰ/ሠ, አ/ዐ, ጸ/ፀ and similar spellings match each other.
+- Filters: Old or New Testament, a single book, or a version.
+- Results show the reference plus a snippet with the match highlighted, ordered by canonical position (with a relevance option in P1).
+- Reference queries ("ዮሐንስ 3፥16", "Jn 3:16", "1 ቆሮ 13") jump straight to the passage.
+
+### 3.5 Personal study — P0/P1
+- A library screen with tabs for Highlights, Bookmarks and Notes, filterable by color or book (P0).
+- Notes in Markdown-lite (bold, italic, lists), linked to a verse range (P0).
+- Tags (P1).
+- Export to a JSON or Markdown file (P1).
+
+### 3.6 Engagement — P1
+- **Verse of the day** shown on the home screen and as an optional notification at a time the user picks. A home-screen widget comes in P2.
+- **Reading plans** (bundled JSON): read the Bible in a year, the New Testament in 90 days, Psalms and Proverbs, and Lent / Hudade (Orthodox fasting season). The plans track progress and send reminders.
+- **Reading streak** — a gentle, opt-in streak with no penalty for missing a day.
+
+### 3.7 Parallel view — P1
+Amharic and English side by side, or interleaved verse by verse on narrow screens.
+
+### 3.8 Accounts and sync — P1
+- An **optional** account (email link, Google or Apple sign-in).
+- Syncs highlights, bookmarks, notes, plan progress and settings.
+- The app is fully usable without signing in, and data merges into the account after a later sign-in.
+
+### 3.9 Later — P2
+81-book Orthodox canon, Ge'ez (ግዕዝ) liturgical text, Strong's / lexicon links, commentaries, a children's Bible with pictures, a web reader, and Android Auto / CarPlay audio.
+
+---
+
+## 4. UX design
+
+### 4.1 Navigation
+
+The app uses a bottom tab bar with four tabs:
+
+```
+┌───────────────────────────────────────┐
+│  ቤት      ንባብ       ፍለጋ      የእኔ      │
+│  Home    Read     Search    Me        │
+└───────────────────────────────────────┘
+```
+
+- **Home:** verse of the day, continue reading, active plan, continue listening.
+- **Read:** the reader; the top bar holds the book/chapter selector and the version switcher.
+- **Search:** the search field, recent searches and filters.
+- **Me:** highlights, bookmarks, notes, plans, downloads, settings, about and sources.
+
+The mini-player sits above the tab bar whenever audio is loaded.
+
+### 4.2 Key screens (wireframes)
+
+**Reader**
+```
+┌─────────────────────────────────┐
+│ ‹  ዮሐንስ 3 ▾          አማ1954 ▾  Aa │  ← book/chapter, version, text settings
+├─────────────────────────────────┤
+│  ምዕራፍ 3                         │
+│ ¹ ከፈሪሳውያንም ወገን ስሙ ኒቆዲሞስ     │
+│   የሚባል የአይሁድ አለቃ የሆነ ሰው      │
+│   ነበረ።                           │
+│ ² ...                            │
+│ ▌¹⁶ እግዚአብሔር አንድያ ልጁን ...      │  ← verse highlighted during audio
+│                                   │
+├─────────────────────────────────┤
+│ ▶  ዮሐንስ 3   ━━━━●──── 2:14  1×  │  ← mini-player
+├─────────────────────────────────┤
+│  ቤት    ንባብ    ፍለጋ    የእኔ       │
+└─────────────────────────────────┘
+```
+
+**Book picker:** Old and New Testament sections. Books appear as a grid of
+abbreviations (ዘፍ, ዘጸ, ዘሌ …), or as a list for long names. Tapping a book
+opens a chapter grid. A search field at the top filters the books.
+
+**Verse action sheet:**
+```
+┌─────────────────────────────────┐
+│  ዮሐንስ 3፥16                       │
+│  ● ● ● ● ●   (highlight colors)  │
+│  🔖 ዕልባት  📝 ማስታወሻ  📋 ቅዳ       │
+│  ↗ አጋራ    🖼 ምስል   ▶ አዳምጥ      │
+└─────────────────────────────────┘
+```
+
+### 4.3 Typography and visual design
+
+- **Fonts:** Noto Serif Ethiopic (reading) and Noto Sans Ethiopic (UI), both bundled and subset to the Ethiopic ranges plus Latin to save space. Abyssinica SIL is an alternative serif.
+- Ethiopic glyphs need more line height than Latin text: use a **1.6–1.8** line-height for body text.
+- The default reading size is 19 sp, larger than for Latin text, because Ge'ez characters are dense.
+- Use the Ethiopic punctuation in the source as-is: `።` (full stop), `፣` (comma), `፤` (semicolon) and `፥` (the colon in references, e.g. ዮሐንስ 3፥16).
+- **Color:** a calm neutral base with one accent color (deep green or burgundy, drawn from Ethiopian manuscript art). Highlight colors must keep a 4.5:1 text contrast in both light and dark themes.
+- **Iconography:** simple line icons with text labels, because some users are not fluent with icon-only interfaces.
+
+### 4.4 Localization
+
+- UI languages: **Amharic (default)** and English. Afaan Oromo and Tigrinya are planned for P2. Strings live in ARB files.
+- **Ethiopian calendar:** dates for notes and plans can be shown in the Ethiopian calendar (e.g. መስከረም 22, 2019 ዓ.ም.), switchable to Gregorian. Store dates in UTC and convert only for display.
+- Numbers use Arabic numerals in the UI. Ge'ez numerals (፩ ፪ ፫) are an optional setting for chapter and verse numbers.
+- Book names, abbreviations and aliases (Amharic + English) are kept in `books.json` and also feed reference parsing.
+
+### 4.5 Accessibility
+
+- Screen reader labels on all controls, and each verse read as "ዮሐንስ ምዕራፍ 3 ቁጥር 16, …".
+- Text scales with the system font setting up to 200% without clipping.
+- 48 dp minimum touch targets.
+- No meaning conveyed by color alone; highlights also carry an icon in the library.
+- Audio-first mode (P1): a simplified home screen with big play controls for low-literacy users.
+
+---
+
+## 5. System architecture
+
+### 5.1 Technology choices
+
+| Layer | Choice | Why |
+|---|---|---|
+| App | **Flutter (Dart)** | One codebase for Android and iOS, consistent text rendering, good performance on low-end devices |
+| State | Riverpod | Testable, little boilerplate |
+| Local DB | **SQLite** via `drift` (with FTS5) | Bundled read-only content DB + a separate read/write user DB |
+| Audio | `just_audio` + `audio_service` | Streaming, caching, background playback, MediaSession |
+| Downloads | `background_downloader` | Resumable downloads that survive the app being killed |
+| Backend (P1) | **Supabase** (Postgres + Auth) or Firebase | Managed auth and sync; little operations work for a small team |
+| Content pipeline | Python 3 scripts + GitHub Actions | USFM → SQLite, validation, packaging |
+| Analytics | Self-hosted or privacy-friendly (e.g. PostHog, opt-in) | Respects users; no ad SDKs |
+| Crash reporting | Sentry or Firebase Crashlytics | |
+
+Native Kotlin is the alternative if iOS is dropped and the smallest possible APK matters more than shared code.
+
+### 5.2 High-level diagram
+
+```
+                ┌──────────────────────── Mobile app (Flutter) ────────────────────────┐
+                │                                                                      │
+                │  UI (screens/widgets) ──► State (Riverpod providers)                 │
+                │                               │                                      │
+                │        ┌──────────────────────┼─────────────────────────┐            │
+                │        ▼                      ▼                         ▼            │
+                │  BibleRepository        UserDataRepository        AudioService       │
+                │   (read-only)            (read/write)           (just_audio +        │
+                │        │                      │                  audio_service)      │
+                │        ▼                      ▼                         │            │
+                │  content.db (SQLite)    user.db (SQLite)          AudioCache /       │
+                │  bundled + downloaded   highlights, notes,        Downloads          │
+                │  versions, FTS index    plans, settings,                │            │
+                │                          sync outbox                    │            │
+                └──────────────────────────────┬──────────────────────────┼────────────┘
+                                               │ sync (P1)                │ HTTPS
+                                               ▼                          ▼
+                                  ┌───────────────────────┐   ┌──────────────────────────┐
+                                  │ Backend (Supabase)    │   │ Bible Brain API / CDN    │
+                                  │ Auth, user_data,      │   │ audio streams,           │
+                                  │ content manifest      │   │ timestamps               │
+                                  └───────────────────────┘   └──────────────────────────┘
+                                               ▲
+                                               │ publish content packs
+                                  ┌───────────────────────┐
+                                  │ Content pipeline (CI) │
+                                  │ USFM → SQLite packs   │
+                                  └───────────────────────┘
+```
+
+### 5.3 App module layout
+
+```
+app/
+  lib/
+    main.dart
+    core/            # theme, routing (go_router), l10n, ethiopian_calendar, geez_normalize
+    data/
+      content/       # content.db access, version manager, pack downloader
+      user/          # user.db, sync outbox
+      audio/         # fileset resolver, timestamp loader, cache
+      remote/        # Bible Brain client, backend client
+    domain/          # models: Book, Chapter, Verse, Reference, Highlight, Plan…
+                     # services: ReferenceParser, SearchService, PlanEngine
+    features/
+      home/  reader/  picker/  search/  audio_player/
+      library/  plans/  settings/  onboarding/  share_image/
+  assets/
+    fonts/  content/content.db  plans/*.json  books.json
+  test/  integration_test/
+pipeline/
+  ingest_usfm.py  build_db.py  validate.py  normalize.py  fetch_timestamps.py
+content/
+  LICENSES.yaml  sources/ (raw USFM, git-lfs or downloaded in CI)
+docs/
+  DESIGN.md
+```
+
+---
+
+## 6. Data design
+
+### 6.1 Canonical reference model
+
+- Books are identified by **OSIS/USFM code** (`GEN`, `JHN`, `1CO` …), never by localized name.
+- A verse key is a single integer, `BBCCCVVV` (book ordinal × 10⁶ + chapter × 10³ + verse), e.g. John 3:16 = `43003016`. It is fast to index, sort and compare by range.
+- **Versification:** Amharic sources may number verses differently from English (especially in Psalm titles and Malachi 3–4). A `versification_map` table maps keys between versions for the parallel view and audio sync.
+- The canon is a property of each version: a `canon` table lists which books it includes and in what order (66 Protestant, 73 Catholic, 81 Ethiopian Orthodox).
+
+### 6.2 Content database (`content.db`, read-only)
+
+```sql
+CREATE TABLE version (
+  id TEXT PRIMARY KEY,          -- 'AMH1962', 'WEB'
+  name TEXT, local_name TEXT,   -- 'Amharic 1962', 'አማርኛ 1954'
+  language TEXT,                -- 'amh', 'eng'
+  canon TEXT,                   -- 'protestant66' | 'orthodox81' ...
+  license_id TEXT, attribution TEXT,
+  content_hash TEXT, schema_version INTEGER
+);
+
+CREATE TABLE book (
+  version_id TEXT, code TEXT,   -- 'JHN'
+  ordinal INTEGER,              -- canonical order for this version
+  name TEXT, short_name TEXT, abbrev TEXT,   -- 'የዮሐንስ ወንጌል', 'ዮሐንስ', 'ዮሐ'
+  testament TEXT,               -- 'OT' | 'NT' | 'DC'
+  chapter_count INTEGER,
+  PRIMARY KEY (version_id, code)
+);
+
+CREATE TABLE verse (
+  version_id TEXT,
+  vkey INTEGER,                 -- BBCCCVVV
+  text TEXT,                    -- plain text for display/search
+  markup TEXT,                  -- compact JSON: paragraphs, poetry indent, wj spans, note anchors
+  PRIMARY KEY (version_id, vkey)
+) WITHOUT ROWID;
+
+CREATE TABLE heading (version_id TEXT, vkey INTEGER, level INTEGER, text TEXT);
+CREATE TABLE footnote (version_id TEXT, vkey INTEGER, anchor INTEGER, text TEXT);
+CREATE TABLE crossref (version_id TEXT, vkey INTEGER, target_start INTEGER, target_end INTEGER);
+
+-- Full-text search on normalized text
+CREATE VIRTUAL TABLE verse_fts USING fts5(
+  norm_text, version_id UNINDEXED, vkey UNINDEXED,
+  tokenize = 'unicode61 remove_diacritics 0'
+);
+
+CREATE TABLE book_alias (alias_norm TEXT, code TEXT);   -- 'ዮሐ', 'ዮሐንስ', 'jn', 'john'
+CREATE TABLE versification_map (from_version TEXT, from_vkey INTEGER, to_version TEXT, to_vkey INTEGER);
+```
+
+Each additional version comes as a separate **content pack** (`AMHxxxx.db.zst`), attached with `ATTACH DATABASE`, so downloaded versions never require rewriting the bundled DB.
+
+### 6.3 User database (`user.db`, read/write)
+
+```sql
+CREATE TABLE highlight (
+  id TEXT PRIMARY KEY,          -- UUIDv7 (sortable, offline-safe)
+  vkey_start INTEGER, vkey_end INTEGER,
+  color TEXT,
+  created_at INTEGER, updated_at INTEGER, deleted_at INTEGER  -- soft delete for sync
+);
+CREATE TABLE bookmark (id TEXT PRIMARY KEY, vkey INTEGER, label TEXT,
+  created_at INTEGER, updated_at INTEGER, deleted_at INTEGER);
+CREATE TABLE note (id TEXT PRIMARY KEY, vkey_start INTEGER, vkey_end INTEGER,
+  body TEXT, tags TEXT, created_at INTEGER, updated_at INTEGER, deleted_at INTEGER);
+CREATE TABLE plan_progress (plan_id TEXT, day INTEGER, completed_at INTEGER,
+  PRIMARY KEY (plan_id, day));
+CREATE TABLE reading_history (vkey INTEGER, version_id TEXT, read_at INTEGER);
+CREATE TABLE setting (key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER);
+CREATE TABLE sync_outbox (seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity TEXT, entity_id TEXT, op TEXT, payload TEXT, created_at INTEGER);
+```
+
+User data is stored against **version-independent verse keys** (in a canonical
+versification), so highlights carry over when the user switches versions.
+
+### 6.4 Ge'ez search normalization
+
+The pipeline (when indexing) and the app (when querying) apply the **same**
+`normalize()` function, with shared test vectors in `pipeline/tests/normalize_vectors.json`:
+
+1. Unicode NFC.
+2. Fold homophone consonant series onto one base, in all seven vowel orders:
+   - ሀ/ሐ/ኀ/ኸ → ሀ series
+   - ሰ/ሠ → ሰ series
+   - አ/ዐ → አ series
+   - ጸ/ፀ → ጸ series
+   - Labialized forms (ኋ, ቋ, ጓ …) are kept, with an optional fold to the base plus ዋ.
+3. Fold common vowel variants used interchangeably in spelling: 1st/4th order after ሀ/አ (ሃ↔ሀ, ኣ↔አ).
+4. Strip Ethiopic punctuation (`። ፣ ፤ ፥ ፦ ፧`) and Latin punctuation.
+5. Lowercase Latin characters; fold Ge'ez numerals to Arabic numerals.
+
+**Prefix search:** Amharic attaches prefixes and suffixes to words (e.g. በኢየሱስ, ለእግዚአብሔር,
+ኢየሱስም), so the app searches with FTS5 prefix queries (`term*`). P1 adds a
+lightweight affix stripper (በ-, ለ-, ከ-, የ-, -ም, -ን, -ና …) at index time, which
+stores both the surface form and the stem.
+
+### 6.5 Reference parser
+
+Grammar: `[number] book-alias [chapter [sep verse [- verse | - chapter sep verse]]]`, where
+`sep ∈ {':', '፥', '.'}`. Aliases come from `book_alias`, including Amharic
+abbreviations, English names and OSIS codes. Examples that must parse:
+`ዮሐ 3፥16`, `ዮሐንስ 3:16-18`, `1ኛ ቆሮ 13`, `መዝ 23`, `Jn 3:16`, `Rom 8:28-39`.
+
+### 6.6 Audio data
+
+```sql
+CREATE TABLE audio_fileset (id TEXT PRIMARY KEY, version_id TEXT, provider TEXT,
+  type TEXT, -- 'audio_drama' | 'audio'
+  has_timestamps INTEGER, license_id TEXT);
+CREATE TABLE audio_chapter (fileset_id TEXT, book TEXT, chapter INTEGER,
+  url TEXT, duration_ms INTEGER, size_bytes INTEGER, local_path TEXT,
+  PRIMARY KEY (fileset_id, book, chapter));
+CREATE TABLE audio_timestamp (fileset_id TEXT, vkey INTEGER, start_ms INTEGER,
+  PRIMARY KEY (fileset_id, vkey));
+```
+
+- Streaming URLs from Bible Brain are signed and expire, so the app resolves them just before playback and does not store them for later.
+- Timestamps are fetched once per chapter and cached.
+- Follow-along: on each position tick (~250 ms), binary-search `start_ms` to find the current verse and highlight it if it changed.
+
+---
+
+## 7. Content pipeline
+
+```
+USFM/USX sources ─► ingest_usfm.py ─► intermediate JSON (per book)
+                                          │
+                                 validate.py  (verse counts vs. reference
+                                          │    versification, empty verses,
+                                          │    stray markers, Unicode sanity)
+                                          ▼
+                                    build_db.py ─► content.db / packs (.db.zst)
+                                          │          + FTS index (normalized)
+                                          ▼
+                       manifest.json (versions, sizes, sha256, min_app_version)
+                                          │
+                                   upload to CDN / GitHub Releases
+```
+
+- Runs in GitHub Actions on every change to `content/` or `pipeline/`.
+- **Validation gates:** the expected chapter count per book, a verse-count diff against a reference versification, no unmatched USFM markers, NFC normalization, and spot-check snapshots (Gen 1:1, Ps 23, John 3:16, Rev 22:21) compared with expected text.
+- The app checks `manifest.json` at most once a week (and only on Wi-Fi by default) for new or updated packs, and verifies sha256 before attaching a pack.
+
+---
+
+## 8. Key flows
+
+### 8.1 First launch
+1. Splash → language choice (አማርኛ / English), then a short theme preview.
+2. Open straight to **John 1** or Genesis 1 (configurable). No sign-up wall.
+3. A one-time tooltip explains long-press on a verse.
+4. The audio prompt appears the first time the user taps ▶; there are no download prompts at startup.
+
+### 8.2 Play audio with follow-along
+1. Tap ▶ in the reader. `AudioService` resolves the fileset for the current version and finds the URL (local file first, then streaming).
+2. Load timestamps from cache or the API.
+3. The player emits position → the current verse key → the reader highlights it and scrolls if the verse is off-screen. If the user scrolled manually in the last 5 s, the reader does not auto-scroll.
+4. At the end of a chapter, the next chapter starts automatically, and the reader follows if it is on the same book.
+
+### 8.3 Sync (P1)
+- Local writes go to the user tables and append to `sync_outbox` in one transaction.
+- The sync worker runs on app start, every 15 min in the foreground, and after writes (debounced). It pushes the outbox, then pulls changes `since last_pulled_at`.
+- **Conflict rule:** last-writer-wins per record, using `updated_at`; deletes are tombstones. Notes keep the newer version and save the losing body as a conflict copy, so text is never silently lost.
+- The server keeps a `user_data` table per entity with row-level security (`user_id = auth.uid()`).
+
+---
+
+## 9. Performance and offline budget
+
+| Metric | Target |
+|---|---|
+| APK/AAB download size | ≤ 40 MB with one Amharic and one English version (Android App Bundle + split per ABI) |
+| Cold start to readable text | < 2.0 s on a 2 GB RAM Android 8 device |
+| Chapter render | < 100 ms |
+| Search across a whole version | < 300 ms (FTS5) |
+| Memory while reading | < 150 MB |
+| Audio start (streaming, 3G) | < 3 s; start at a low bitrate (e.g. 24–32 kbps opus/aac) |
+
+Techniques:
+- Bundle `content.db` uncompressed in assets and copy it out once on first run, or open it read-only from the extracted file.
+- Render chapters with a lazy list of verse widgets (`ScrollablePositionedList`) to allow jumping straight to a verse.
+- Subset fonts and use deferred loading for rarely used features (the share image editor).
+- Audio: prefer the low-bitrate fileset; the user can opt in to higher quality on Wi-Fi.
+
+---
+
+## 10. Privacy and security
+
+- **No account required**; no ads; no third-party tracking SDKs.
+- Analytics are opt-in and aggregate only (screen views, feature use). Verse content, notes and search terms are **never** collected.
+- Notes and highlights are personal and sensitive (religious data is a special category under GDPR). Encrypt them in transit (TLS) and at rest in the backend, and offer export and delete-account from within the app.
+- API keys (Bible Brain) are not shipped in the app binary in plain text. Use a thin backend proxy or edge function that adds the key and caches responses, which also protects against rate limits.
+- Rely on the platform's app data sandbox; there is no sensitive data on external storage. Audio downloads go to app-specific storage.
+
+---
+
+## 11. Quality and testing
+
+| Level | What |
+|---|---|
+| Unit | `normalize()` (shared vectors with Python), ReferenceParser, the vkey math, PlanEngine, Ethiopian calendar conversion, sync merge rules |
+| Pipeline | Validation suite on every content build; snapshot tests of key verses |
+| Widget | Reader rendering (poetry indent, red letters, headings), verse selection, the action sheet |
+| Integration | Navigate → highlight → search → play audio, on an Android emulator in CI |
+| Device lab | Manual pass on a low-end Android (2 GB, Android 8), a mid-range Android, and an iPhone SE |
+| Text proofreading | Native Amharic reviewers proofread headings, book names, UI strings, and sample chapters against print |
+
+---
+
+## 12. Release and operations
+
+- **Channels:** internal → closed beta (church partners, Telegram group) → Google Play / App Store. Also publish a direct APK download (website or Telegram), because Play Store access is limited for some users.
+- **Versioning:** semver for the app; content packs are versioned separately via the manifest.
+- **CI/CD:** GitHub Actions → lint, test → build AAB/IPA → Fastlane upload to the test tracks.
+- **Monitoring:** crash-free sessions > 99.5%; alert on audio failure rates.
+- **Feedback:** an in-app "report a text error" button on each verse files a structured report (version, vkey, comment) for the content team.
+
+---
+
+## 13. Roadmap
+
+| Phase | Scope | Rough effort (1–2 devs) |
+|---|---|---|
+| **0. Foundations** | Content license confirmation, pipeline (USFM → SQLite), normalize + reference parser with tests, Flutter skeleton | 2–3 weeks |
+| **1. MVP (P0)** | Reader, picker, themes and fonts, search, highlights / bookmarks / notes, audio streaming + follow-along, downloads, Amharic/English UI | 6–8 weeks |
+| **2. v1.x (P1)** | Accounts and sync, reading plans, verse of the day + notifications, share-as-image, parallel view, compare, export | 6–8 weeks |
+| **3. Growth (P2)** | 81-book Orthodox canon, Ge'ez text, more UI languages, home-screen widget, web reader, CarPlay / Android Auto, children's Bible | Ongoing |
+
+---
+
+## 14. Risks and open questions
+
+| Risk / question | Mitigation |
+|---|---|
+| Unclear or restrictive text licenses | Start with the 1962 text; contact the Ethiopian Bible Society early; the license registry gates every build |
+| Audio terms forbid offline caching | Stream-only for that fileset; seek a partnership or fund our own recordings |
+| Versification differences break audio sync or the parallel view | `versification_map`, validated in the pipeline; fall back to chapter-level sync |
+| Ge'ez search misses due to word affixes | Prefix queries in v1; stemmer in v1.x; collect "no results" queries (opt-in) to tune it |
+| Font rendering differences on old Android | Always use the bundled fonts, never system fonts |
+| **Open:** which canon is the default — 66 or 81? | Decide with the target church communities; the architecture supports both |
+| **Open:** Supabase vs. Firebase for sync | Decide in phase 2; the data model is backend-agnostic |
+
+---
+
+## Appendix A — Amharic book names (sample of `books.json`)
+
+```json
+[
+  {"code": "GEN", "name": "ኦሪት ዘፍጥረት", "short": "ዘፍጥረት", "abbrev": "ዘፍ", "en": "Genesis"},
+  {"code": "EXO", "name": "ኦሪት ዘጸአት",  "short": "ዘጸአት",  "abbrev": "ዘጸ", "en": "Exodus"},
+  {"code": "PSA", "name": "መዝሙረ ዳዊት",  "short": "መዝሙር",  "abbrev": "መዝ", "en": "Psalms"},
+  {"code": "MAT", "name": "የማቴዎስ ወንጌል", "short": "ማቴዎስ", "abbrev": "ማቴ", "en": "Matthew"},
+  {"code": "JHN", "name": "የዮሐንስ ወንጌል", "short": "ዮሐንስ", "abbrev": "ዮሐ", "en": "John"},
+  {"code": "ROM", "name": "ወደ ሮሜ ሰዎች",  "short": "ሮሜ",   "abbrev": "ሮሜ", "en": "Romans"},
+  {"code": "REV", "name": "የዮሐንስ ራእይ",  "short": "ራእይ",   "abbrev": "ራእ", "en": "Revelation"}
+]
+```
+
+Names must be checked against the chosen source text's own book titles before release.
