@@ -48,6 +48,15 @@ String formatKeys(List<Book> books, List<int> keys, {required bool amharic}) {
 
 String formatNumber(int n, Settings s) => s.geezNumerals ? intToGeez(n) : '$n';
 
+/// Reminder times offered: every half hour from 05:00 to 22:00.
+const reminderEarliestMinute = 5 * 60;
+const reminderLatestMinute = 22 * 60;
+const reminderStepMinutes = 30;
+
+/// "7:00 AM" style, in the UI language.
+String formatMinuteOfDay(int minute, S strings) =>
+    DateFormat.jm(strings.locale.languageCode).format(DateTime(2000, 1, 1, minute ~/ 60, minute % 60));
+
 String formatDate(DateTime d, Settings s, S strings) {
   if (s.ethiopianCalendar) return EthiopianDate.fromGregorian(d.toLocal()).format();
   return DateFormat.yMMMd(strings.locale.languageCode).format(d.toLocal());

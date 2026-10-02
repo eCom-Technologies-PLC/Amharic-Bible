@@ -73,12 +73,15 @@ Features:
   its end, listening to most of a chapter, or marking a plan day done. One missed day a week is forgiven
   (a rest day). Home shows the streak and the last seven days; Me → Reading activity has a month calendar.
   Reading from before the streak existed is carried over, so updating the app does not reset it.
+- **Daily reminder** (off by default; Settings → Reminders): a notification at a time you pick, e.g. "Today:
+  Mark 3–4" from your active plan, or a nudge to keep your streak. Skipped once you've read that day; tapping it
+  opens the passage. Local notifications only, nothing leaves the phone.
 - **Share:** verses as text, or as an image card (8 backgrounds, square or story size, 1080 px PNG).
 - **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes, plans (including your
   own) and reading days across devices. Export your data as JSON, or delete your account, from inside the app.
 - Verse of the day, an Amharic or English UI, and the Ethiopian calendar.
 
-The app uses the 66-book canon only. Still to come: notification reminders for plans.
+The app uses the 66-book canon only.
 
 ## Audio
 

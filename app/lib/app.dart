@@ -15,6 +15,7 @@ import 'features/plans/plan_builder_screen.dart';
 import 'features/plans/plan_detail_screen.dart';
 import 'features/plans/plans_screen.dart';
 import 'features/reader/book_picker_screen.dart';
+import 'features/reminders/reminder_sync.dart';
 import 'features/reader/reader_screen.dart';
 import 'features/search/search_screen.dart';
 import 'features/share/share_image_screen.dart';
@@ -117,6 +118,9 @@ class AmharicBibleApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Keep the sync controller alive so it reacts to sign-in and edits.
     ref.listen(syncControllerProvider, (_, _) {});
+    // Keep reading reminders scheduled; tapping one opens its passage.
+    ref.listen(reminderSyncProvider, (_, _) {});
+    ref.read(reminderSchedulerProvider).onOpen = (route) => ref.read(routerProvider).go(route);
     final settings = ref.watch(settingsProvider);
     final brightness = MediaQuery.platformBrightnessOf(context);
     return MaterialApp.router(

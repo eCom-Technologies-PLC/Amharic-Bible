@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:amharic_bible/data/reminder_scheduler.dart';
 import 'package:amharic_bible/data/sync/account_service.dart';
 import 'package:amharic_bible/data/sync/sync_engine.dart';
 
@@ -70,4 +71,29 @@ class FakeAccountService implements AccountService {
     deleted = true;
     await signOut();
   }
+}
+
+/// Records what would be scheduled on the device.
+class FakeReminderScheduler implements ReminderScheduler {
+  FakeReminderScheduler({this.granted = true});
+
+  bool granted;
+  List<ScheduledReminder> scheduled = [];
+  var permissionRequests = 0;
+
+  @override
+  Future<bool> requestPermission() async {
+    permissionRequests++;
+    return granted;
+  }
+
+  @override
+  Future<void> replace(List<ScheduledReminder> reminders, {required String title, required String channelName}) async =>
+      scheduled = reminders;
+
+  @override
+  Future<void> clear() async => scheduled = [];
+
+  @override
+  set onOpen(void Function(String route)? callback) {}
 }

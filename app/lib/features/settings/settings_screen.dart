@@ -5,6 +5,7 @@ import '../../core/ethiopian_calendar.dart';
 import '../../core/geez.dart';
 import '../../core/strings.dart';
 import '../../state/providers.dart';
+import '../common.dart';
 import '../../ui/ui.dart';
 import '../reader/text_settings_sheet.dart';
 
@@ -120,6 +121,40 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text(EthiopianDate.fromGregorian(DateTime.now()).format()),
             value: settings.ethiopianCalendar,
             onChanged: (v) => notifier.update((x) => x.copyWith(ethiopianCalendar: v)),
+          ),
+          SectionHeader(s.remindersSection),
+          SwitchListTile(
+            secondary: const Icon(Icons.notifications_outlined),
+            title: Text(s.dailyReminder),
+            subtitle: Text(s.dailyReminderHint),
+            value: settings.reminders,
+            onChanged: (on) async {
+              if (on && !await ref.read(reminderSchedulerProvider).requestPermission()) {
+                if (context.mounted) showAppSnack(context, s.notificationsBlocked);
+                return;
+              }
+              await notifier.update((x) => x.copyWith(reminders: on));
+            },
+          ),
+          AppListTile(
+            leadingIcon: Icons.schedule_outlined,
+            title: s.reminderTime,
+            subtitle: formatMinuteOfDay(settings.reminderMinute, s),
+            chevron: true,
+            onTap: settings.reminders
+                ? () async {
+                    final v = await showOptionPicker<int>(
+                      context: context,
+                      title: s.reminderTime,
+                      selected: settings.reminderMinute,
+                      options: [
+                        for (var m = reminderEarliestMinute; m <= reminderLatestMinute; m += reminderStepMinutes)
+                          PickerOption(m, formatMinuteOfDay(m, s)),
+                      ],
+                    );
+                    if (v != null) await notifier.update((x) => x.copyWith(reminderMinute: v));
+                  }
+                : null,
           ),
           SectionHeader(s.readingStreak),
           SwitchListTile(

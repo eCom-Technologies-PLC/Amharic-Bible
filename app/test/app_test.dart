@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:amharic_bible/app.dart';
 import 'package:amharic_bible/domain/preferences.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
+import 'package:amharic_bible/data/reminder_scheduler.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/reader/selection_bar.dart';
@@ -38,6 +39,8 @@ void main() {
     Settings settings = const Settings(),
     String initial = '/home',
     AccountService? account,
+    ReminderScheduler? reminders,
+    DateTime Function()? clock,
   }) async {
     tester.view.physicalSize = const Size(1080, 2340);
     tester.view.devicePixelRatio = 2.75;
@@ -49,6 +52,8 @@ void main() {
           userDbProvider.overrideWithValue(userDb),
           initialSettingsProvider.overrideWithValue(settings),
           accountServiceProvider.overrideWithValue(account),
+          if (reminders != null) reminderSchedulerProvider.overrideWithValue(reminders),
+          if (clock != null) clockProvider.overrideWithValue(clock),
           audioRepositoryProvider.overrideWithValue(AudioRepository(baseUrl: '', storageDir: Directory.systemTemp)),
           routerProvider.overrideWithValue(buildRouter(initialLocation: initial)),
         ],
@@ -303,6 +308,65 @@ void main() {
     expect(find.textContaining('chapters read before re-planning'), findsOneWidget);
   });
 
+  testWidgets('daily reminder: turn on, name the plan reading, drop today once read', (tester) async {
+    final now = DateTime.now();
+    final morning = DateTime(now.year, now.month, now.day, 6);
+    final scheduler = FakeReminderScheduler();
+    await UserRepository(userDb).startPlan('mark-7');
+
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/settings',
+      reminders: scheduler,
+      clock: () => morning,
+    );
+    expect(scheduler.scheduled, isEmpty); // off until turned on
+    await tester.scrollUntilVisible(
+      find.text('Daily reading reminder'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Daily reading reminder'));
+    await tester.pumpAndSettle();
+    expect(scheduler.permissionRequests, 1);
+    expect(scheduler.scheduled, hasLength(14));
+    expect(scheduler.scheduled.first.at, DateTime(now.year, now.month, now.day, 7));
+    expect(scheduler.scheduled.first.body, startsWith('Today: '));
+    expect(scheduler.scheduled.first.route, '/read?ref=MRK.1');
+    expect((await UserRepository(userDb).settings())['reminders'], 'true');
+
+    // Reading today removes today's reminder.
+    await UserRepository(userDb, clock: () => morning).setDayDone('mark-7', 1, true);
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(tester.element(find.byType(MaterialApp)));
+    invalidateAll(container);
+    await tester.pumpAndSettle();
+    expect(scheduler.scheduled, hasLength(13));
+    expect(scheduler.scheduled.first.at.day, morning.add(const Duration(days: 1)).day);
+  });
+
+  testWidgets('daily reminder stays off when notifications are not allowed', (tester) async {
+    final scheduler = FakeReminderScheduler(granted: false);
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/settings',
+      reminders: scheduler,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Daily reading reminder'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Daily reading reminder'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Notifications are off'), findsOneWidget);
+    expect(scheduler.scheduled, isEmpty);
+    expect((await UserRepository(userDb).settings())['reminders'], isNull);
+  });
+
   testWidgets('staying on a chapter counts today; home and activity show the streak', (tester) async {
     await pumpApp(
       tester,
@@ -409,4 +473,11 @@ void main() {
     expect(find.text('Accounts are not set up yet'), findsOneWidget);
     expect(find.text('Export my data'), findsOneWidget);
   });
+}
+
+/// What a write made through the UI does: refresh every user-data provider.
+void invalidateAll(ProviderContainer c) {
+  c.invalidate(streakProvider);
+  c.invalidate(activePlansProvider);
+  c.invalidate(planProgressProvider);
 }

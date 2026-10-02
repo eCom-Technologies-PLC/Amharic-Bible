@@ -42,6 +42,13 @@ differs from this document, the code is current:
   the pipeline. Reading weekdays are honoured when working out "today". Re-planning keeps the chapters of
   finished days (`carried`), spreads the rest from today to the chosen end date, and restarts the day ticks.
   At most 731 reading days, which keeps each synced record small.
+- **Reading reminders** (`domain/reminders.dart`, `data/reminder_scheduler.dart`,
+  `features/reminders/reminder_sync.dart`): local notifications (flutter_local_notifications), off until
+  the reader turns them on and allows notifications. Fourteen one-off reminders are kept scheduled ahead
+  (ids 7000–7013, inexact alarms, no exact-alarm permission) and rebuilt whenever settings, the streak
+  or plans change, so reading today drops today's reminder. Each names the active plan's reading for that
+  day (keeping pace from the next unread day; a plan's days off get a general reminder) and opens it when
+  tapped. Only our ids are cancelled, never the audio player's notification.
 - **Planning assistant** (`/me/plans/assistant`, `domain/plan_assistant.dart`) is rule-based and offline.
   Plans carry `focus` tags; candidates share the focus and are at most one period away, ranked by
   period distance (×3), fit (good / light / stretch: within 25% over the time, or under half), closeness of

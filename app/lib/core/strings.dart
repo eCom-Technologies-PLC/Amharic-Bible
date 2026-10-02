@@ -219,6 +219,13 @@ class S {
   String get noMatchingPlans => _('noMatchingPlans');
   String get catchUpHint => _('catchUpHint');
   String get catchUp => _('catchUp');
+  String get dailyReminder => _('dailyReminder');
+  String get remindersSection => _('remindersSection');
+  String get dailyReminderHint => _('dailyReminderHint');
+  String get reminderTime => _('reminderTime');
+  String get notificationsBlocked => _('notificationsBlocked');
+  String get reminderGeneric => _('reminderGeneric');
+  String get reminderChannel => _('reminderChannel');
   List<String> get weekdayNames => isAmharic
       ? const ['ሰኞ', 'ማክሰኞ', 'ረቡዕ', 'ሐሙስ', 'ዓርብ', 'ቅዳሜ', 'እሑድ']
       : const ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -248,6 +255,9 @@ class S {
       ? 'ይህ በቀን ~$minutes ደቂቃ (~$chapters ምዕራፍ) ነው፤ ከጊዜዎ ይበልጣል።'
       : "That's about $minutes min a day (~$chapters chapters), more than your time.";
   String tryPeriod(String period) => isAmharic ? '$period ይሞክሩ' : 'Try $period';
+  String reminderToday(String readings) => isAmharic ? 'ዛሬ፦ $readings' : 'Today: $readings';
+  String reminderStreak(int n) =>
+      isAmharic ? 'ለ$n ቀናት በተከታታይ አንብበዋል፤ ዛሬም ይቀጥሉ።' : "You've read $n days in a row. Keep it going today.";
   String streakDays(int n) => isAmharic ? '$n ቀን' : (n == 1 ? '1 day' : '$n days');
   String bestStreakIs(int n) => isAmharic ? 'ምርጥ፦ $n ቀን' : 'Best: ${streakDays(n)}';
   String daysThisWeek(int n) => isAmharic ? 'ባለፉት 7 ቀናት $n ቀን' : '$n of the last 7 days';
@@ -452,6 +462,13 @@ const _am = {
   'noMatchingPlans': 'ከመልሶችዎ ጋር የሚስማማ ዝግጁ ዕቅድ የለም፤ ከታች የራስዎን ያዘጋጁ።',
   'catchUpHint': 'ወደኋላ ቀርተዋል? ይህን ዕቅድ የራስዎ አድርገው እንደገና ያስተካክሉ፤ ያነበቡት አይጠፋም።',
   'catchUp': 'አስተካክል',
+  'dailyReminder': 'የዕለት ንባብ ማስታወሻ',
+  'dailyReminderHint': 'ዛሬ ካላነበቡ በመረጡት ሰዓት ያስታውሰዎታል',
+  'reminderTime': 'የማስታወሻ ሰዓት',
+  'notificationsBlocked': 'ማሳወቂያዎች ለዚህ መተግበሪያ ጠፍተዋል። በስልክዎ ቅንብሮች ውስጥ ያብሯቸው።',
+  'reminderGeneric': 'የዛሬው የንባብ ጊዜ ደርሷል።',
+  'reminderChannel': 'የንባብ ማስታወሻዎች',
+  'remindersSection': 'ማስታወሻዎች',
 };
 
 const _en = {
@@ -652,4 +669,11 @@ const _en = {
   'noMatchingPlans': 'No ready-made plan matches your answers; build your own below.',
   'catchUpHint': "Fallen behind? Make this plan your own and re-plan it; what you've read is kept.",
   'catchUp': 'Catch up',
+  'dailyReminder': 'Daily reading reminder',
+  'dailyReminderHint': "A nudge at your time, skipped once you've read that day",
+  'reminderTime': 'Reminder time',
+  'notificationsBlocked': "Notifications are off for this app. Turn them on in your phone's settings.",
+  'reminderGeneric': "Time for today's reading.",
+  'reminderChannel': 'Reading reminders',
+  'remindersSection': 'Reminders',
 };

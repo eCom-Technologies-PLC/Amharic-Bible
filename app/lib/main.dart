@@ -12,6 +12,7 @@ import 'app.dart';
 import 'core/config.dart';
 import 'data/audio_repository.dart';
 import 'data/databases.dart';
+import 'data/reminder_scheduler.dart';
 import 'data/sync/account_service.dart';
 import 'data/user_repository.dart';
 import 'state/account.dart';
@@ -36,6 +37,7 @@ Future<void> main() async {
   final userDb = await openUserDb();
   final settings = Settings.fromMap(await UserRepository(userDb).settings());
   final support = await getApplicationSupportDirectory();
+  final reminders = await LocalReminderScheduler.create();
 
   runApp(
     ProviderScope(
@@ -44,6 +46,7 @@ Future<void> main() async {
         userDbProvider.overrideWithValue(userDb),
         initialSettingsProvider.overrideWithValue(settings),
         accountServiceProvider.overrideWithValue(account),
+        reminderSchedulerProvider.overrideWithValue(reminders),
         audioRepositoryProvider.overrideWithValue(
           AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support.path, 'audio'))),
         ),

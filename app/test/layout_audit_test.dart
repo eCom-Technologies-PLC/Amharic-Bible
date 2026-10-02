@@ -224,6 +224,21 @@ void main() {
         expect(errors, isEmpty);
       });
 
+      testWidgets('$lang reminder time picker', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/me/settings',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, reminders: true),
+          interact: (t) async {
+            final time = find.text(S.forLocale(Locale(lang)).reminderTime);
+            await t.scrollUntilVisible(time, 300, scrollable: find.byType(Scrollable).first);
+            await t.tap(time);
+          },
+        );
+        expect(errors, isEmpty);
+      });
+
       testWidgets('$lang settings option picker', (tester) async {
         final errors = await render(
           tester,

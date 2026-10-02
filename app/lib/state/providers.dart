@@ -10,17 +10,22 @@ import '../ui/tokens/tokens.dart';
 import '../core/vkey.dart';
 import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
+import '../data/reminder_scheduler.dart';
 import '../data/user_repository.dart';
 import '../domain/models.dart';
 import '../domain/custom_plan.dart';
 import '../domain/plans.dart';
 import '../domain/reference_parser.dart';
+import '../domain/reminders.dart';
 import '../domain/streak.dart';
 
 // Overridden in main() (and in tests) once the databases are open.
 final contentDbProvider = Provider<Database>((ref) => throw UnimplementedError());
 final userDbProvider = Provider<Database>((ref) => throw UnimplementedError());
 final audioRepositoryProvider = Provider<AudioRepository>((ref) => throw UnimplementedError());
+
+/// Device notifications for reading reminders; replaced in main().
+final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) => const NoReminderScheduler());
 final initialSettingsProvider = Provider<Settings>((ref) => const Settings());
 
 final contentRepositoryProvider = Provider<ContentRepository>((ref) => ContentRepository(ref.watch(contentDbProvider)));
@@ -47,6 +52,8 @@ class Settings {
     this.recentSearches = const [],
     this.streak = true,
     this.streakRestDays = true,
+    this.reminders = false,
+    this.reminderMinute = defaultReminderMinute,
   });
 
   final ReaderTheme readerTheme;
@@ -73,6 +80,11 @@ class Settings {
   /// Forgive one missed day in seven (see [ReadingStreak]).
   final bool streakRestDays;
 
+  /// Daily reading reminder (off until the reader turns it on and allows
+  /// notifications), at [reminderMinute] minutes after midnight.
+  final bool reminders;
+  final int reminderMinute;
+
   double get fontSize => AppFonts.readingSizes[fontSizeIndex.clamp(0, AppFonts.readingSizes.length - 1)];
   String get fontFamily => serif ? AppFonts.serif : AppFonts.sans;
   Locale get locale => Locale(languageCode);
@@ -94,6 +106,8 @@ class Settings {
     List<String>? recentSearches,
     bool? streak,
     bool? streakRestDays,
+    bool? reminders,
+    int? reminderMinute,
   }) => Settings(
     readerTheme: readerTheme ?? this.readerTheme,
     fontSizeIndex: fontSizeIndex ?? this.fontSizeIndex,
@@ -111,6 +125,8 @@ class Settings {
     recentSearches: recentSearches ?? this.recentSearches,
     streak: streak ?? this.streak,
     streakRestDays: streakRestDays ?? this.streakRestDays,
+    reminders: reminders ?? this.reminders,
+    reminderMinute: reminderMinute ?? this.reminderMinute,
   );
 
   Map<String, String?> toMap() => {
@@ -130,6 +146,8 @@ class Settings {
     'recent_searches': jsonEncode(recentSearches),
     'streak': '$streak',
     'streak_rest_days': '$streakRestDays',
+    'reminders': '$reminders',
+    'reminder_time': '$reminderMinute',
   };
 
   factory Settings.fromMap(Map<String, String> m) {
@@ -156,6 +174,8 @@ class Settings {
           : const [],
       streak: b('streak', d.streak),
       streakRestDays: b('streak_rest_days', d.streakRestDays),
+      reminders: b('reminders', d.reminders),
+      reminderMinute: (int.tryParse(m['reminder_time'] ?? '') ?? d.reminderMinute).clamp(0, 24 * 60 - 1),
     );
   }
 }
