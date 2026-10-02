@@ -55,8 +55,10 @@ Features:
 - **Side by side:** any two versions (e.g. Amharic + English), in columns on tablets and interleaved on phones.
 - **Study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16").
 - **Audio:** follow-along verse highlighting, background playback, speed, sleep timer and book downloads.
-- **Reading plans:** 15 plans grouped by length (1 week, 1 month, 3 months, 6 months, 1 year), from Mark in
-  7 days to the Bible in a year (straight through, or Old and New Testament together). Each shows its
+- **Reading plans:** 19 plans grouped by length (1 week, 1 month, 3 months, 6 months, 1 year), from Mark in
+  7 days to the Bible in a year (straight through, Old and New Testament together, or in time order).
+  Hand-picked plans include the Sermon on the Mount and the parables, Psalms of comfort and the life of
+  Jesus in time order (lists in `pipeline/curated_plans.py`, drafts for pastoral review). Each shows its
   estimated minutes a day and pace; days are balanced by verse count. Daily progress and a "today's
   reading" card on Home.
 - **Planning assistant** (offline): four quick questions (how long, time a day, what to read, which days)

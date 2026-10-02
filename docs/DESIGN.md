@@ -33,6 +33,10 @@ differs from this document, the code is current:
   Old Testament plus New Testament or Psalms). Each plan carries an estimated `minutes` a day (9 s a
   verse); the app groups plans into periods (week ≤ 7 days, month ≤ 31, 3 months ≤ 92, 6 months ≤ 183,
   year) and paces (light < 10 min, steady ≤ 20, intensive). `plans.json` also carries `verse_counts`.
+  Hand-picked and time-order plans come from `pipeline/curated_plans.py`: either readings listed day by
+  day, or an ordered sequence of chapter ranges split by verse count. Time order is approximate and at
+  chapter level (Job with the patriarchs, Psalms with David, prophets with their kings, letters with
+  Acts); tests check every sequence reads each chapter of its books once.
 - **Plans you build** (`/me/plans/new`) are stored as a `custom_plan` row (schema 4, synced): a
   `CustomPlanSpec` with the choices and the day-by-day schedule, balanced by verses with the same rule as
   the pipeline. Reading weekdays are honoured when working out "today". Re-planning keeps the chapters of

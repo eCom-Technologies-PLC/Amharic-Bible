@@ -29,6 +29,7 @@ const routes = [
   '/me/plans/nt-90',
   '/me/plans/bible-year',
   '/me/plans/bible-year-mixed',
+  '/me/plans/bible-chronological-365',
   '/me/plans/new',
   '/me/plans/assistant',
   '/me/plans/my-audit',

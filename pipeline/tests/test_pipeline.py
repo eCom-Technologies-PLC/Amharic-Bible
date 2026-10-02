@@ -10,6 +10,7 @@ sys.path.insert(0, str(HERE.parent))
 
 import build_db  # noqa: E402
 import build_plans  # noqa: E402
+import curated_plans  # noqa: E402
 from abible import usfm  # noqa: E402
 from abible.catalog import alias_key, load_books, split_vkey, vkey  # noqa: E402
 from abible.geez import geez_to_int, index_terms, int_to_geez, normalize  # noqa: E402
@@ -191,6 +192,45 @@ class PlansTest(unittest.TestCase):
             self.assertIn("OT", testaments)
         self.assertEqual(lengths["proverbs-31"], 31)
         self.assertTrue(all(len(day) == 1 and day[0]["f"] == day[0]["t"] for day in plans["proverbs-31"]["days"]))
+
+    def test_parse_passage(self):
+        self.assertEqual(build_plans.parse_passage("MAT 5"), [("MAT", 5)])
+        self.assertEqual(build_plans.parse_passage("1KI 20-22"), [("1KI", 20), ("1KI", 21), ("1KI", 22)])
+
+    def test_curated_passages_exist(self):
+        books = load_books()
+        for spec in curated_plans.CURATED_PLANS:
+            passages = spec.get("sequence") or [p for day in spec["readings"] for p in day]
+            for passage in passages:
+                for book, ch in build_plans.parse_passage(passage):
+                    self.assertIn(book, books, (spec["id"], passage))
+                    self.assertTrue(1 <= ch <= books[book].chapters, (spec["id"], passage))
+
+    def test_time_order_sequences_read_each_chapter_once(self):
+        books = load_books()
+
+        def chapters(seq):
+            return [c for p in seq for c in build_plans.parse_passage(p)]
+
+        gospels = chapters(curated_plans.LIFE_OF_JESUS)
+        self.assertEqual(sorted(gospels), sorted(
+            (b, c) for b in ("MAT", "MRK", "LUK", "JHN") for c in range(1, books[b].chapters + 1)))
+        bible = chapters(curated_plans.CHRONOLOGICAL)
+        self.assertEqual(len(bible), len(set(bible)))
+        self.assertEqual(set(bible), {(b, c) for b in books for c in range(1, books[b].chapters + 1)})
+        # Starts at creation, ends with Revelation; Job comes before Abraham.
+        self.assertEqual(bible[0], ("GEN", 1))
+        self.assertEqual(bible[-1], ("REV", 22))
+        self.assertLess(bible.index(("JOB", 1)), bible.index(("GEN", 12)))
+
+    def test_curated_plans_are_bundled(self):
+        plans = {p["id"]: p for p in build_plans.build()["plans"]}
+        self.assertEqual(len(plans["sermon-parables-7"]["days"]), 7)
+        self.assertEqual(plans["psalms-comfort-7"]["days"][0],
+                         [{"b": "PSA", "f": 23, "t": 23}, {"b": "PSA", "f": 121, "t": 121}])
+        self.assertEqual(len(plans["life-of-jesus-89"]["days"]), 89)
+        self.assertEqual(plans["life-of-jesus-89"]["days"][0], [{"b": "JHN", "f": 1, "t": 1}])
+        self.assertEqual(len(plans["bible-chronological-365"]["days"]), 365)
 
     def test_bundled_plans_are_up_to_date(self):
         bundled = json.loads((HERE.parents[1] / "app/assets/plans/plans.json").read_text(encoding="utf-8"))

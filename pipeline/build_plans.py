@@ -9,6 +9,8 @@ kept stable for people already reading them) or by verse count ("verses",
 so Psalm 119 is not one day's reading next to Psalm 117). A day's readings
 are compressed into per-book chapter ranges: {"b": "GEN", "f": 1, "t": 3}.
 
+Hand-picked and time-order plans live in curated_plans.py.
+
 Each plan also gets "minutes": the estimated reading time per day, and
 "focus": what it reads ("all", "ot", "nt", "gospels", "wisdom"), which the
 in-app planning assistant matches against the reader's answers. The file
@@ -28,6 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from abible.catalog import CONTENT, REPO, load_books  # noqa: E402
+from curated_plans import CURATED_PLANS  # noqa: E402
 
 # Average reading time per verse, from the length of full-Bible audio
 # recordings (about 75 hours for 31,102 verses).
@@ -287,9 +290,39 @@ def select_books(sel, books: list) -> list:
     return out
 
 
+def parse_passage(text: str) -> list[tuple[str, int]]:
+    """"MAT 5" or "1KI 12-22" -> [(book, chapter), ...]."""
+    book, chapters = text.split()
+    first, _, last = chapters.partition("-")
+    return [(book, c) for c in range(int(first), int(last or first) + 1)]
+
+
+def curated_days(spec: dict, verses: dict[str, list[int]]) -> list[list[tuple[str, int]]]:
+    """Days of a hand-picked plan: listed day by day ("readings"), or an
+    ordered "sequence" split into days balanced by verse count."""
+    if "readings" in spec:
+        return [[c for passage in day for c in parse_passage(passage)] for day in spec["readings"]]
+    chapters = [c for passage in spec["sequence"] for c in parse_passage(passage)]
+    weights = [verses[b][c - 1] for b, c in chapters]
+    return [chapters[a:z] for a, z in split_balanced(weights, spec["days"])]
+
+
 def build() -> dict:
     books = sorted(load_books().values(), key=lambda b: b.num)
     verses = load_verse_counts()
+    plans = []
+    for spec in CURATED_PLANS:
+        days = curated_days(spec, verses)
+        total_verses = sum(verses[b][c - 1] for day in days for b, c in day)
+        plans.append({
+            "id": spec["id"],
+            "name": spec["name"],
+            "description": spec["description"],
+            "focus": spec["focus"],
+            "minutes": max(1, round(total_verses / len(days) * SECONDS_PER_VERSE / 60)),
+            "days": [compress(day) for day in days],
+        })
+    plans_by_id = {p["id"]: p for p in plans}
     plans = []
     for spec in PLANS:
         n = spec["days"]
@@ -314,6 +347,7 @@ def build() -> dict:
             "minutes": max(1, round(total_verses / n * SECONDS_PER_VERSE / 60)),
             "days": [compress(day) for day in days],
         })
+    plans += plans_by_id.values()
     # Verses per chapter, in canonical book order: the app balances the
     # plans people build themselves with it.
     counts = {b.code: verses[b.code] for b in books}

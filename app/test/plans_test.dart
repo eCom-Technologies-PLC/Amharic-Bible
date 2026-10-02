@@ -39,6 +39,18 @@ void main() {
     expect(PlanPace.of(21), PlanPace.intensive);
   });
 
+  test('hand-picked and time-order plans', () {
+    final comfort = plans.firstWhere((p) => p.id == 'psalms-comfort-7');
+    expect(comfort.period, PlanPeriod.week);
+    expect(comfort.readingsFor(1).map((r) => '${r.book} ${r.from}'), ['PSA 23', 'PSA 121']);
+    final jesus = plans.firstWhere((p) => p.id == 'life-of-jesus-89');
+    expect(jesus.period, PlanPeriod.threeMonths);
+    expect(jesus.readingsFor(1).single.book, 'JHN');
+    final chronological = plans.firstWhere((p) => p.id == 'bible-chronological-365');
+    expect(chronological.period, PlanPeriod.year);
+    expect(chronological.focus, {'all'});
+  });
+
   test('a mixed plan reads from both testaments every day', () {
     final mixed = plans.firstWhere((p) => p.id == 'bible-year-mixed');
     expect(mixed.length, 365);
