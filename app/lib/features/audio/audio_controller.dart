@@ -8,6 +8,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import '../../core/vkey.dart';
 import '../../data/audio_repository.dart';
 import '../../domain/models.dart';
+import '../../domain/streak.dart';
 import '../../state/providers.dart';
 
 enum AudioStatus { idle, loading, ready, error }
@@ -91,6 +92,7 @@ class AudioController extends Notifier<AudioState> {
   final List<StreamSubscription<dynamic>> _subs = [];
   Timer? _sleepTimer;
   int _loadSeq = 0;
+  bool _chapterCredited = false; // streak: this chapter already counted
 
   @override
   AudioState build() {
@@ -135,11 +137,20 @@ class AudioController extends Notifier<AudioState> {
       if (v != null) current = vkey(book.num, state.chapter!, v);
     }
     state = state.copyWith(position: pos, currentVerse: () => current);
+    final duration = state.duration;
+    if (duration != null && duration > Duration.zero && pos >= duration * audioCreditFraction) _creditChapter();
+  }
+
+  void _creditChapter() {
+    if (_chapterCredited || state.book == null) return;
+    _chapterCredited = true;
+    unawaited(recordReadingDay(ref, ReadingSource.audio));
   }
 
   /// Load and play a chapter, optionally starting at a verse.
   Future<void> playChapter(BibleVersion version, Book book, int chapter, {int? fromVerse}) async {
     final seq = ++_loadSeq;
+    _chapterCredited = false;
     state = state.copyWith(
       status: AudioStatus.loading,
       version: version,
@@ -243,6 +254,7 @@ class AudioController extends Notifier<AudioState> {
   }
 
   void _onCompleted() {
+    _creditChapter();
     if (state.sleepAtEndOfChapter) {
       state = state.copyWith(sleepAtEndOfChapter: false, playing: false);
       return;

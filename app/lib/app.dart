@@ -16,6 +16,7 @@ import 'features/reader/book_picker_screen.dart';
 import 'features/reader/reader_screen.dart';
 import 'features/search/search_screen.dart';
 import 'features/share/share_image_screen.dart';
+import 'features/streak/streak_widgets.dart';
 import 'features/settings/about_screen.dart';
 import 'features/settings/account_screen.dart';
 import 'features/settings/downloads_screen.dart';
@@ -70,6 +71,7 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
                     ),
                   ],
                 ),
+                GoRoute(path: 'activity', builder: (_, _) => const ActivityScreen()),
                 GoRoute(path: 'about', builder: (_, _) => const AboutScreen()),
                 GoRoute(path: 'downloads', builder: (_, _) => const DownloadsScreen()),
               ],

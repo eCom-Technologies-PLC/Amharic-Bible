@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../domain/preferences.dart';
 import '../domain/models.dart';
+import '../domain/streak.dart';
 
 /// Read/write personal data: highlights, bookmarks, notes, settings and
 /// reading history. Verse keys are version-independent, so user data follows
@@ -15,7 +16,7 @@ class UserRepository {
   final DateTime Function() _clock;
   static const _uuid = Uuid();
 
-  static const schemaVersion = 2;
+  static const schemaVersion = 3;
 
   /// sqflite onCreate: build version 1, then run every migration.
   static Future<void> createSchema(Database db, [int version = schemaVersion]) async {
@@ -45,6 +46,23 @@ class UserRepository {
           'updated_at INTEGER NOT NULL, deleted_at INTEGER)',
       // completed_at NULL means "not done" (an unchecked day still syncs).
       'ALTER TABLE plan_progress ADD COLUMN updated_at INTEGER',
+    ],
+    3: [
+      // One row per local calendar day the user read (for the streak);
+      // sources is a ReadingSource bit set. Synced; days are never deleted.
+      'CREATE TABLE reading_day (day TEXT PRIMARY KEY, sources INTEGER NOT NULL, updated_at INTEGER NOT NULL)',
+      // Carry existing reading over so an app update does not reset anyone's
+      // streak: chapters opened (reading_history) and plan days marked done.
+      'INSERT INTO reading_day (day, sources, updated_at) '
+          "SELECT day, SUM(DISTINCT src), CAST(strftime('%s', 'now') AS INTEGER) * 1000 FROM ("
+          "SELECT date(read_at / 1000, 'unixepoch', 'localtime') AS day, ${ReadingSource.read} AS src "
+          'FROM reading_history WHERE read_at IS NOT NULL '
+          'UNION '
+          "SELECT date(completed_at / 1000, 'unixepoch', 'localtime'), ${ReadingSource.plan} "
+          'FROM plan_progress WHERE completed_at IS NOT NULL'
+          ') GROUP BY day',
+      'INSERT INTO sync_outbox (entity, entity_id, op, created_at) '
+          "SELECT 'reading_day', day, 'upsert', updated_at FROM reading_day",
     ],
   };
 
@@ -332,7 +350,10 @@ class UserRepository {
     return {for (final r in rows) r['day'] as int};
   }
 
-  Future<void> setDayDone(String planId, int day, bool done) async {
+  /// Returns true when this was the first reading of the day (see
+  /// [markReadingDay]).
+  Future<bool> setDayDone(String planId, int day, bool done) async {
+    var firstToday = false;
     await db.transaction((tx) async {
       await tx.insert('plan_progress', {
         'plan_id': planId,
@@ -341,7 +362,9 @@ class UserRepository {
         'updated_at': _now,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
       await _outbox(tx, 'plan_progress', '$planId:$day', 'upsert');
+      if (done) firstToday = await _markReadingDay(tx, ReadingSource.plan);
     });
+    return firstToday;
   }
 
   // ----------------------------------------------------------------- history
@@ -349,6 +372,37 @@ class UserRepository {
   Future<void> recordReading(String versionId, int vkey) async {
     await db.insert('reading_history', {'vkey': vkey, 'version_id': versionId, 'read_at': _now});
   }
+
+  // ------------------------------------------------------------------ streak
+
+  /// Count today (local date) as a reading day. Returns true when today was
+  /// not counted before, so the caller can refresh the streak.
+  Future<bool> markReadingDay(int source) => db.transaction((tx) => _markReadingDay(tx, source));
+
+  Future<bool> _markReadingDay(Transaction tx, int source) async {
+    final day = dayKey(_clock());
+    final rows = await tx.query('reading_day', columns: ['sources'], where: 'day = ?', whereArgs: [day]);
+    final before = rows.isEmpty ? null : rows.first['sources'] as int;
+    final after = (before ?? 0) | source;
+    if (after == before) return false;
+    await tx.insert('reading_day', {
+      'day': day,
+      'sources': after,
+      'updated_at': _now,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    await _outbox(tx, 'reading_day', day, 'upsert');
+    return before == null;
+  }
+
+  /// Every day the user read (local dates).
+  Future<List<DateTime>> readingDays() async {
+    final rows = await db.query('reading_day', columns: ['day']);
+    return [for (final r in rows) parseDayKey(r['day'] as String)];
+  }
+
+  /// Distinct chapters opened, for the activity screen.
+  Future<int> chaptersRead() async =>
+      Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(DISTINCT vkey / 1000) FROM reading_history')) ?? 0;
 
   Future<int> pendingSyncCount() async =>
       Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM sync_outbox')) ?? 0;

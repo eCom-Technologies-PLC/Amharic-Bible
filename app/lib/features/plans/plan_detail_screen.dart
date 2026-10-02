@@ -8,6 +8,7 @@ import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 import 'plan_widgets.dart';
+import '../streak/streak_widgets.dart';
 
 class PlanDetailScreen extends ConsumerWidget {
   const PlanDetailScreen({super.key, required this.planId});
@@ -167,8 +168,9 @@ class _DayList extends ConsumerWidget {
                 title: Text(s.day(day), style: isToday ? context.text.titleSmall : null),
                 subtitle: ReadingChips(readings: plan.readingsFor(day)),
                 onChanged: (v) async {
-                  await ref.read(userRepositoryProvider).setDayDone(plan.id, day, v ?? false);
-                  invalidateUserData(ref);
+                  final firstToday = await ref.read(userRepositoryProvider).setDayDone(plan.id, day, v ?? false);
+                  if (!context.mounted) return;
+                  firstToday ? await celebrateNewDay(context, ref) : invalidateUserData(ref);
                 },
               );
             },

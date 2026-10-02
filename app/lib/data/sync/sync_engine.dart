@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/streak.dart';
+
 /// One synced item, as stored on the server (see
 /// server/supabase/migrations/*_user_records.sql).
 class SyncRecord {
@@ -73,6 +75,7 @@ const _entities = {
   'note': _Entity('note', ['vkey_start', 'vkey_end', 'body', 'tags', 'created_at']),
   'plan': _Entity('plan', ['started_at'], keyColumns: ['plan_id']),
   'plan_progress': _Entity('plan_progress', ['completed_at'], keyColumns: ['plan_id', 'day'], softDelete: false),
+  'reading_day': _Entity('reading_day', ['sources'], keyColumns: ['day'], softDelete: false),
 };
 
 class SyncResult {
@@ -90,6 +93,8 @@ class SyncResult {
 ///   than the local row (last writer wins on updated_at).
 /// - Notes are never silently lost: when a pulled note overwrites unsynced
 ///   local edits, the local text is kept as a separate note.
+/// - Reading days merge instead: a day read on either device stays read, and
+///   its sources are combined.
 class SyncEngine {
   SyncEngine(this.db, this.backend, {this.batchSize = 500});
 
@@ -187,6 +192,8 @@ class SyncEngine {
         )! >
         0;
 
+    if (r.entity == 'reading_day' && local != null) return _mergeReadingDay(tx, local, r, pending);
+
     if (local != null && local.updatedAt >= r.updatedAt) {
       // Local is as new or newer. Make sure the server hears about it.
       if (local.updatedAt > r.updatedAt && !pending) {
@@ -222,6 +229,29 @@ class SyncEngine {
     return true;
   }
 
+  /// Union of both devices' sources. When the result has bits the server
+  /// lacks, it is written newer than the server copy and pushed back.
+  Future<bool> _mergeReadingDay(Transaction tx, SyncRecord local, SyncRecord r, bool pending) async {
+    final mine = local.payload['sources'] as int? ?? 0;
+    final theirs = (r.payload['sources'] as num?)?.toInt() ?? ReadingSource.read;
+    final merged = mine | theirs;
+    if (merged == mine && merged == theirs) return false;
+    final serverBehind = merged != theirs;
+    final updatedAt = serverBehind ? (local.updatedAt > r.updatedAt ? local.updatedAt : r.updatedAt) + 1 : r.updatedAt;
+    await tx.update('reading_day', {'sources': merged, 'updated_at': updatedAt}, where: 'day = ?', whereArgs: [r.id]);
+    if (serverBehind && !pending) {
+      await tx.insert('sync_outbox', {
+        'entity': r.entity,
+        'entity_id': r.id,
+        'op': 'upsert',
+        'created_at': DateTime.now().millisecondsSinceEpoch,
+      });
+    } else if (!serverBehind) {
+      await tx.delete('sync_outbox', where: 'entity = ? AND entity_id = ?', whereArgs: [r.entity, r.id]);
+    }
+    return merged != mine;
+  }
+
   /// NOT NULL columns may be missing from records written by other clients.
   static void _fillRequired(String entity, Map<String, Object?> row) {
     row['created_at'] ??= row['updated_at'];
@@ -236,6 +266,9 @@ class SyncEngine {
         row['started_at'] ??= row['updated_at'];
         row.remove('created_at');
       case 'plan_progress':
+        row.remove('created_at');
+      case 'reading_day':
+        row['sources'] ??= ReadingSource.read;
         row.remove('created_at');
     }
   }

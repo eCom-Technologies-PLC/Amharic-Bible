@@ -10,6 +10,7 @@ import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 import '../plans/plan_widgets.dart';
+import '../streak/streak_widgets.dart';
 
 /// Curated verse-of-the-day list (verse keys, BBCCCVVV).
 const verseOfTheDayKeys = [
@@ -97,6 +98,7 @@ class HomeScreen extends ConsumerWidget {
             AsyncLoading() => const Padding(padding: EdgeInsets.all(AppSpacing.xxl), child: LoadingState()),
             _ => const SizedBox.shrink(),
           },
+          const StreakCard(),
           const TodaysReadingCards(),
           AppCard(
             onTap: () => context.go(last != null ? '/read?ref=${last.encode()}' : '/read'),

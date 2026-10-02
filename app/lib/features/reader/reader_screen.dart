@@ -8,10 +8,12 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
+import '../../domain/streak.dart';
 import '../../state/providers.dart';
 import '../audio/audio_controller.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import '../streak/streak_widgets.dart';
 import 'chapter_layout.dart';
 import 'paragraph_view.dart';
 import 'selection_bar.dart';
@@ -34,10 +36,49 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   final _positions = ItemPositionsListener.create();
   DateTime _lastUserScroll = DateTime.fromMillisecondsSinceEpoch(0);
 
+  // Streak: a chapter counts once the reader stays on it for
+  // [chapterReadTime] or scrolls to its end.
+  String? _timedChapter;
+  DateTime _chapterOpenedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  int _chapterLastItem = -1;
+  bool _chapterCredited = false;
+  Timer? _readTimer;
+
   @override
   void initState() {
     super.initState();
     _ref = widget.target;
+    _positions.itemPositions.addListener(_checkReachedEnd);
+  }
+
+  @override
+  void dispose() {
+    _readTimer?.cancel();
+    _positions.itemPositions.removeListener(_checkReachedEnd);
+    super.dispose();
+  }
+
+  void _watchChapter(String key, int lastItem) {
+    _chapterLastItem = lastItem;
+    if (key == _timedChapter) return;
+    _timedChapter = key;
+    _chapterOpenedAt = DateTime.now();
+    _chapterCredited = false;
+    _readTimer?.cancel();
+    _readTimer = Timer(chapterReadTime, _creditChapter);
+  }
+
+  void _checkReachedEnd() {
+    if (_chapterCredited || !_lastUserScroll.isAfter(_chapterOpenedAt)) return;
+    final atEnd = _positions.itemPositions.value.any((p) => p.index == _chapterLastItem && p.itemLeadingEdge < 1);
+    if (atEnd) _creditChapter();
+  }
+
+  void _creditChapter() {
+    if (_chapterCredited || !mounted) return;
+    _chapterCredited = true;
+    _readTimer?.cancel();
+    unawaited(creditReading(context, ref, ReadingSource.read));
   }
 
   @override
@@ -167,7 +208,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final layout = secondary != null ? parallelLayout(c, secondary) : layoutChapter(c);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _savePosition(version.id, r, c.book.num);
+      if (!mounted) return;
+      _savePosition(version.id, r, c.book.num);
+      _watchChapter('${c.book.code}/${c.chapter}', layout.blocks.length + 1);
     });
 
     // Follow the audio: scroll to the verse being read unless the user

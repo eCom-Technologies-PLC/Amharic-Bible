@@ -97,6 +97,15 @@ test('input validation', async () => {
   await assert.rejects(as(ALICE, (tx) => push(tx, many)), /at most 500/);
 });
 
+test('reading days sync', async () => {
+  const res = await as(ALICE, (tx) =>
+    push(tx, [{ entity: 'reading_day', id: '2026-10-02', payload: { sources: 3 }, updated_at: 100 }]),
+  );
+  assert.equal(res.rows[0].n, 1);
+  const rows = await as(ALICE, (tx) => pull(tx));
+  assert.equal(rows.find((r) => r.entity === 'reading_day').payload.sources, 3);
+});
+
 test('delete_my_account removes the user and their records only', async () => {
   await as(BOB, (tx) => tx.query('select public.delete_my_account()'));
   const users = (await db.query('select id from auth.users order by id')).rows.map((r) => r.id);

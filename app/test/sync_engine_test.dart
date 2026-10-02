@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:amharic_bible/domain/preferences.dart';
 import 'package:amharic_bible/data/sync/sync_engine.dart';
 import 'package:amharic_bible/data/user_repository.dart';
+import 'package:amharic_bible/domain/streak.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -40,7 +41,7 @@ void main() {
     await phone.repo.setDayDone('nt-90', 1, true);
 
     final r = await phone.engine.sync();
-    expect(r.pushed, 5);
+    expect(r.pushed, 6); // the plan day also counts today as a reading day
     expect(await phone.repo.pendingSyncCount(), 0);
 
     await tablet.engine.sync();
@@ -49,6 +50,7 @@ void main() {
     expect((await tablet.repo.allNotes()).single.body, 'ፍቅር');
     expect((await tablet.repo.activePlans()).keys, ['nt-90']);
     expect(await tablet.repo.completedDays('nt-90'), {1});
+    expect(await tablet.repo.readingDays(), [DateTime.utc(2026, 10, 2)]);
     // Applying pulled data must not queue it to be pushed back.
     expect(await tablet.repo.pendingSyncCount(), 0);
   });
@@ -109,6 +111,42 @@ void main() {
     expect((await tablet.repo.allBookmarks()).length, 8);
     final again = await tablet.engine.sync();
     expect(again.pulled, 0);
+  });
+
+  test('reading days from both devices merge instead of overwriting', () async {
+    await phone.repo.markReadingDay(ReadingSource.read);
+    await phone.engine.sync();
+    tablet.now = tablet.now.add(const Duration(hours: 2));
+    await tablet.repo.markReadingDay(ReadingSource.audio); // same day, newer, other source
+    await tablet.repo.markReadingDay(ReadingSource.read);
+    tablet.now = DateTime(2026, 10, 3, 8);
+    await tablet.repo.markReadingDay(ReadingSource.audio); // a day only the tablet read
+
+    await tablet.engine.sync();
+    await phone.engine.sync();
+    await tablet.engine.sync();
+
+    Future<Map<String, int>> days(Device d) async => {
+      for (final r in await d.db.query('reading_day')) r['day'] as String: r['sources'] as int,
+    };
+    const both = ReadingSource.read | ReadingSource.audio;
+    expect(await days(phone), {'2026-10-02': both, '2026-10-03': ReadingSource.audio});
+    expect(await days(tablet), await days(phone));
+  });
+
+  test('a reading day the server lacks a source for is pushed back merged', () async {
+    await phone.repo.markReadingDay(ReadingSource.audio);
+    await phone.engine.sync();
+    // The tablet read the same day (older clock) before ever syncing.
+    tablet.now = tablet.now.subtract(const Duration(hours: 1));
+    await tablet.repo.markReadingDay(ReadingSource.plan);
+    await tablet.engine.sync();
+    await phone.engine.sync();
+    const all = ReadingSource.audio | ReadingSource.plan;
+    for (final d in [phone, tablet]) {
+      expect((await d.db.query('reading_day')).single['sources'], all);
+      expect(await d.repo.pendingSyncCount(), 0);
+    }
   });
 
   test('records from unknown entities are ignored', () async {

@@ -121,6 +121,20 @@ class SettingsScreen extends ConsumerWidget {
             value: settings.ethiopianCalendar,
             onChanged: (v) => notifier.update((x) => x.copyWith(ethiopianCalendar: v)),
           ),
+          SectionHeader(s.readingStreak),
+          SwitchListTile(
+            secondary: const Icon(Icons.local_fire_department_outlined),
+            title: Text(s.showStreak),
+            value: settings.streak,
+            onChanged: (v) => notifier.update((x) => x.copyWith(streak: v)),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.weekend_outlined),
+            title: Text(s.restDay),
+            subtitle: Text(s.restDayHint),
+            value: settings.streakRestDays,
+            onChanged: settings.streak ? (v) => notifier.update((x) => x.copyWith(streakRestDays: v)) : null,
+          ),
         ],
       ),
     );

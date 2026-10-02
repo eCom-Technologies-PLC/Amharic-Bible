@@ -138,7 +138,10 @@ Long-press a verse or select a range to get:
 ### 3.6 Engagement — P1
 - **Verse of the day** shown on the home screen and as an optional notification at a time the user picks. A home-screen widget comes in P2.
 - **Reading plans** (bundled JSON): read the Bible in a year, the New Testament in 90 days, Psalms and Proverbs, and the Gospels in 30 days. The plans track progress and send reminders.
-- **Reading streak** — a gentle, opt-in streak with no penalty for missing a day.
+- **Reading streak** — on by default, gentle: today stays open until it ends, and one missed day in seven is a
+  rest day that keeps the streak (can be turned off). A day counts after 30 s on a chapter, reaching its end,
+  hearing 80% of a chapter, or marking a plan day done. Days sync and merge across devices; the schema-3
+  upgrade fills them from `reading_history` and `plan_progress` so existing readers keep their streak.
 
 ### 3.7 Parallel view — P1
 Amharic and English side by side, or interleaved verse by verse on narrow screens.
@@ -385,6 +388,8 @@ CREATE TABLE note (id TEXT PRIMARY KEY, vkey_start INTEGER, vkey_end INTEGER,
 CREATE TABLE plan_progress (plan_id TEXT, day INTEGER, completed_at INTEGER,
   PRIMARY KEY (plan_id, day));
 CREATE TABLE reading_history (vkey INTEGER, version_id TEXT, read_at INTEGER);
+CREATE TABLE reading_day (day TEXT PRIMARY KEY,  -- local date, YYYY-MM-DD
+  sources INTEGER, updated_at INTEGER);           -- bits: read 1, audio 2, plan 4
 CREATE TABLE setting (key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER);
 CREATE TABLE sync_outbox (seq INTEGER PRIMARY KEY AUTOINCREMENT,
   entity TEXT, entity_id TEXT, op TEXT, payload TEXT, created_at INTEGER);

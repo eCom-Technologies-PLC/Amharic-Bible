@@ -14,6 +14,7 @@ import '../data/user_repository.dart';
 import '../domain/models.dart';
 import '../domain/plans.dart';
 import '../domain/reference_parser.dart';
+import '../domain/streak.dart';
 
 // Overridden in main() (and in tests) once the databases are open.
 final contentDbProvider = Provider<Database>((ref) => throw UnimplementedError());
@@ -43,6 +44,8 @@ class Settings {
     this.lastSyncedAt,
     this.lastRef,
     this.recentSearches = const [],
+    this.streak = true,
+    this.streakRestDays = true,
   });
 
   final ReaderTheme readerTheme;
@@ -61,6 +64,13 @@ class Settings {
   final DateTime? lastSyncedAt;
   final BibleRef? lastRef;
   final List<String> recentSearches;
+
+  /// Show the reading streak (on by default; days are recorded either way,
+  /// so turning it back on loses nothing).
+  final bool streak;
+
+  /// Forgive one missed day in seven (see [ReadingStreak]).
+  final bool streakRestDays;
 
   double get fontSize => AppFonts.readingSizes[fontSizeIndex.clamp(0, AppFonts.readingSizes.length - 1)];
   String get fontFamily => serif ? AppFonts.serif : AppFonts.sans;
@@ -81,6 +91,8 @@ class Settings {
     DateTime? Function()? lastSyncedAt,
     BibleRef? lastRef,
     List<String>? recentSearches,
+    bool? streak,
+    bool? streakRestDays,
   }) => Settings(
     readerTheme: readerTheme ?? this.readerTheme,
     fontSizeIndex: fontSizeIndex ?? this.fontSizeIndex,
@@ -96,6 +108,8 @@ class Settings {
     lastSyncedAt: lastSyncedAt != null ? lastSyncedAt() : this.lastSyncedAt,
     lastRef: lastRef ?? this.lastRef,
     recentSearches: recentSearches ?? this.recentSearches,
+    streak: streak ?? this.streak,
+    streakRestDays: streakRestDays ?? this.streakRestDays,
   );
 
   Map<String, String?> toMap() => {
@@ -113,6 +127,8 @@ class Settings {
     'last_synced': lastSyncedAt?.millisecondsSinceEpoch.toString(),
     'last_ref': lastRef?.encode(),
     'recent_searches': jsonEncode(recentSearches),
+    'streak': '$streak',
+    'streak_rest_days': '$streakRestDays',
   };
 
   factory Settings.fromMap(Map<String, String> m) {
@@ -137,6 +153,8 @@ class Settings {
       recentSearches: m['recent_searches'] != null
           ? List<String>.from(jsonDecode(m['recent_searches']!) as List)
           : const [],
+      streak: b('streak', d.streak),
+      streakRestDays: b('streak_rest_days', d.streakRestDays),
     );
   }
 }
@@ -262,8 +280,31 @@ final activePlansProvider = FutureProvider<List<PlanProgress>>((ref) async {
   return [for (final id in ids) ?await ref.watch(planProgressProvider(id).future)];
 });
 
+// -------------------------------------------------------------------- streak
+
+final streakProvider = FutureProvider<ReadingStreak>((ref) async {
+  final restDays = ref.watch(settingsProvider.select((s) => s.streakRestDays));
+  return ReadingStreak(
+    days: await ref.watch(userRepositoryProvider).readingDays(),
+    today: ref.watch(clockProvider)(),
+    restDays: restDays,
+  );
+});
+
+final chaptersReadProvider = FutureProvider<int>((ref) => ref.watch(userRepositoryProvider).chaptersRead());
+
+/// Count today as a reading day from outside the widget tree (audio).
+/// Returns true when today was newly counted.
+Future<bool> recordReadingDay(Ref ref, int source) async {
+  final added = await ref.read(userRepositoryProvider).markReadingDay(source);
+  ref.invalidate(streakProvider);
+  if (added) ref.read(userDataWrittenProvider.notifier).bump();
+  return added;
+}
+
 /// Refresh every screen showing user data (after a sync pulled changes).
 void refreshUserData(Ref ref) {
+  ref.invalidate(streakProvider);
   ref.invalidate(planProgressProvider);
   ref.invalidate(activePlansProvider);
   ref.invalidate(chapterMarksProvider);
@@ -276,6 +317,8 @@ void refreshUserData(Ref ref) {
 /// sync when signed in.
 void invalidateUserData(WidgetRef ref) {
   ref.read(userDataWrittenProvider.notifier).bump();
+  ref.invalidate(streakProvider);
+  ref.invalidate(chaptersReadProvider);
   ref.invalidate(planProgressProvider);
   ref.invalidate(activePlansProvider);
   ref.invalidate(chapterMarksProvider);

@@ -137,6 +137,23 @@ class S {
   String get exportData => _('exportData');
   String get deleteAccount => _('deleteAccount');
   String get deleteAccountConfirm => _('deleteAccountConfirm');
+  String get readingStreak => _('readingStreak');
+  String get readingActivity => _('readingActivity');
+  String get currentStreak => _('currentStreak');
+  String get bestStreak => _('bestStreak');
+  String get daysRead => _('daysRead');
+  String get chaptersRead => _('chaptersRead');
+  String get showStreak => _('showStreak');
+  String get restDay => _('restDay');
+  String get restDayHint => _('restDayHint');
+  String get streakStart => _('streakStart');
+  String get streakKeepGoing => _('streakKeepGoing');
+  String get streakDoneToday => _('streakDoneToday');
+  String get previousMonth => _('previousMonth');
+  String get nextMonth => _('nextMonth');
+  String get dayReadLabel => _('dayReadLabel');
+  List<String> get weekdayInitials =>
+      isAmharic ? const ['ሰ', 'ማ', 'ረ', 'ሐ', 'ዓ', 'ቅ', 'እ'] : const ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   String minutes(int n) => isAmharic ? '$n ደቂቃ' : '$n min';
   String results(int n) => isAmharic ? '$n ውጤቶች' : (n == 1 ? '1 result' : '$n results');
@@ -147,6 +164,10 @@ class S {
   String days(int n) => isAmharic ? '$n ቀናት' : '$n days';
   String behind(int n) => isAmharic ? '$n ቀናት ወደኋላ' : '$n days behind';
   String signedInAs(String email) => isAmharic ? 'በ$email ገብተዋል' : 'Signed in as $email';
+  String streakDays(int n) => isAmharic ? '$n ቀን' : (n == 1 ? '1 day' : '$n days');
+  String bestStreakIs(int n) => isAmharic ? 'ምርጥ፦ $n ቀን' : 'Best: ${streakDays(n)}';
+  String daysThisWeek(int n) => isAmharic ? 'ባለፉት 7 ቀናት $n ቀን' : '$n of the last 7 days';
+  String streakMilestone(int n) => isAmharic ? '$n ቀን በተከታታይ አንብበዋል። በርቱ!' : '$n days in a row. Keep going!';
   String chapterOf(String book, int c) => isAmharic ? '$book ምዕራፍ $c' : '$book $c';
 }
 
@@ -265,6 +286,21 @@ const _am = {
   'total': 'ጠቅላላ',
   'stopPlanConfirm': 'ይህን ዕቅድ ማቆም ይፈልጋሉ? ዕቅዱ ከዕቅዶችዎ ይወገዳል።',
   'restartPlanConfirm': 'እስካሁን ምልክት ያደረጉባቸው ቀናት ይጠፋሉ፤ ዕቅዱ ከዛሬ ይጀምራል።',
+  'readingStreak': 'ተከታታይ ንባብ',
+  'readingActivity': 'የንባብ እንቅስቃሴ',
+  'currentStreak': 'የአሁኑ ተከታታይ',
+  'bestStreak': 'ምርጥ ተከታታይ',
+  'daysRead': 'ያነበቡባቸው ቀናት',
+  'chaptersRead': 'የተከፈቱ ምዕራፎች',
+  'showStreak': 'ተከታታይ ንባብን አሳይ',
+  'restDay': 'የዕረፍት ቀን',
+  'restDayHint': 'በሳምንት አንድ ያመለጠ ቀን ተከታታይነቱን አያቋርጥም',
+  'streakStart': 'ዛሬ አንድ ምዕራፍ በማንበብ ይጀምሩ',
+  'streakKeepGoing': 'ዛሬ በማንበብ ይቀጥሉ',
+  'streakDoneToday': 'የዛሬው ንባብ ተቆጥሯል',
+  'previousMonth': 'ያለፈው ወር',
+  'nextMonth': 'የሚቀጥለው ወር',
+  'dayReadLabel': 'ተነቧል',
 };
 
 const _en = {
@@ -383,4 +419,19 @@ const _en = {
   'total': 'Total',
   'stopPlanConfirm': 'Stop this plan? It will be removed from your plans.',
   'restartPlanConfirm': 'Your checked days will be cleared and the plan will start again today.',
+  'readingStreak': 'Reading streak',
+  'readingActivity': 'Reading activity',
+  'currentStreak': 'Current streak',
+  'bestStreak': 'Best streak',
+  'daysRead': 'Days read',
+  'chaptersRead': 'Chapters opened',
+  'showStreak': 'Show reading streak',
+  'restDay': 'Rest day',
+  'restDayHint': 'One missed day a week keeps your streak',
+  'streakStart': 'Read a chapter today to start a streak',
+  'streakKeepGoing': 'Read today to keep it going',
+  'streakDoneToday': "Today's reading is counted",
+  'previousMonth': 'Previous month',
+  'nextMonth': 'Next month',
+  'dayReadLabel': 'Read',
 };

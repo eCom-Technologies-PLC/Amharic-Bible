@@ -20,6 +20,7 @@ class MeScreen extends StatelessWidget {
           tile(Icons.bookmark_border, s.bookmarks, '/me/library?tab=1'),
           tile(Icons.sticky_note_2_outlined, s.notes, '/me/library?tab=2'),
           tile(Icons.event_note_outlined, s.readingPlans, '/me/plans'),
+          tile(Icons.local_fire_department_outlined, s.readingActivity, '/me/activity'),
           const Divider(),
           tile(Icons.account_circle_outlined, s.account, '/me/account'),
           tile(Icons.download_outlined, s.downloads, '/me/downloads'),

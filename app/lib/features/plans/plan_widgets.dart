@@ -8,6 +8,7 @@ import '../../domain/plans.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import '../streak/streak_widgets.dart';
 
 /// Book code -> short name in the current version (falls back to the code).
 final bookNamesProvider = FutureProvider<Map<String, String>>((ref) async {
@@ -69,8 +70,9 @@ class TodaysReadingCards extends ConsumerWidget {
                     tooltip: s.markAsRead,
                     icon: const Icon(Icons.check_circle_outline),
                     onPressed: () async {
-                      await ref.read(userRepositoryProvider).setDayDone(p.plan.id, p.nextDay!, true);
-                      invalidateUserData(ref);
+                      final firstToday = await ref.read(userRepositoryProvider).setDayDone(p.plan.id, p.nextDay!, true);
+                      if (!context.mounted) return;
+                      firstToday ? await celebrateNewDay(context, ref) : invalidateUserData(ref);
                     },
                   ),
             child: Column(

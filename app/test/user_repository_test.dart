@@ -1,5 +1,6 @@
 import 'package:amharic_bible/domain/preferences.dart';
 import 'package:amharic_bible/data/user_repository.dart';
+import 'package:amharic_bible/domain/streak.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -61,6 +62,53 @@ void main() {
     expect(await repo.completedDays('nt-90'), isEmpty);
     await repo.stopPlan('nt-90');
     expect(await repo.activePlans(), isEmpty);
+  });
+
+  test('reading days: one row per local day, sources combine', () async {
+    var now = DateTime(2026, 10, 2, 23, 59);
+    final r = UserRepository(repo.db, clock: () => now);
+    expect(await r.markReadingDay(ReadingSource.read), isTrue);
+    expect(await r.markReadingDay(ReadingSource.read), isFalse);
+    expect(await r.markReadingDay(ReadingSource.audio), isFalse); // same day, new source
+    now = DateTime(2026, 10, 3, 0, 1);
+    expect(await r.setDayDone('nt-90', 1, true), isTrue);
+    expect(await r.setDayDone('nt-90', 2, false), isFalse);
+    expect(await r.readingDays(), unorderedEquals([DateTime.utc(2026, 10, 2), DateTime.utc(2026, 10, 3)]));
+    final rows = await repo.db.query('reading_day', orderBy: 'day');
+    expect(rows.map((x) => x['sources']), [ReadingSource.read | ReadingSource.audio, ReadingSource.plan]);
+  });
+
+  test('upgrading keeps the streak: past reading becomes reading days', () async {
+    final db = await databaseFactory.openDatabase(
+      inMemoryDatabasePath,
+      options: OpenDatabaseOptions(
+        version: 2,
+        onCreate: (db, v) => UserRepository.createSchema(db, 2),
+        singleInstance: false,
+      ),
+    );
+    int at(int d, int h) => DateTime(2026, 9, d, h).millisecondsSinceEpoch;
+    await db.insert('reading_history', {'vkey': 43003016, 'version_id': 'x', 'read_at': at(28, 8)});
+    await db.insert('reading_history', {'vkey': 43004001, 'version_id': 'x', 'read_at': at(28, 21)});
+    await db.insert('reading_history', {'vkey': 43005001, 'version_id': 'x', 'read_at': at(29, 7)});
+    await db.insert('plan_progress', {'plan_id': 'p', 'day': 1, 'completed_at': at(29, 9), 'updated_at': 1});
+    await db.insert('plan_progress', {'plan_id': 'p', 'day': 2, 'completed_at': at(30, 9), 'updated_at': 1});
+    await db.insert('plan_progress', {'plan_id': 'p', 'day': 3, 'completed_at': null, 'updated_at': 1});
+    await UserRepository.migrate(db, 2, UserRepository.schemaVersion);
+
+    final rows = await db.query('reading_day', orderBy: 'day');
+    expect(
+      {for (final x in rows) x['day']: x['sources']},
+      {
+        '2026-09-28': ReadingSource.read,
+        '2026-09-29': ReadingSource.read | ReadingSource.plan,
+        '2026-09-30': ReadingSource.plan,
+      },
+    );
+    final streak = ReadingStreak(days: await UserRepository(db).readingDays(), today: DateTime(2026, 9, 30));
+    expect(streak.current, 3);
+    // The carried-over days are queued so they reach the user's other devices.
+    expect(await db.query('sync_outbox', where: "entity = 'reading_day'"), hasLength(3));
   });
 
   test('schema migrates from version 1', () async {

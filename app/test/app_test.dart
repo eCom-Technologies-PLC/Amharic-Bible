@@ -8,6 +8,7 @@ import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/reader/selection_bar.dart';
 import 'package:amharic_bible/features/share/share_image_screen.dart';
 import 'package:amharic_bible/data/sync/account_service.dart';
+import 'package:amharic_bible/domain/streak.dart';
 import 'package:amharic_bible/state/account.dart';
 import 'package:amharic_bible/state/providers.dart';
 import 'package:flutter/material.dart';
@@ -157,6 +158,36 @@ void main() {
     await tester.tap(find.byType(Checkbox).first);
     await tester.pumpAndSettle();
     expect(await UserRepository(userDb).completedDays('gospels-30'), {1});
+    // Marking a plan day done counts today for the streak.
+    expect(await UserRepository(userDb).readingDays(), hasLength(1));
+  });
+
+  testWidgets('staying on a chapter counts today; home and activity show the streak', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=JHN.3',
+    );
+    expect(await UserRepository(userDb).readingDays(), isEmpty); // just opening does not count
+    await tester.pump(chapterReadTime + const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(await UserRepository(userDb).readingDays(), hasLength(1));
+
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reading streak'), findsOneWidget);
+    expect(find.text('1 day'), findsOneWidget);
+    expect(find.text("Today's reading is counted"), findsOneWidget);
+
+    await tester.tap(find.text('Reading streak'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reading activity'), findsOneWidget);
+    expect(find.text('Current streak'), findsOneWidget);
+  });
+
+  testWidgets('the streak card is hidden when turned off', (tester) async {
+    await pumpApp(tester, settings: const Settings(languageCode: 'en', streak: false));
+    expect(find.text('Reading streak'), findsNothing);
   });
 
   testWidgets('verse image card renders to a 1080 px PNG', (tester) async {

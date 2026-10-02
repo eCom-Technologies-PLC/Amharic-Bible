@@ -26,6 +26,7 @@ const routes = [
   '/me/plans',
   '/me/plans/nt-90',
   '/me/plans/bible-year',
+  '/me/activity',
   '/me/library',
   '/me/settings',
   '/me/account',

@@ -57,9 +57,13 @@ Features:
 - **Audio:** follow-along verse highlighting, background playback, speed, sleep timer and book downloads.
 - **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
   60 days, with daily progress and a "today's reading" card on Home.
+- **Reading streak:** on by default (can be turned off). A day counts after 30 seconds on a chapter, reaching
+  its end, listening to most of a chapter, or marking a plan day done. One missed day a week is forgiven
+  (a rest day). Home shows the streak and the last seven days; Me → Reading activity has a month calendar.
+  Reading from before the streak existed is carried over, so updating the app does not reset it.
 - **Share:** verses as text, or as an image card (8 backgrounds, square or story size, 1080 px PNG).
-- **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes and plans across
-  devices. Export your data as JSON, or delete your account, from inside the app.
+- **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes, plans and reading days
+  across devices. Export your data as JSON, or delete your account, from inside the app.
 - Verse of the day, an Amharic or English UI, and the Ethiopian calendar.
 
 The app uses the 66-book canon only. Still to come: notification reminders for plans.
