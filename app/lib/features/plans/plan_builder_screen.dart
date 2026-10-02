@@ -5,24 +5,14 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/strings.dart';
 import '../../domain/custom_plan.dart';
+import '../../domain/plan_assistant.dart';
 import '../../domain/plans.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 import 'plan_widgets.dart';
 
-enum _Scope { all, oldTestament, newTestament, gospels, psalmsProverbs, chosen }
-
 enum _LengthMode { period, endDate, perDay }
-
-/// Calendar days a period runs for when building a plan.
-int periodCalendarDays(PlanPeriod p) => switch (p) {
-  PlanPeriod.week => 7,
-  PlanPeriod.month => 30,
-  PlanPeriod.threeMonths => 90,
-  PlanPeriod.sixMonths => 180,
-  PlanPeriod.year => 365,
-};
 
 const _everyDay = {1, 2, 3, 4, 5, 6, 7};
 const _mondayToFriday = {1, 2, 3, 4, 5};
@@ -32,7 +22,32 @@ const _perDayChoices = [1, 2, 3, 4, 5, 6, 8, 10];
 /// Me → Reading plans → Make your own plan: one scrolling form whose choices
 /// open bottom sheets, with a live preview of the pace and end date.
 class PlanBuilderScreen extends ConsumerStatefulWidget {
-  const PlanBuilderScreen({super.key});
+  const PlanBuilderScreen({super.key, this.scope, this.period, this.weekdays});
+
+  /// Starting answers (from the planning assistant); defaults otherwise.
+  final PlanScope? scope;
+  final PlanPeriod? period;
+  final Set<int>? weekdays;
+
+  /// Builder route with starting answers, e.g. /me/plans/new?scope=gospels&period=month&days=123456
+  static String location({PlanScope? scope, PlanPeriod? period, Set<int>? weekdays}) => Uri(
+    path: '/me/plans/new',
+    queryParameters: {
+      'scope': ?scope?.name,
+      'period': ?period?.name,
+      if (weekdays != null) 'days': (weekdays.toList()..sort()).join(),
+    },
+  ).toString();
+
+  /// Reads [location]'s query parameters; unknown values are ignored.
+  static PlanBuilderScreen fromQuery(Map<String, String> q) {
+    final days = q['days']?.split('').map(int.tryParse).whereType<int>().where((d) => d >= 1 && d <= 7).toSet();
+    return PlanBuilderScreen(
+      scope: PlanScope.values.asNameMap()[q['scope']],
+      period: PlanPeriod.values.asNameMap()[q['period']],
+      weekdays: days == null || days.isEmpty ? null : days,
+    );
+  }
 
   @override
   ConsumerState<PlanBuilderScreen> createState() => _PlanBuilderScreenState();
@@ -42,13 +57,15 @@ class _PlanBuilderScreenState extends ConsumerState<PlanBuilderScreen> {
   final _name = TextEditingController();
   bool _saving = false;
 
-  _Scope _scope = _Scope.newTestament;
+  late PlanScope _scope = widget.scope == PlanScope.chosen
+      ? PlanScope.newTestament
+      : widget.scope ?? PlanScope.newTestament;
   Set<String> _chosenBooks = {};
   _LengthMode _mode = _LengthMode.period;
-  PlanPeriod _period = PlanPeriod.threeMonths;
+  late PlanPeriod _period = widget.period ?? PlanPeriod.threeMonths;
   DateTime? _endDate;
   int _perDay = 3;
-  Set<int> _weekdays = _everyDay;
+  late Set<int> _weekdays = widget.weekdays ?? _everyDay;
   late DateTime _start = _today;
 
   DateTime get _today {
@@ -62,17 +79,7 @@ class _PlanBuilderScreenState extends ConsumerState<PlanBuilderScreen> {
     super.dispose();
   }
 
-  List<String> _books(BibleCatalog c) => switch (_scope) {
-    _Scope.all => c.codes,
-    _Scope.oldTestament => c.oldTestament,
-    _Scope.newTestament => c.newTestament,
-    _Scope.gospels => BibleCatalog.gospels,
-    _Scope.psalmsProverbs => const ['PSA', 'PRO'],
-    _Scope.chosen => [
-      for (final b in c.codes)
-        if (_chosenBooks.contains(b)) b,
-    ],
-  };
+  List<String> _books(BibleCatalog c) => _scope.books(c, _chosenBooks);
 
   int _readingDays(BibleCatalog c) {
     switch (_mode) {
@@ -88,15 +95,11 @@ class _PlanBuilderScreenState extends ConsumerState<PlanBuilderScreen> {
     }
   }
 
-  String _scopeLabel(S s, Map<String, String> names) => switch (_scope) {
-    _Scope.all => s.scopeAll,
-    _Scope.oldTestament => s.oldTestament,
-    _Scope.newTestament => s.newTestament,
-    _Scope.gospels => s.scopeGospels,
-    _Scope.psalmsProverbs => s.scopePsalmsProverbs,
-    _Scope.chosen =>
-      _chosenBooks.length == 1 ? (names[_chosenBooks.first] ?? _chosenBooks.first) : s.booksChosen(_chosenBooks.length),
-  };
+  String _scopeLabel(S s, Map<String, String> names) => _scope == PlanScope.chosen
+      ? (_chosenBooks.length == 1
+            ? (names[_chosenBooks.first] ?? _chosenBooks.first)
+            : s.booksChosen(_chosenBooks.length))
+      : scopeLabel(_scope, s);
 
   String _lengthLabel(S s, Settings settings) => switch (_mode) {
     _LengthMode.period => periodLabel(_period, s),
@@ -130,25 +133,21 @@ class _PlanBuilderScreenState extends ConsumerState<PlanBuilderScreen> {
   );
 
   Future<void> _pickScope(S s, BibleCatalog catalog, Map<String, String> names) async {
-    final v = await showOptionPicker<_Scope>(
+    final v = await showOptionPicker<PlanScope>(
       context: context,
       title: s.whatToRead,
       selected: _scope,
       options: [
-        PickerOption(_Scope.all, s.scopeAll),
-        PickerOption(_Scope.oldTestament, s.oldTestament),
-        PickerOption(_Scope.newTestament, s.newTestament),
-        PickerOption(_Scope.gospels, s.scopeGospels),
-        PickerOption(_Scope.psalmsProverbs, s.scopePsalmsProverbs),
-        PickerOption(_Scope.chosen, s.chooseBooks),
+        for (final scope in PlanScope.values)
+          PickerOption(scope, scope == PlanScope.chosen ? s.chooseBooks : scopeLabel(scope, s)),
       ],
     );
     if (v == null || !mounted) return;
-    if (v == _Scope.chosen) {
+    if (v == PlanScope.chosen) {
       final books = await _chooseBooks(s, catalog, names);
       if (books == null || books.isEmpty) return;
       setState(() {
-        _scope = _Scope.chosen;
+        _scope = PlanScope.chosen;
         _chosenBooks = books;
       });
     } else {

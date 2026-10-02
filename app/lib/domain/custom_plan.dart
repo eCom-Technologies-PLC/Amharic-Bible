@@ -29,6 +29,7 @@ class BibleCatalog {
 
   static const oldTestamentBooks = 39;
   static const gospels = ['MAT', 'MRK', 'LUK', 'JHN'];
+  static const wisdomBooks = ['JOB', 'PSA', 'PRO', 'ECC', 'SNG'];
 
   List<String> get oldTestament => codes.take(oldTestamentBooks).toList();
   List<String> get newTestament => codes.skip(oldTestamentBooks).toList();
@@ -46,6 +47,31 @@ class BibleCatalog {
   }
 
   int versesIn(Iterable<PlanChapter> chapters) => chapters.fold(0, (n, c) => n + (verses[c.book]?[c.chapter - 1] ?? 0));
+}
+
+/// What a built plan reads (the builder's first question).
+enum PlanScope {
+  all,
+  oldTestament,
+  newTestament,
+  gospels,
+  psalmsProverbs,
+  wisdom,
+  chosen;
+
+  /// Books of this scope in canonical order ([chosen] for [PlanScope.chosen]).
+  List<String> books(BibleCatalog c, [Set<String> chosen = const {}]) => switch (this) {
+    all => c.codes,
+    oldTestament => c.oldTestament,
+    newTestament => c.newTestament,
+    gospels => BibleCatalog.gospels,
+    psalmsProverbs => const ['PSA', 'PRO'],
+    wisdom => BibleCatalog.wisdomBooks,
+    PlanScope.chosen => [
+      for (final b in c.codes)
+        if (chosen.contains(b)) b,
+    ],
+  };
 }
 
 /// One chapter of a plan.

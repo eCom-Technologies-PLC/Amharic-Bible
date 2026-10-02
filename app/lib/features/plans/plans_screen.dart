@@ -55,27 +55,17 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                     onTap: () => context.push('/me/plans/${p.plan.id}'),
                   ),
               ],
-              AppCard(
+              _ActionCard(
+                icon: Icons.auto_awesome_outlined,
+                title: s.helpMeChoose,
+                hint: s.helpMeChooseHint,
+                onTap: () => context.push('/me/plans/assistant'),
+              ),
+              _ActionCard(
+                icon: Icons.edit_calendar_outlined,
+                title: s.makeYourOwnPlan,
+                hint: s.makeYourOwnPlanHint,
                 onTap: () => context.push('/me/plans/new'),
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_calendar_outlined, color: context.colors.primary),
-                    const SizedBox(width: AppSpacing.lg),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(s.makeYourOwnPlan, style: context.text.titleMedium),
-                          Text(
-                            s.makeYourOwnPlanHint,
-                            style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward),
-                  ],
-                ),
               ),
               SectionHeader(active.isEmpty ? s.readingPlans : s.morePlans),
               FilterBar<PlanPeriod?>(
@@ -110,4 +100,35 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
       ),
     );
   }
+}
+
+/// A card that opens a flow (planning assistant, plan builder).
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({required this.icon, required this.title, required this.hint, required this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String hint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => AppCard(
+    onTap: onTap,
+    child: Row(
+      children: [
+        Icon(icon, color: context.colors.primary),
+        const SizedBox(width: AppSpacing.lg),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: context.text.titleMedium),
+              Text(hint, style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant)),
+            ],
+          ),
+        ),
+        const Icon(Icons.arrow_forward),
+      ],
+    ),
+  );
 }

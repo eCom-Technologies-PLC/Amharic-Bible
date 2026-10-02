@@ -51,6 +51,7 @@ class ReadingPlan {
     required this.description,
     required this.days,
     this.minutesPerDay,
+    this.focus = const {},
     this.weekdays,
     this.start,
     this.carriedChapters = 0,
@@ -64,6 +65,9 @@ class ReadingPlan {
 
   /// Estimated reading time per day (null for plans without an estimate).
   final int? minutesPerDay;
+
+  /// What the plan reads: "all", "ot", "nt", "gospels", "wisdom".
+  final Set<String> focus;
 
   /// Weekdays with a reading (DateTime.monday..sunday); null means every day.
   final Set<int>? weekdays;
@@ -104,6 +108,7 @@ List<ReadingPlan> parsePlans(String source) {
         name: Map<String, String>.from(p['name'] as Map),
         description: Map<String, String>.from(p['description'] as Map),
         minutesPerDay: (p['minutes'] as num?)?.toInt(),
+        focus: {...?(p['focus'] as List?)?.cast<String>()},
         days: [
           for (final day in p['days'] as List)
             [for (final r in day as List) PlanReading(r['b'] as String, r['f'] as int, r['t'] as int)],

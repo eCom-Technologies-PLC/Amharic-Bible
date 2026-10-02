@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/strings.dart';
 import '../../domain/custom_plan.dart';
@@ -139,7 +141,9 @@ class _DayList extends ConsumerWidget {
     final plan = progress.plan;
     final focus = progress.nextDay ?? plan.length;
     final settings = ref.watch(settingsProvider);
-    final showCatchUp = plan.custom && !progress.finished && progress.behind > 1;
+    // Plans you built offer a re-plan as soon as you fall behind; ready-made
+    // ones after a few days (catching up makes them your own).
+    final showCatchUp = !progress.finished && progress.behind > (plan.custom ? 1 : catchUpAfterDaysBehind);
 
     // The progress header scrolls with the days so it never squeezes the
     // list on small screens with large text.
@@ -178,10 +182,10 @@ class _DayList extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.behindHint, style: context.text.bodyMedium),
+                Text(plan.custom ? s.behindHint : s.catchUpHint, style: context.text.bodyMedium),
                 const SizedBox(height: AppSpacing.sm),
                 AppButton.secondary(
-                  label: s.replan,
+                  label: plan.custom ? s.replan : s.catchUp,
                   icon: Icons.event_repeat_outlined,
                   onPressed: () => replanPlan(context, ref, progress),
                 ),
@@ -217,14 +221,37 @@ class _DayList extends ConsumerWidget {
   }
 }
 
-/// Catch up on a plan the user built: keep what is read and spread the rest
-/// over the days from today to an end date they pick.
+/// Days behind before a ready-made plan offers to catch up.
+const catchUpAfterDaysBehind = 3;
+
+/// Catch up: keep what is read and spread the rest over the days from today
+/// to an end date the reader picks. A ready-made plan becomes the reader's
+/// own (same name and readings) and the original is stopped.
 Future<void> replanPlan(BuildContext context, WidgetRef ref, PlanProgress progress) async {
   final s = S.of(context);
   final settings = ref.read(settingsProvider);
-  final specs = await ref.read(customPlanSpecsProvider.future);
-  final spec = specs.where((x) => x.id == progress.plan.id).firstOrNull;
+  final plan = progress.plan;
   final catalog = await ref.read(bibleCatalogProvider.future);
+  final CustomPlanSpec? spec;
+  if (plan.custom) {
+    spec = (await ref.read(customPlanSpecsProvider.future)).where((x) => x.id == plan.id).firstOrNull;
+  } else {
+    final books = {
+      for (final day in plan.days)
+        for (final r in day) r.book,
+    };
+    spec = CustomPlanSpec(
+      id: '${CustomPlanSpec.idPrefix}${const Uuid().v7()}',
+      name: plan.nameFor(s.locale.languageCode),
+      books: [
+        for (final b in catalog.codes)
+          if (books.contains(b)) b,
+      ],
+      weekdays: const {1, 2, 3, 4, 5, 6, 7},
+      start: progress.startedAt,
+      days: plan.days,
+    );
+  }
   if (spec == null || !context.mounted) return;
 
   final now = ref.read(clockProvider)();
@@ -274,8 +301,11 @@ Future<void> replanPlan(BuildContext context, WidgetRef ref, PlanProgress progre
   if (newEnd == null || !context.mounted) return;
 
   final next = spec.replan(catalog, completedDays: progress.completed, from: today, end: newEnd);
-  await ref.read(userRepositoryProvider).saveCustomPlan(spec.id, next.encode());
+  final repo = ref.read(userRepositoryProvider);
+  await repo.saveCustomPlan(spec.id, next.encode());
+  if (!plan.custom) await repo.stopPlan(plan.id);
   if (!context.mounted) return;
   invalidateUserData(ref);
   showAppSnack(context, s.planUpdated);
+  if (!plan.custom) context.replace('/me/plans/${spec.id}');
 }

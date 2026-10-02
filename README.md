@@ -59,6 +59,10 @@ Features:
   7 days to the Bible in a year (straight through, or Old and New Testament together). Each shows its
   estimated minutes a day and pace; days are balanced by verse count. Daily progress and a "today's
   reading" card on Home.
+- **Planning assistant** (offline): four quick questions (how long, time a day, what to read, which days)
+  recommend the ready-made plans that fit best, flag goals that would not fit your time (with a period
+  that does), and offer "Build my own" pre-filled with your answers. Fallen more than three days behind
+  on a ready-made plan? "Catch up" makes it your own and re-plans it, keeping your progress.
 - **Make your own plan:** pick what to read (whole Bible, a testament, the Gospels, Psalms and Proverbs, or any
   books), how long (a period, an end date or chapters a day), which weekdays, and when to start; a live
   preview shows chapters and minutes a day and the finish date. Fallen behind? Re-plan spreads what is left

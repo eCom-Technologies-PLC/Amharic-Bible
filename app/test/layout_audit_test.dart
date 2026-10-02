@@ -30,6 +30,7 @@ const routes = [
   '/me/plans/bible-year',
   '/me/plans/bible-year-mixed',
   '/me/plans/new',
+  '/me/plans/assistant',
   '/me/plans/my-audit',
   '/me/activity',
   '/me/library',
@@ -200,6 +201,23 @@ void main() {
             await t.tap(find.text(s.whatToRead));
             await _settle(t);
             await t.tap(find.text(s.chooseBooks));
+          },
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang planning assistant with advice', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/me/plans/assistant',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang),
+          interact: (t) async {
+            final s = S.forLocale(Locale(lang));
+            for (final answer in [s.periodWeek, s.minutesOption(5), s.scopeAll, s.mondayToFriday]) {
+              await t.tap(find.text(answer).last);
+              await _settle(t);
+            }
           },
         );
         expect(errors, isEmpty);

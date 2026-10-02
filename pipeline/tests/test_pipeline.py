@@ -181,6 +181,10 @@ class PlansTest(unittest.TestCase):
         for lo, hi in [(1, 7), (8, 31), (32, 92), (93, 183), (184, 366)]:
             self.assertTrue(any(lo <= n <= hi for n in lengths.values()), (lo, hi))
         self.assertTrue(all(p["minutes"] >= 1 for p in plans.values()))
+        focuses = {"all", "ot", "nt", "gospels", "wisdom"}
+        self.assertTrue(all(p["focus"] and set(p["focus"]) <= focuses for p in plans.values()))
+        for f in focuses:  # the assistant has something for every answer
+            self.assertTrue(any(f in p["focus"] for p in plans.values()), f)
         # Mixed plans read from every stream every day.
         for day in plans["bible-year-mixed"]["days"]:
             testaments = {load_books()[r["b"]].testament for r in day}

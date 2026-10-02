@@ -202,6 +202,23 @@ class S {
   String get planUpdated => _('planUpdated');
   String get deletePlan => _('deletePlan');
   String get deletePlanConfirm => _('deletePlanConfirm');
+  String get scopeWisdom => _('scopeWisdom');
+  String get helpMeChoose => _('helpMeChoose');
+  String get helpMeChooseHint => _('helpMeChooseHint');
+  String get planningAssistant => _('planningAssistant');
+  String get assistantIntro => _('assistantIntro');
+  String get timeADay => _('timeADay');
+  String get tapToAnswer => _('tapToAnswer');
+  String get recommendedForYou => _('recommendedForYou');
+  String get fitGood => _('fitGood');
+  String get fitLight => _('fitLight');
+  String get fitStretch => _('fitStretch');
+  String get readsEveryDay => _('readsEveryDay');
+  String get buildMyOwn => _('buildMyOwn');
+  String get buildMyOwnHint => _('buildMyOwnHint');
+  String get noMatchingPlans => _('noMatchingPlans');
+  String get catchUpHint => _('catchUpHint');
+  String get catchUp => _('catchUp');
   List<String> get weekdayNames => isAmharic
       ? const ['ሰኞ', 'ማክሰኞ', 'ረቡዕ', 'ሐሙስ', 'ዓርብ', 'ቅዳሜ', 'እሑድ']
       : const ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -226,6 +243,11 @@ class S {
   String booksChosen(int n) => isAmharic ? '$n መጻሕፍት' : (n == 1 ? '1 book' : '$n books');
   String chaptersLeft(int n) => isAmharic ? '$n ምዕራፎች ቀርተዋል' : (n == 1 ? '1 chapter left' : '$n chapters left');
   String chaptersCarried(int n) => isAmharic ? '$n ምዕራፎች ቀድመው ተነበዋል' : '$n chapters read before re-planning';
+  String minutesOption(int n) => n >= 45 ? (isAmharic ? '$n+ ደቂቃ' : '$n+ min') : minutes(n);
+  String tooMuchReading(int minutes, String chapters) => isAmharic
+      ? 'ይህ በቀን ~$minutes ደቂቃ (~$chapters ምዕራፍ) ነው፤ ከጊዜዎ ይበልጣል።'
+      : "That's about $minutes min a day (~$chapters chapters), more than your time.";
+  String tryPeriod(String period) => isAmharic ? '$period ይሞክሩ' : 'Try $period';
   String streakDays(int n) => isAmharic ? '$n ቀን' : (n == 1 ? '1 day' : '$n days');
   String bestStreakIs(int n) => isAmharic ? 'ምርጥ፦ $n ቀን' : 'Best: ${streakDays(n)}';
   String daysThisWeek(int n) => isAmharic ? 'ባለፉት 7 ቀናት $n ቀን' : '$n of the last 7 days';
@@ -413,6 +435,23 @@ const _am = {
   'planUpdated': 'ዕቅዱ ተስተካክሏል',
   'deletePlan': 'ዕቅዱን ሰርዝ',
   'deletePlanConfirm': 'ይህ ዕቅድና እድገቱ ይሰረዛል።',
+  'scopeWisdom': 'መዝሙረ ዳዊትና የጥበብ መጻሕፍት',
+  'helpMeChoose': 'ዕቅድ እንድመርጥ እርዳኝ',
+  'helpMeChooseHint': 'ለአራት አጭር ጥያቄዎች ይመልሱ፤ የሚስማማዎትን እንጠቁማለን',
+  'planningAssistant': 'የዕቅድ ረዳት',
+  'assistantIntro': 'ለአራት አጭር ጥያቄዎች ይመልሱ። ከጊዜዎ ጋር የሚስማሙ ዕቅዶችን እንጠቁማለን።',
+  'timeADay': 'በቀን ምን ያህል ጊዜ አለዎት?',
+  'tapToAnswer': 'ለመመለስ ይንኩ',
+  'recommendedForYou': 'ለእርስዎ የሚስማሙ',
+  'fitGood': 'ይስማማል',
+  'fitLight': 'ቀለል ያለ',
+  'fitStretch': 'ትንሽ ይከብዳል',
+  'readsEveryDay': 'በየቀኑ ይነበባል',
+  'buildMyOwn': 'የራሴን አዘጋጅ',
+  'buildMyOwnHint': 'በመልሶችዎ የተሞላ፤ ማንኛውንም ማስተካከል ይችላሉ',
+  'noMatchingPlans': 'ከመልሶችዎ ጋር የሚስማማ ዝግጁ ዕቅድ የለም፤ ከታች የራስዎን ያዘጋጁ።',
+  'catchUpHint': 'ወደኋላ ቀርተዋል? ይህን ዕቅድ የራስዎ አድርገው እንደገና ያስተካክሉ፤ ያነበቡት አይጠፋም።',
+  'catchUp': 'አስተካክል',
 };
 
 const _en = {
@@ -596,4 +635,21 @@ const _en = {
   'planUpdated': 'Plan updated',
   'deletePlan': 'Delete plan',
   'deletePlanConfirm': 'This plan and its progress will be deleted.',
+  'scopeWisdom': 'Psalms and wisdom books',
+  'helpMeChoose': 'Help me choose a plan',
+  'helpMeChooseHint': 'Answer four quick questions for plans that fit',
+  'planningAssistant': 'Planning assistant',
+  'assistantIntro': 'Answer four short questions and we will suggest plans that fit your time.',
+  'timeADay': 'Time a day',
+  'tapToAnswer': 'Tap to answer',
+  'recommendedForYou': 'Recommended for you',
+  'fitGood': 'Good fit',
+  'fitLight': 'Lighter',
+  'fitStretch': 'A stretch',
+  'readsEveryDay': 'Reads every day',
+  'buildMyOwn': 'Build my own',
+  'buildMyOwnHint': 'Pre-filled with your answers; change anything',
+  'noMatchingPlans': 'No ready-made plan matches your answers; build your own below.',
+  'catchUpHint': "Fallen behind? Make this plan your own and re-plan it; what you've read is kept.",
+  'catchUp': 'Catch up',
 };

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
 import '../../domain/models.dart';
+import '../../domain/custom_plan.dart';
+import '../../domain/plan_assistant.dart';
 import '../../domain/plans.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
@@ -130,5 +132,32 @@ class PlanFacts extends StatelessWidget {
           }, tone: pace == PlanPace.intensive ? BadgeTone.warning : BadgeTone.info),
       ],
     );
+  }
+}
+
+String scopeLabel(PlanScope scope, S s) => switch (scope) {
+  PlanScope.all => s.scopeAll,
+  PlanScope.oldTestament => s.oldTestament,
+  PlanScope.newTestament => s.newTestament,
+  PlanScope.gospels => s.scopeGospels,
+  PlanScope.psalmsProverbs => s.scopePsalmsProverbs,
+  PlanScope.wisdom => s.scopeWisdom,
+  PlanScope.chosen => s.chooseBooks,
+};
+
+/// How well a plan fits the reader's time (planning assistant).
+class FitBadge extends StatelessWidget {
+  const FitBadge({super.key, required this.fit});
+
+  final PlanFit fit;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return switch (fit) {
+      PlanFit.good => StatusBadge(s.fitGood, tone: BadgeTone.success, icon: Icons.check),
+      PlanFit.light => StatusBadge(s.fitLight, tone: BadgeTone.info),
+      PlanFit.stretch => StatusBadge(s.fitStretch, tone: BadgeTone.warning),
+    };
   }
 }

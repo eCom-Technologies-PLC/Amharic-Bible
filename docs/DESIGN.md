@@ -37,7 +37,14 @@ differs from this document, the code is current:
   `CustomPlanSpec` with the choices and the day-by-day schedule, balanced by verses with the same rule as
   the pipeline. Reading weekdays are honoured when working out "today". Re-planning keeps the chapters of
   finished days (`carried`), spreads the rest from today to the chosen end date, and restarts the day ticks.
-  At most 731 reading days, which keeps each synced record small. The Lent/Hudade plan was replaced by "Gospels in 30 days".
+  At most 731 reading days, which keeps each synced record small.
+- **Planning assistant** (`/me/plans/assistant`, `domain/plan_assistant.dart`) is rule-based and offline.
+  Plans carry `focus` tags; candidates share the focus and are at most one period away, ranked by
+  period distance (×3), fit (good / light / stretch: within 25% over the time, or under half), closeness of
+  minutes, then closeness of length. Bundled plans read daily, so fewer reading days scale their minutes
+  by 7 ÷ days. "Build my own" is sized the same way; when it is a stretch the assistant suggests the
+  shortest period that fits. Ready-made plans more than three days behind offer "Catch up", which turns
+  them into a custom plan and re-plans the rest. The Lent/Hudade plan was replaced by "Gospels in 30 days".
 
 ## 1. Overview
 

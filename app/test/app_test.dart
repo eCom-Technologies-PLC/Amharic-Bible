@@ -253,6 +253,56 @@ void main() {
     expect(find.textContaining('chapters read before re-planning'), findsOneWidget);
   });
 
+  testWidgets('planning assistant: four answers, recommendations, then a pre-filled builder', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/plans',
+    );
+    await tester.tap(find.text('Help me choose a plan'));
+    await tester.pumpAndSettle(); // the first question opens by itself
+    for (final answer in ['1 month', '15 min', 'The Gospels', 'Every day']) {
+      await tester.tap(find.text(answer).last);
+      await tester.pumpAndSettle(); // the next question opens by itself
+    }
+    expect(find.text('Recommended for you'), findsOneWidget);
+    expect(find.text('The Gospels in 30 days'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Build my own'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Build my own'));
+    await tester.pumpAndSettle();
+    expect(find.text('New plan'), findsOneWidget);
+    expect(find.text('The Gospels'), findsOneWidget); // what to read, from the answers
+    expect(find.text('1 month'), findsOneWidget);
+  });
+
+  testWidgets('a ready-made plan you fell behind on can be caught up as your own', (tester) async {
+    final past = DateTime.now().subtract(const Duration(days: 10));
+    await UserRepository(userDb, clock: () => past).startPlan('nt-90');
+    await UserRepository(userDb, clock: () => past).setDayDone('nt-90', 1, true);
+
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/plans/nt-90',
+    );
+    expect(find.textContaining('Make this plan your own'), findsOneWidget);
+    await tester.tap(find.text('Catch up'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keep the end date'));
+    await tester.pumpAndSettle();
+
+    final repo = UserRepository(userDb);
+    final specs = await repo.customPlans();
+    expect(specs, hasLength(1));
+    final spec = CustomPlanSpec.decode(specs.keys.single, specs.values.single)!;
+    expect(spec.name, 'New Testament in 90 days');
+    expect(spec.carriedChapters, greaterThan(0));
+    expect((await repo.activePlans()).keys, [spec.id]); // the original is stopped
+    expect(find.textContaining('chapters read before re-planning'), findsOneWidget);
+  });
+
   testWidgets('staying on a chapter counts today; home and activity show the streak', (tester) async {
     await pumpApp(
       tester,

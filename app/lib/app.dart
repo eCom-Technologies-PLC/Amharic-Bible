@@ -10,6 +10,7 @@ import 'features/audio/player_widgets.dart';
 import 'features/home/home_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/library/note_editor_screen.dart';
+import 'features/plans/plan_assistant_screen.dart';
 import 'features/plans/plan_builder_screen.dart';
 import 'features/plans/plan_detail_screen.dart';
 import 'features/plans/plans_screen.dart';
@@ -66,7 +67,8 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
                   path: 'plans',
                   builder: (_, _) => const PlansScreen(),
                   routes: [
-                    GoRoute(path: 'new', builder: (_, _) => const PlanBuilderScreen()),
+                    GoRoute(path: 'new', builder: (_, state) => PlanBuilderScreen.fromQuery(state.uri.queryParameters)),
+                    GoRoute(path: 'assistant', builder: (_, _) => const PlanAssistantScreen()),
                     GoRoute(
                       path: ':id',
                       builder: (_, state) => PlanDetailScreen(planId: state.pathParameters['id']!),

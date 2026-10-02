@@ -9,7 +9,9 @@ kept stable for people already reading them) or by verse count ("verses",
 so Psalm 119 is not one day's reading next to Psalm 117). A day's readings
 are compressed into per-book chapter ranges: {"b": "GEN", "f": 1, "t": 3}.
 
-Each plan also gets "minutes": the estimated reading time per day. The file
+Each plan also gets "minutes": the estimated reading time per day, and
+"focus": what it reads ("all", "ot", "nt", "gospels", "wisdom"), which the
+in-app planning assistant matches against the reader's answers. The file
 also carries "verse_counts" (book code -> verses per chapter, in canonical
 order) for the plans people build in the app.
 
@@ -34,6 +36,7 @@ SECONDS_PER_VERSE = 9
 PLANS = [
     {
         "id": "bible-year",
+        "focus": ["all"],
         "name": {"am": "መጽሐፍ ቅዱስን በአንድ ዓመት", "en": "The Bible in a year"},
         "description": {
             "am": "ሙሉውን መጽሐፍ ቅዱስ ከዘፍጥረት እስከ ራእይ በ365 ቀናት ያንብቡ።",
@@ -44,6 +47,7 @@ PLANS = [
     },
     {
         "id": "nt-90",
+        "focus": ["nt"],
         "name": {"am": "አዲስ ኪዳን በ90 ቀናት", "en": "New Testament in 90 days"},
         "description": {
             "am": "አዲስ ኪዳንን በሦስት ወራት ውስጥ ያንብቡ።",
@@ -54,6 +58,7 @@ PLANS = [
     },
     {
         "id": "gospels-30",
+        "focus": ["gospels", "nt"],
         "name": {"am": "ወንጌላት በ30 ቀናት", "en": "The Gospels in 30 days"},
         "description": {
             "am": "አራቱን ወንጌላት በአንድ ወር ያንብቡ።",
@@ -64,6 +69,7 @@ PLANS = [
     },
     {
         "id": "psalms-proverbs-60",
+        "focus": ["wisdom"],
         "name": {"am": "መዝሙረ ዳዊትና ምሳሌ በ60 ቀናት", "en": "Psalms and Proverbs in 60 days"},
         "description": {
             "am": "መዝሙረ ዳዊትንና መጽሐፈ ምሳሌን በሁለት ወራት ያንብቡ።",
@@ -74,6 +80,7 @@ PLANS = [
     },
     {
         "id": "mark-7",
+        "focus": ["gospels", "nt"],
         "name": {"am": "የማርቆስ ወንጌል በ7 ቀናት", "en": "Mark in 7 days"},
         "description": {
             "am": "አጭሩንና ፈጣኑን ወንጌል በአንድ ሳምንት ያንብቡ።",
@@ -85,6 +92,7 @@ PLANS = [
     },
     {
         "id": "romans-7",
+        "focus": ["nt"],
         "name": {"am": "ሮሜ በ7 ቀናት", "en": "Romans in 7 days"},
         "description": {
             "am": "የወንጌልን ትምህርት በሮሜ መልእክት በአንድ ሳምንት ያንብቡ።",
@@ -96,6 +104,7 @@ PLANS = [
     },
     {
         "id": "proverbs-31",
+        "focus": ["wisdom"],
         "name": {"am": "ምሳሌ በ31 ቀናት", "en": "Proverbs in 31 days"},
         "description": {
             "am": "በየቀኑ አንድ የምሳሌ ምዕራፍ፤ በአንድ ወር።",
@@ -106,6 +115,7 @@ PLANS = [
     },
     {
         "id": "psalms-30",
+        "focus": ["wisdom"],
         "name": {"am": "መዝሙረ ዳዊት በ30 ቀናት", "en": "Psalms in 30 days"},
         "description": {
             "am": "መዝሙረ ዳዊትን በሙሉ በአንድ ወር ይጸልዩና ያንብቡ።",
@@ -117,6 +127,7 @@ PLANS = [
     },
     {
         "id": "acts-letters-30",
+        "focus": ["nt"],
         "name": {"am": "የሐዋርያት ሥራና የመጀመሪያዎቹ መልእክቶች", "en": "Acts and the early letters"},
         "description": {
             "am": "የቤተ ክርስቲያንን ጅማሬ በሐዋርያት ሥራ፣ ከዚያም ገላትያንና ተሰሎንቄን በአንድ ወር ያንብቡ።",
@@ -128,6 +139,7 @@ PLANS = [
     },
     {
         "id": "torah-90",
+        "focus": ["ot"],
         "name": {"am": "ኦሪት (ከዘፍጥረት እስከ ዘዳግም) በ90 ቀናት", "en": "The Torah in 90 days"},
         "description": {
             "am": "አምስቱን የሙሴ መጻሕፍት በሦስት ወራት ያንብቡ።",
@@ -139,6 +151,7 @@ PLANS = [
     },
     {
         "id": "wisdom-90",
+        "focus": ["wisdom", "ot"],
         "name": {"am": "የጥበብ መጻሕፍት በ90 ቀናት", "en": "Wisdom books in 90 days"},
         "description": {
             "am": "ኢዮብን፣ መዝሙረ ዳዊትን፣ ምሳሌን፣ መክብብንና መኃልየ መኃልይን በሦስት ወራት ያንብቡ።",
@@ -150,6 +163,7 @@ PLANS = [
     },
     {
         "id": "nt-wisdom-180",
+        "focus": ["nt", "wisdom"],
         "name": {"am": "አዲስ ኪዳን ከመዝሙርና ምሳሌ ጋር በ6 ወራት", "en": "New Testament with Psalms and Proverbs"},
         "description": {
             "am": "በየቀኑ ከአዲስ ኪዳን እና ከመዝሙረ ዳዊት ወይም ከምሳሌ፤ በስድስት ወራት።",
@@ -161,6 +175,7 @@ PLANS = [
     },
     {
         "id": "ot-history-180",
+        "focus": ["ot"],
         "name": {"am": "የብሉይ ኪዳን ታሪክ መጻሕፍት በ6 ወራት", "en": "Old Testament history in 6 months"},
         "description": {
             "am": "ከኢያሱ እስከ አስቴር ያለውን የእስራኤልን ታሪክ በስድስት ወራት ያንብቡ።",
@@ -172,6 +187,7 @@ PLANS = [
     },
     {
         "id": "prophets-180",
+        "focus": ["ot"],
         "name": {"am": "ነቢያት በ6 ወራት", "en": "The Prophets in 6 months"},
         "description": {
             "am": "ከኢሳይያስ እስከ ሚልክያስ ያሉትን ነቢያት በስድስት ወራት ያንብቡ።",
@@ -183,6 +199,7 @@ PLANS = [
     },
     {
         "id": "bible-year-mixed",
+        "focus": ["all"],
         "name": {"am": "መጽሐፍ ቅዱስ በአንድ ዓመት፤ ብሉይና አዲስ በየቀኑ", "en": "The Bible in a year, Old and New together"},
         "description": {
             "am": "በየቀኑ ከብሉይ ኪዳን፣ እንዲሁም ከአዲስ ኪዳን ወይም ከመዝሙረ ዳዊት፤ በ365 ቀናት።",
@@ -293,6 +310,7 @@ def build() -> dict:
             "id": spec["id"],
             "name": spec["name"],
             "description": spec["description"],
+            "focus": spec["focus"],
             "minutes": max(1, round(total_verses / n * SECONDS_PER_VERSE / 60)),
             "days": [compress(day) for day in days],
         })
