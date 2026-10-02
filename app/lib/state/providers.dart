@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -10,6 +11,7 @@ import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
 import '../data/user_repository.dart';
 import '../domain/models.dart';
+import '../domain/plans.dart';
 import '../domain/reference_parser.dart';
 
 // Overridden in main() (and in tests) once the databases are open.
@@ -36,6 +38,7 @@ class Settings {
     this.ethiopianCalendar = true,
     this.languageCode = 'am',
     this.versionId,
+    this.parallelVersionId,
     this.lastRef,
     this.recentSearches = const [],
   });
@@ -50,6 +53,9 @@ class Settings {
   final bool ethiopianCalendar;
   final String languageCode;
   final String? versionId;
+
+  /// Second version shown side by side, or null for single-version reading.
+  final String? parallelVersionId;
   final BibleRef? lastRef;
   final List<String> recentSearches;
 
@@ -68,6 +74,7 @@ class Settings {
     bool? ethiopianCalendar,
     String? languageCode,
     String? versionId,
+    String? Function()? parallelVersionId,
     BibleRef? lastRef,
     List<String>? recentSearches,
   }) => Settings(
@@ -81,6 +88,7 @@ class Settings {
     ethiopianCalendar: ethiopianCalendar ?? this.ethiopianCalendar,
     languageCode: languageCode ?? this.languageCode,
     versionId: versionId ?? this.versionId,
+    parallelVersionId: parallelVersionId != null ? parallelVersionId() : this.parallelVersionId,
     lastRef: lastRef ?? this.lastRef,
     recentSearches: recentSearches ?? this.recentSearches,
   );
@@ -96,6 +104,7 @@ class Settings {
     'ethiopian_calendar': '$ethiopianCalendar',
     'language': languageCode,
     'version': versionId,
+    'parallel_version': parallelVersionId,
     'last_ref': lastRef?.encode(),
     'recent_searches': jsonEncode(recentSearches),
   };
@@ -114,6 +123,7 @@ class Settings {
       ethiopianCalendar: b('ethiopian_calendar', d.ethiopianCalendar),
       languageCode: m['language'] ?? d.languageCode,
       versionId: m['version'],
+      parallelVersionId: m['parallel_version'],
       lastRef: BibleRef.decode(m['last_ref']),
       recentSearches: m['recent_searches'] != null
           ? List<String>.from(jsonDecode(m['recent_searches']!) as List)
@@ -214,8 +224,39 @@ final highlightsListProvider = FutureProvider<List<Highlight>>(
 final bookmarksListProvider = FutureProvider<List<Bookmark>>((ref) => ref.watch(userRepositoryProvider).allBookmarks());
 final notesListProvider = FutureProvider<List<Note>>((ref) => ref.watch(userRepositoryProvider).allNotes());
 
+// --------------------------------------------------------------------- plans
+
+final plansProvider = FutureProvider<List<ReadingPlan>>(
+  (ref) async => parsePlans(await rootBundle.loadString('assets/plans/plans.json')),
+);
+
+/// Clock used for plan scheduling; overridden in tests.
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+final planProgressProvider = FutureProvider.family<PlanProgress?, String>((ref, planId) async {
+  final plans = await ref.watch(plansProvider.future);
+  final plan = plans.where((p) => p.id == planId).firstOrNull;
+  if (plan == null) return null;
+  final repo = ref.watch(userRepositoryProvider);
+  final started = (await repo.activePlans())[planId];
+  if (started == null) return null;
+  return PlanProgress(
+    plan: plan,
+    startedAt: started,
+    completed: await repo.completedDays(planId),
+    today: ref.watch(clockProvider)(),
+  );
+});
+
+final activePlansProvider = FutureProvider<List<PlanProgress>>((ref) async {
+  final ids = (await ref.watch(userRepositoryProvider).activePlans()).keys;
+  return [for (final id in ids) ?await ref.watch(planProgressProvider(id).future)];
+});
+
 /// Call after any write to user data so open screens refresh.
 void invalidateUserData(WidgetRef ref) {
+  ref.invalidate(planProgressProvider);
+  ref.invalidate(activePlansProvider);
   ref.invalidate(chapterMarksProvider);
   ref.invalidate(highlightsListProvider);
   ref.invalidate(bookmarksListProvider);

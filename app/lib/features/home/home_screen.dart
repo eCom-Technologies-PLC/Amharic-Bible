@@ -8,6 +8,7 @@ import '../../core/vkey.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../common.dart';
+import '../plans/plan_widgets.dart';
 
 /// Curated verse-of-the-day list (verse keys, BBCCCVVV).
 const verseOfTheDayKeys = [
@@ -147,6 +148,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
           ),
+          const TodaysReadingCards(),
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: ListTile(

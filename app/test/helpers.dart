@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:amharic_bible/data/user_repository.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// Repo root (tests run with the app/ directory as the working directory).
@@ -25,4 +26,17 @@ Future<Database> openSampleContentDb() async {
   final path = '${dir.path}/content.db';
   await File('assets/content/content.db').copy(path);
   return databaseFactory.openDatabase(path, options: OpenDatabaseOptions(readOnly: true));
+}
+
+/// Fresh in-memory user DB at the current schema version.
+Future<Database> openTestUserDb() async {
+  initFfi();
+  return databaseFactory.openDatabase(
+    inMemoryDatabasePath,
+    options: OpenDatabaseOptions(
+      version: UserRepository.schemaVersion,
+      onCreate: (db, v) => UserRepository.createSchema(db, v),
+      singleInstance: false,
+    ),
+  );
 }

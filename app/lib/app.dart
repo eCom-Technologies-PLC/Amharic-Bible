@@ -10,6 +10,8 @@ import 'features/audio/player_widgets.dart';
 import 'features/home/home_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/library/note_editor_screen.dart';
+import 'features/plans/plan_detail_screen.dart';
+import 'features/plans/plans_screen.dart';
 import 'features/reader/book_picker_screen.dart';
 import 'features/reader/reader_screen.dart';
 import 'features/search/search_screen.dart';
@@ -54,6 +56,16 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
                       LibraryScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0),
                 ),
                 GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
+                GoRoute(
+                  path: 'plans',
+                  builder: (_, _) => const PlansScreen(),
+                  routes: [
+                    GoRoute(
+                      path: ':id',
+                      builder: (_, state) => PlanDetailScreen(planId: state.pathParameters['id']!),
+                    ),
+                  ],
+                ),
                 GoRoute(path: 'about', builder: (_, _) => const AboutScreen()),
                 GoRoute(path: 'downloads', builder: (_, _) => const DownloadsScreen()),
               ],

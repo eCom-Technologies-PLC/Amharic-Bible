@@ -9,6 +9,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
 import build_db  # noqa: E402
+import build_plans  # noqa: E402
 from abible import usfm  # noqa: E402
 from abible.catalog import alias_key, load_books, split_vkey, vkey  # noqa: E402
 from abible.geez import geez_to_int, index_terms, int_to_geez, normalize  # noqa: E402
@@ -116,6 +117,34 @@ class BuildTest(unittest.TestCase):
             rc = build_db.build(FIXTURES, out, sample=True, allow_unverified=False)
             self.assertEqual(rc, 1)
             self.assertFalse(out.exists())
+
+
+class PlansTest(unittest.TestCase):
+    def test_split_even(self):
+        groups = build_plans.split_even(list(range(10)), 3)
+        self.assertEqual([len(g) for g in groups], [4, 3, 3])
+        self.assertEqual(sum(groups, []), list(range(10)))
+
+    def test_compress(self):
+        self.assertEqual(build_plans.compress([("GEN", 49), ("GEN", 50), ("EXO", 1)]),
+                         [{"b": "GEN", "f": 49, "t": 50}, {"b": "EXO", "f": 1, "t": 1}])
+
+    def test_plans_cover_every_chapter_once(self):
+        data = build_plans.build()
+        books = load_books()
+        for plan in data["plans"]:
+            seen = [(r["b"], c) for day in plan["days"] for r in day for c in range(r["f"], r["t"] + 1)]
+            self.assertEqual(len(seen), len(set(seen)), plan["id"])
+            self.assertTrue(all(day for day in plan["days"]), plan["id"])
+        year = next(p for p in data["plans"] if p["id"] == "bible-year")
+        self.assertEqual(len(year["days"]), 365)
+        total = sum(r["t"] - r["f"] + 1 for day in year["days"] for r in day)
+        self.assertEqual(total, sum(b.chapters for b in books.values()))
+        self.assertEqual(year["days"][0][0], {"b": "GEN", "f": 1, "t": 4})
+
+    def test_bundled_plans_are_up_to_date(self):
+        bundled = json.loads((HERE.parents[1] / "app/assets/plans/plans.json").read_text(encoding="utf-8"))
+        self.assertEqual(bundled, build_plans.build(), "run python pipeline/build_plans.py")
 
 
 if __name__ == "__main__":

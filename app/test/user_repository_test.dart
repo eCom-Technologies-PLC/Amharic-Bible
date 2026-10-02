@@ -10,10 +10,7 @@ void main() {
 
   setUp(() async {
     initFfi();
-    final db = await databaseFactory.openDatabase(
-      inMemoryDatabasePath,
-      options: OpenDatabaseOptions(version: 1, onCreate: (db, _) => UserRepository.createSchema(db)),
-    );
+    final db = await openTestUserDb();
     repo = UserRepository(db);
   });
 
@@ -51,5 +48,35 @@ void main() {
     expect((await repo.settings())['theme'], 'dark');
     await repo.setSetting('theme', null);
     expect((await repo.settings()).containsKey('theme'), isFalse);
+  });
+
+  test('plans: start, mark days, stop, restart clears progress', () async {
+    await repo.startPlan('nt-90');
+    expect((await repo.activePlans()).keys, ['nt-90']);
+    await repo.setDayDone('nt-90', 1, true);
+    await repo.setDayDone('nt-90', 2, true);
+    await repo.setDayDone('nt-90', 2, false);
+    expect(await repo.completedDays('nt-90'), {1});
+    await repo.startPlan('nt-90');
+    expect(await repo.completedDays('nt-90'), isEmpty);
+    await repo.stopPlan('nt-90');
+    expect(await repo.activePlans(), isEmpty);
+  });
+
+  test('schema migrates from version 1', () async {
+    final db = await databaseFactory.openDatabase(
+      inMemoryDatabasePath,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (db, v) => UserRepository.createSchema(db, 1),
+        singleInstance: false,
+      ),
+    );
+    await db.insert('plan_progress', {'plan_id': 'p', 'day': 1, 'completed_at': 5});
+    await UserRepository.migrate(db, 1, UserRepository.schemaVersion);
+    final r = UserRepository(db);
+    expect(await r.completedDays('p'), {1});
+    await r.startPlan('p');
+    expect(await r.activePlans(), contains('p'));
   });
 }

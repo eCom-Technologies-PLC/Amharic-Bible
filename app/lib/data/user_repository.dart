@@ -15,15 +15,38 @@ class UserRepository {
   final DateTime Function() _clock;
   static const _uuid = Uuid();
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
-  static Future<void> createSchema(Database db) async {
+  /// sqflite onCreate: build version 1, then run every migration.
+  static Future<void> createSchema(Database db, [int version = schemaVersion]) async {
     final b = db.batch();
     for (final sql in _schema) {
       b.execute(sql);
     }
     await b.commit(noResult: true);
+    await migrate(db, 1, version);
   }
+
+  /// sqflite onUpgrade.
+  static Future<void> migrate(Database db, int from, int to) async {
+    for (var v = from + 1; v <= to; v++) {
+      final b = db.batch();
+      for (final sql in _migrations[v]!) {
+        b.execute(sql);
+      }
+      await b.commit(noResult: true);
+    }
+  }
+
+  static const _migrations = {
+    2: [
+      // Reading plans the user has started; synced like other user data.
+      'CREATE TABLE plan (plan_id TEXT PRIMARY KEY, started_at INTEGER NOT NULL, '
+          'updated_at INTEGER NOT NULL, deleted_at INTEGER)',
+      // completed_at NULL means "not done" (an unchecked day still syncs).
+      'ALTER TABLE plan_progress ADD COLUMN updated_at INTEGER',
+    ],
+  };
 
   static const _schema = [
     'CREATE TABLE highlight (id TEXT PRIMARY KEY, vkey_start INTEGER NOT NULL, '
@@ -250,6 +273,74 @@ class UserRepository {
     await db.transaction((tx) async {
       await tx.update('note', {'deleted_at': _now, 'updated_at': _now}, where: 'id = ?', whereArgs: [id]);
       await _outbox(tx, 'note', id, 'delete');
+    });
+  }
+
+  // ------------------------------------------------------------------- plans
+
+  /// Start (or restart) a plan today; restarting clears its progress.
+  Future<void> startPlan(String planId) async {
+    final now = _now;
+    final today = _clock();
+    final startOfDay = DateTime(today.year, today.month, today.day).millisecondsSinceEpoch;
+    await db.transaction((tx) async {
+      await tx.insert('plan', {
+        'plan_id': planId,
+        'started_at': startOfDay,
+        'updated_at': now,
+        'deleted_at': null,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await _outbox(tx, 'plan', planId, 'upsert');
+      final done = await tx.query(
+        'plan_progress',
+        columns: ['day'],
+        where: 'plan_id = ? AND completed_at IS NOT NULL',
+        whereArgs: [planId],
+      );
+      for (final r in done) {
+        await tx.update(
+          'plan_progress',
+          {'completed_at': null, 'updated_at': now},
+          where: 'plan_id = ? AND day = ?',
+          whereArgs: [planId, r['day']],
+        );
+        await _outbox(tx, 'plan_progress', '$planId:${r['day']}', 'upsert');
+      }
+    });
+  }
+
+  Future<void> stopPlan(String planId) async {
+    await db.transaction((tx) async {
+      await tx.update('plan', {'deleted_at': _now, 'updated_at': _now}, where: 'plan_id = ?', whereArgs: [planId]);
+      await _outbox(tx, 'plan', planId, 'delete');
+    });
+  }
+
+  /// Active plans and the day each was started.
+  Future<Map<String, DateTime>> activePlans() async {
+    final rows = await db.query('plan', where: 'deleted_at IS NULL', orderBy: 'started_at');
+    return {for (final r in rows) r['plan_id'] as String: DateTime.fromMillisecondsSinceEpoch(r['started_at'] as int)};
+  }
+
+  Future<Set<int>> completedDays(String planId) async {
+    final rows = await db.query(
+      'plan_progress',
+      columns: ['day'],
+      where: 'plan_id = ? AND completed_at IS NOT NULL',
+      whereArgs: [planId],
+    );
+    return {for (final r in rows) r['day'] as int};
+  }
+
+  Future<void> setDayDone(String planId, int day, bool done) async {
+    await db.transaction((tx) async {
+      await tx.insert('plan_progress', {
+        'plan_id': planId,
+        'day': day,
+        'completed_at': done ? _now : null,
+        'updated_at': _now,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await _outbox(tx, 'plan_progress', '$planId:$day', 'upsert');
     });
   }
 

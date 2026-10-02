@@ -9,5 +9,5 @@ int vkeyVerse(int key) => key % 1000;
 /// First and last possible keys of a chapter (inclusive).
 (int, int) chapterRange(int book, int chapter) => (vkey(book, chapter, 0), vkey(book, chapter, 999));
 
-/// Old Testament books are 1..39, New Testament 40..66 (deuterocanon 67+).
+/// Old Testament books are 1..39, New Testament 40..66 (66-book canon).
 bool isOldTestament(int book) => book <= 39;

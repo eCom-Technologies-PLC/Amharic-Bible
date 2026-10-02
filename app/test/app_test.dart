@@ -19,10 +19,7 @@ void main() {
 
   setUp(() async {
     contentDb = await openSampleContentDb();
-    userDb = await databaseFactory.openDatabase(
-      inMemoryDatabasePath,
-      options: OpenDatabaseOptions(version: 1, onCreate: (db, _) => UserRepository.createSchema(db)),
-    );
+    userDb = await openTestUserDb();
   });
 
   Future<void> pumpApp(WidgetTester tester, {Settings settings = const Settings(), String initial = '/home'}) async {
@@ -111,5 +108,39 @@ void main() {
     await tester.tap(find.byIcon(Icons.play_circle));
     await tester.pumpAndSettle();
     expect(find.text('ድምፅ ገና አልተዘጋጀም'), findsWidgets);
+  });
+
+  testWidgets('side-by-side shows both versions, interleaved on a phone', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(parallelVersionId: 'WEB'),
+      initial: '/read?ref=GEN.1',
+    );
+    expect(find.text('አማ1954 + WEB'), findsOneWidget);
+    expect(find.text('አማ1954 · WEB'), findsOneWidget); // narrow header
+    expect(find.textContaining('In the beginning', findRichText: true), findsOneWidget);
+    expect(find.textContaining('በመጀመሪያ', findRichText: true), findsOneWidget);
+    // Selecting the English verse selects the shared verse key.
+    final english = find.textContaining('In the beginning', findRichText: true);
+    await tester.tapAt(tester.getTopLeft(english) + const Offset(80, 12));
+    await tester.pumpAndSettle();
+    expect(find.byType(SelectionBar), findsOneWidget);
+  });
+
+  testWidgets('a reading plan can be started and today is shown on home', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/plans',
+    );
+    await tester.tap(find.text('The Gospels in 30 days'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start plan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Day 1'), findsOneWidget);
+    expect(await UserRepository(userDb).activePlans(), contains('gospels-30'));
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+    expect(await UserRepository(userDb).completedDays('gospels-30'), {1});
   });
 }

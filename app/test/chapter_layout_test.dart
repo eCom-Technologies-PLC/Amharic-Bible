@@ -47,4 +47,33 @@ void main() {
     expect((layout.blocks[0] as ParaBlock).segs.map((s) => s.toString()), ['num:1', 't:a', 'num:2', 't:b', 'n:note']);
     expect((layout.blocks[1] as ParaBlock).segs.map((s) => s.kind), ['num', 'wj']);
   });
+
+  test('parallel layout pairs verses by key and keeps verses missing on either side', () {
+    final a = ChapterContent(
+      versionId: 'A',
+      book: _book,
+      chapter: 23,
+      verses: [_v(1, '[["q",1],["t","one;"],["q",2],["t","two."]]'), _v(2, '[["t","three"]]')],
+      headings: {
+        19023001: [const Heading(19023001, 9, 'Title')],
+      },
+    );
+    final b = ChapterContent(
+      versionId: 'B',
+      book: _book,
+      chapter: 23,
+      verses: [_v(1, '[["t","uno"]]'), _v(3, '[["t","tres"]]')],
+      headings: const {},
+    );
+    final layout = parallelLayout(a, b);
+    expect(layout.blocks.first, isA<HeadingBlock>());
+    final pairs = layout.blocks.whereType<PairBlock>().toList();
+    expect(pairs.map((p) => p.vkey), [19023001, 19023002, 19023003]);
+    // Poetry breaks are dropped inside a paired verse.
+    expect(pairs[0].primary.segs.map((s) => s.toString()), ['num:1', 't:one;', 't:two.']);
+    expect(pairs[0].secondary!.segs.map((s) => s.toString()), ['num:1', 't:uno']);
+    expect(pairs[1].secondary, isNull);
+    expect(pairs[2].primary.segs, isEmpty);
+    expect(layout.blockOfVerse[19023003], 3);
+  });
 }

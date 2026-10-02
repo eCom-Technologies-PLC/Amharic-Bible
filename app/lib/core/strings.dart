@@ -98,9 +98,48 @@ class S {
   String get tapToSelectHint => _('tapToSelectHint');
   String get privacyNote => _('privacyNote');
 
+  String get readingPlans => _('readingPlans');
+  String get todaysReading => _('todaysReading');
+  String get startPlan => _('startPlan');
+  String get stopPlan => _('stopPlan');
+  String get restartPlan => _('restartPlan');
+  String get planFinished => _('planFinished');
+  String get markAsRead => _('markAsRead');
+  String get myPlans => _('myPlans');
+  String get morePlans => _('morePlans');
+  String get sideBySide => _('sideBySide');
+  String get secondVersion => _('secondVersion');
+  String get none => _('none');
+  String get shareImage => _('shareImage');
+  String get image => _('image');
+  String get background => _('background');
+  String get account => _('account');
+  String get signIn => _('signIn');
+  String get signOut => _('signOut');
+  String get email => _('email');
+  String get sendCode => _('sendCode');
+  String get enterCode => _('enterCode');
+  String get verify => _('verify');
+  String get invalidCode => _('invalidCode');
+  String get syncNow => _('syncNow');
+  String get syncing => _('syncing');
+  String get lastSynced => _('lastSynced');
+  String get never => _('never');
+  String get syncFailed => _('syncFailed');
+  String get accountOptional => _('accountOptional');
+  String get accountsNotConfigured => _('accountsNotConfigured');
+  String get exportData => _('exportData');
+  String get deleteAccount => _('deleteAccount');
+  String get deleteAccountConfirm => _('deleteAccountConfirm');
+
   String minutes(int n) => isAmharic ? '$n ደቂቃ' : '$n min';
   String results(int n) => isAmharic ? '$n ውጤቶች' : '$n results';
   String selected(int n) => isAmharic ? '$n ተመርጠዋል' : '$n selected';
+  String day(int n) => isAmharic ? 'ቀን $n' : 'Day $n';
+  String dayOf(int n, int total) => isAmharic ? 'ቀን $n ከ$total' : 'Day $n of $total';
+  String days(int n) => isAmharic ? '$n ቀናት' : '$n days';
+  String behind(int n) => isAmharic ? '$n ቀናት ወደኋላ' : '$n days behind';
+  String signedInAs(String email) => isAmharic ? 'በ$email ገብተዋል' : 'Signed in as $email';
   String chapterOf(String book, int c) => isAmharic ? '$book ምዕራፍ $c' : '$book $c';
 }
 
@@ -179,7 +218,40 @@ const _am = {
   'licenseUnverified': 'ፈቃዱ ገና አልተረጋገጠም',
   'recentSearches': 'የቅርብ ጊዜ ፍለጋዎች',
   'tapToSelectHint': 'ለማድመቅ፣ ለማጋራት ወይም ማስታወሻ ለመጻፍ ጥቅሱን ይንኩ',
-  'privacyNote': 'ማስታወሻዎ እና ድምቀቶችዎ በስልክዎ ላይ ብቻ ይቀመጣሉ።',
+  'privacyNote': 'ማስታወሻዎ እና ድምቀቶችዎ ካልገቡ በቀር በስልክዎ ላይ ብቻ ይቀመጣሉ። ማስታወቂያ ወይም መከታተያ የለም።',
+  'readingPlans': 'የንባብ ዕቅዶች',
+  'todaysReading': 'የዛሬ ንባብ',
+  'startPlan': 'ዕቅዱን ጀምር',
+  'stopPlan': 'ዕቅዱን አቁም',
+  'restartPlan': 'እንደገና ጀምር',
+  'planFinished': 'ዕቅዱን ጨርሰዋል። እንኳን ደስ አለዎት!',
+  'markAsRead': 'እንደተነበበ ምልክት አድርግ',
+  'myPlans': 'የእኔ ዕቅዶች',
+  'morePlans': 'ሌሎች ዕቅዶች',
+  'sideBySide': 'ጎን ለጎን',
+  'secondVersion': 'ሁለተኛ ትርጉም',
+  'none': 'የለም',
+  'shareImage': 'እንደ ምስል አጋራ',
+  'image': 'ምስል',
+  'background': 'ዳራ',
+  'account': 'መለያ',
+  'signIn': 'ግባ',
+  'signOut': 'ውጣ',
+  'email': 'ኢሜይል',
+  'sendCode': 'ኮድ ላክ',
+  'enterCode': 'ወደ ኢሜይልዎ የተላከውን ኮድ ያስገቡ',
+  'verify': 'አረጋግጥ',
+  'invalidCode': 'ኮዱ ትክክል አይደለም',
+  'syncNow': 'አሁን አመሳስል',
+  'syncing': 'በማመሳሰል ላይ…',
+  'lastSynced': 'መጨረሻ የተመሳሰለው',
+  'never': 'ገና አልተመሳሰለም',
+  'syncFailed': 'ማመሳሰል አልተሳካም',
+  'accountOptional': 'መለያ መክፈት አማራጭ ነው። ከገቡ ድምቀቶችዎ፣ ዕልባቶችዎ፣ ማስታወሻዎችዎ እና ዕቅዶችዎ በስልኮችዎ መካከል ይመሳሰላሉ።',
+  'accountsNotConfigured': 'መለያዎች ገና አልተዘጋጁም',
+  'exportData': 'ውሂቤን ላክ',
+  'deleteAccount': 'መለያዬን ሰርዝ',
+  'deleteAccountConfirm': 'መለያዎ እና በአገልጋዩ ላይ ያለው ውሂብዎ ይሰረዛል። በዚህ ስልክ ላይ ያለው ውሂብ ይቀራል።',
 };
 
 const _en = {
@@ -257,5 +329,39 @@ const _en = {
   'licenseUnverified': 'License not yet confirmed',
   'recentSearches': 'Recent searches',
   'tapToSelectHint': 'Tap a verse to highlight, share or add a note',
-  'privacyNote': 'Your notes and highlights stay on this device.',
+  'privacyNote': 'Your notes and highlights stay on this device unless you sign in to sync. No ads, no tracking.',
+  'readingPlans': 'Reading plans',
+  'todaysReading': "Today's reading",
+  'startPlan': 'Start plan',
+  'stopPlan': 'Stop plan',
+  'restartPlan': 'Start over',
+  'planFinished': 'Plan complete. Well done!',
+  'markAsRead': 'Mark as read',
+  'myPlans': 'My plans',
+  'morePlans': 'More plans',
+  'sideBySide': 'Side by side',
+  'secondVersion': 'Second version',
+  'none': 'None',
+  'shareImage': 'Share as image',
+  'image': 'Image',
+  'background': 'Background',
+  'account': 'Account',
+  'signIn': 'Sign in',
+  'signOut': 'Sign out',
+  'email': 'Email',
+  'sendCode': 'Send code',
+  'enterCode': 'Enter the code we emailed you',
+  'verify': 'Verify',
+  'invalidCode': 'That code is not valid',
+  'syncNow': 'Sync now',
+  'syncing': 'Syncing…',
+  'lastSynced': 'Last synced',
+  'never': 'Never',
+  'syncFailed': 'Sync failed',
+  'accountOptional':
+      'An account is optional. Signing in syncs your highlights, bookmarks, notes and plans across your devices.',
+  'accountsNotConfigured': 'Accounts are not set up yet',
+  'exportData': 'Export my data',
+  'deleteAccount': 'Delete account',
+  'deleteAccountConfirm': 'Your account and its data on the server will be deleted. Data on this phone is kept.',
 };

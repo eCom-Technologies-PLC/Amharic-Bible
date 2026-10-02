@@ -168,7 +168,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final playing = ref.watch(
       audioControllerProvider.select((a) => a.isChapter(version.id, c.book.code, c.chapter) ? a.currentVerse : null),
     );
-    final layout = layoutChapter(c);
+    final parallelId = settings.parallelVersionId;
+    final secondary = parallelId != null && parallelId != version.id
+        ? ref.watch(chapterProvider((versionId: parallelId, book: c.book.code, chapter: c.chapter))).value
+        : null;
+    final secondaryVersion = secondary != null
+        ? (ref.watch(versionsProvider).value ?? const <BibleVersion>[]).where((v) => v.id == parallelId).firstOrNull
+        : null;
+    final layout = secondary != null ? parallelLayout(c, secondary) : layoutChapter(c);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _savePosition(version.id, r, c.book.num);
@@ -226,7 +233,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           return false;
         },
         child: ScrollablePositionedList.builder(
-          key: ValueKey('${version.id}/${c.book.code}/${c.chapter}'),
+          key: ValueKey('${version.id}/${secondary?.versionId}/${c.book.code}/${c.chapter}'),
           itemScrollController: _scroll,
           itemPositionsListener: _positions,
           initialScrollIndex: initial ?? 0,
@@ -234,7 +241,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           padding: const EdgeInsets.only(top: 8, bottom: 24),
           itemCount: layout.blocks.length + 2,
           itemBuilder: (context, i) {
-            if (i == 0) return const SizedBox.shrink();
+            if (i == 0) {
+              return secondaryVersion == null
+                  ? const SizedBox.shrink()
+                  : _ParallelHeader(left: version.abbrev, right: secondaryVersion.abbrev);
+            }
             if (i == layout.blocks.length + 1) {
               return _ChapterNav(
                 onPrevious: () => _changeChapter(version, c.book, c.chapter, -1),
@@ -252,10 +263,100 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 onTapVerse: _toggleVerse,
                 onTapFootnote: _showFootnote,
               ),
+              PairBlock() => _PairView(
+                block: block,
+                style: style,
+                decor: decor,
+                onTapVerse: _toggleVerse,
+                onTapFootnote: _showFootnote,
+              ),
             };
           },
         ),
       ),
+    );
+  }
+}
+
+/// Width from which the two versions are shown in columns instead of
+/// one under the other.
+const sideBySideMinWidth = 600.0;
+
+class _ParallelHeader extends StatelessWidget {
+  const _ParallelHeader({required this.left, required this.right});
+
+  final String left;
+  final String right;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary);
+    return LayoutBuilder(
+      builder: (context, box) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+        child: box.maxWidth >= sideBySideMinWidth
+            ? Row(
+                children: [
+                  Expanded(child: Text(left, style: style)),
+                  const SizedBox(width: 40),
+                  Expanded(child: Text(right, style: style)),
+                ],
+              )
+            : Text('$left · $right', style: style),
+      ),
+    );
+  }
+}
+
+/// A verse in both versions: columns on wide screens, interleaved on phones.
+class _PairView extends StatelessWidget {
+  const _PairView({
+    required this.block,
+    required this.style,
+    required this.decor,
+    required this.onTapVerse,
+    required this.onTapFootnote,
+  });
+
+  final PairBlock block;
+  final ReaderStyle style;
+  final VerseDecor decor;
+  final ValueChanged<int> onTapVerse;
+  final ValueChanged<String> onTapFootnote;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final wide = box.maxWidth >= sideBySideMinWidth;
+        final primary = ParagraphView(
+          block: block.primary,
+          style: style,
+          decor: decor,
+          onTapVerse: onTapVerse,
+          onTapFootnote: onTapFootnote,
+        );
+        final second = block.secondary;
+        final secondary = second == null
+            ? const SizedBox.shrink()
+            : ParagraphView(
+                block: second,
+                style: style.secondary(showNumbers: wide && style.showNumbers),
+                decor: decor,
+                onTapVerse: onTapVerse,
+                onTapFootnote: onTapFootnote,
+              );
+        if (wide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: primary),
+              Expanded(child: secondary),
+            ],
+          );
+        }
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [primary, secondary]);
+      },
     );
   }
 }
@@ -340,17 +441,42 @@ class _VersionMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
     final versions = ref.watch(versionsProvider).value ?? const [];
+    final parallelId = ref.watch(settingsProvider.select((x) => x.parallelVersionId));
+    final parallel = versions.where((v) => v.id == parallelId && v.id != current.id).firstOrNull;
+    final notifier = ref.read(settingsProvider.notifier);
     return PopupMenuButton<String>(
-      tooltip: S.of(context).version,
-      initialValue: current.id,
-      onSelected: (id) => ref.read(settingsProvider.notifier).update((s) => s.copyWith(versionId: id)),
+      tooltip: s.version,
+      onSelected: (value) {
+        final id = value.substring(2);
+        if (value.startsWith('v:')) {
+          notifier.update(
+            (x) => x.copyWith(versionId: id, parallelVersionId: x.parallelVersionId == id ? () => current.id : null),
+          );
+        } else {
+          notifier.update((x) => x.copyWith(parallelVersionId: () => id.isEmpty ? null : id));
+        }
+      },
       itemBuilder: (_) => [
-        for (final v in versions) PopupMenuItem(value: v.id, child: Text('${v.abbrev} · ${v.localName}')),
+        for (final v in versions)
+          CheckedPopupMenuItem(
+            value: 'v:${v.id}',
+            checked: v.id == current.id,
+            child: Text('${v.abbrev} · ${v.localName}'),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem(enabled: false, child: Text(s.sideBySide)),
+        CheckedPopupMenuItem(value: 'p:', checked: parallel == null, child: Text(s.none)),
+        for (final v in versions.where((v) => v.id != current.id))
+          CheckedPopupMenuItem(value: 'p:${v.id}', checked: v.id == parallel?.id, child: Text(v.abbrev)),
       ],
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Chip(label: Text(current.abbrev), visualDensity: VisualDensity.compact),
+        child: Chip(
+          label: Text(parallel == null ? current.abbrev : '${current.abbrev} + ${parallel.abbrev}'),
+          visualDensity: VisualDensity.compact,
+        ),
       ),
     );
   }

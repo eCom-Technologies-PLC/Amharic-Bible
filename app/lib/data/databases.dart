@@ -43,6 +43,7 @@ Future<Database> openUserDb({String name = 'user.db'}) async {
   return openDatabase(
     path,
     version: UserRepository.schemaVersion,
-    onCreate: (db, _) => UserRepository.createSchema(db),
+    onCreate: (db, v) => UserRepository.createSchema(db, v),
+    onUpgrade: UserRepository.migrate,
   );
 }

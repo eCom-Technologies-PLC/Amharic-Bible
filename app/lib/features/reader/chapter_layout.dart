@@ -95,3 +95,45 @@ ChapterLayout layoutChapter(ChapterContent c) {
   close();
   return ChapterLayout(blocks, blockOfVerse);
 }
+
+/// One verse in two versions, shown side by side (wide screens) or one
+/// under the other (phones).
+class PairBlock extends Block {
+  const PairBlock(this.vkey, this.primary, this.secondary);
+
+  final int vkey;
+  final ParaBlock primary;
+  final ParaBlock? secondary; // null when the verse is missing in that version
+}
+
+/// The verse as a single block: number plus text runs (structure breaks are
+/// dropped so the two columns line up verse by verse).
+ParaBlock verseBlock(Verse v) => ParaBlock([
+  Seg(v.vkey, 'num', v.displayNumber),
+  for (final t in v.markup)
+    if (!t.isBreak) Seg(v.vkey, t.kind, t.text),
+]);
+
+/// Verse-by-verse layout of [primary] with [secondary] aligned by verse key.
+/// Verses only in the secondary version are appended after their neighbours
+/// so nothing is silently dropped.
+ChapterLayout parallelLayout(ChapterContent primary, ChapterContent secondary) {
+  final blocks = <Block>[];
+  final blockOfVerse = <int, int>{};
+  final other = {for (final v in secondary.verses) v.vkey: v};
+  final keys = {...primary.verses.map((v) => v.vkey), ...other.keys}.toList()..sort();
+  final mine = {for (final v in primary.verses) v.vkey: v};
+  for (final k in keys) {
+    for (final h in primary.headings[k] ?? const <Heading>[]) {
+      blocks.add(HeadingBlock(h));
+    }
+    final a = mine[k], b = other[k];
+    blockOfVerse[k] = blocks.length;
+    blocks.add(
+      a != null
+          ? PairBlock(k, verseBlock(a), b != null ? verseBlock(b) : null)
+          : PairBlock(k, const ParaBlock([]), verseBlock(b!)),
+    );
+  }
+  return ChapterLayout(blocks, blockOfVerse);
+}

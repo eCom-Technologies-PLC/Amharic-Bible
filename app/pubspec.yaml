@@ -35,6 +35,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/content/content.db
+    - assets/plans/plans.json
   fonts:
     - family: NotoSerifEthiopic
       fonts:

@@ -30,6 +30,7 @@ class ReaderStyle {
     required this.showNumbers,
     required this.redLetters,
     required this.geezNumerals,
+    this.muted = false,
   });
 
   final String fontFamily;
@@ -38,6 +39,19 @@ class ReaderStyle {
   final bool showNumbers;
   final bool redLetters;
   final bool geezNumerals;
+
+  /// Secondary text in side-by-side reading: softer color, slightly smaller.
+  final bool muted;
+
+  ReaderStyle secondary({required bool showNumbers}) => ReaderStyle(
+    fontFamily: fontFamily,
+    fontSize: fontSize * 0.92,
+    lineHeight: lineHeight,
+    showNumbers: showNumbers,
+    redLetters: redLetters,
+    geezNumerals: geezNumerals,
+    muted: true,
+  );
 }
 
 /// One paragraph or poetry line, rendered as a single RichText so text flows
@@ -87,7 +101,7 @@ class _ParagraphViewState extends State<ParagraphView> {
       fontFamily: s.fontFamily,
       fontSize: s.fontSize,
       height: s.lineHeight,
-      color: scheme.onSurface,
+      color: s.muted ? scheme.onSurfaceVariant : scheme.onSurface,
     );
 
     final spans = <InlineSpan>[];

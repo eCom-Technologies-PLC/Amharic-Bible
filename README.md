@@ -54,7 +54,7 @@ jumps ("ዮሐ 3፥16", "Jn 3:16"), audio with follow-along highlighting, backgr
 book downloads, verse of the day, an Amharic or English UI, the Ethiopian calendar and Ge'ez numerals.
 
 Not yet built (phase 2, per the design): accounts and sync (the outbox is already recorded), reading plans,
-share-as-image, parallel view and the 81-book canon.
+share-as-image and parallel view. The app uses the 66-book canon only.
 
 ## Audio
 

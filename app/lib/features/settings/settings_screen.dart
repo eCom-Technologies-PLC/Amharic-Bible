@@ -46,6 +46,23 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           ListTile(
+            leading: const Icon(Icons.view_column_outlined),
+            title: Text(s.sideBySide),
+            trailing: DropdownButton<String>(
+              value: versions.any((v) => v.id == settings.parallelVersionId && v.id != current?.id)
+                  ? settings.parallelVersionId
+                  : '',
+              underline: const SizedBox.shrink(),
+              items: [
+                DropdownMenuItem(value: '', child: Text(s.none)),
+                for (final v in versions.where((v) => v.id != current?.id))
+                  DropdownMenuItem(value: v.id, child: Text(v.abbrev)),
+              ],
+              onChanged: (id) =>
+                  notifier.update((x) => x.copyWith(parallelVersionId: () => id == null || id.isEmpty ? null : id)),
+            ),
+          ),
+          ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: Text(s.theme),
             subtitle: Text(themeLabel(s, settings.readerTheme)),

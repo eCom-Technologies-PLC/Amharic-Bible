@@ -52,7 +52,6 @@ Ethiopia and the diaspora.
 | **Listener** (limited literacy, older users, commuters) | Big play button, background audio, offline downloads |
 | **Church leader / student** | Fast search, parallel Amharic–English view, notes, sharing verses |
 | **Diaspora user** (iOS/Android, strong data plan) | Amharic + English UI, sync across devices |
-| **Orthodox Tewahedo user** | 81-book canon, Orthodox book order and names |
 
 ---
 
@@ -69,7 +68,6 @@ needs a recorded license before it is bundled or streamed.
 | Amharic Standard Version (1980 / 2000s revisions) | Ethiopian Bible Society | Copyrighted | Seek a license; ship only with permission |
 | New Amharic Standard Version and others | Bible Brain / YouVersion | Per-version terms | Optional streaming via API if licensed |
 | English (WEB, KJV) | eBible.org | Public domain | Bundled for the parallel view |
-| Deuterocanonical / Orthodox books (Enoch, Jubilees, Meqabyan, etc.) | Ethiopian Orthodox sources | Verify | Phase 2 (81-book canon) |
 
 ### 2.2 Audio
 
@@ -131,7 +129,7 @@ Long-press a verse or select a range to get:
 
 ### 3.6 Engagement — P1
 - **Verse of the day** shown on the home screen and as an optional notification at a time the user picks. A home-screen widget comes in P2.
-- **Reading plans** (bundled JSON): read the Bible in a year, the New Testament in 90 days, Psalms and Proverbs, and Lent / Hudade (Orthodox fasting season). The plans track progress and send reminders.
+- **Reading plans** (bundled JSON): read the Bible in a year, the New Testament in 90 days, Psalms and Proverbs, and the Gospels in 30 days. The plans track progress and send reminders.
 - **Reading streak** — a gentle, opt-in streak with no penalty for missing a day.
 
 ### 3.7 Parallel view — P1
@@ -143,7 +141,7 @@ Amharic and English side by side, or interleaved verse by verse on narrow screen
 - The app is fully usable without signing in, and data merges into the account after a later sign-in.
 
 ### 3.9 Later — P2
-81-book Orthodox canon, Ge'ez (ግዕዝ) liturgical text, Strong's / lexicon links, commentaries, a children's Bible with pictures, a web reader, and Android Auto / CarPlay audio.
+Strong's / lexicon links, commentaries, a children's Bible with pictures, a web reader, and Android Auto / CarPlay audio.
 
 ---
 
@@ -316,7 +314,7 @@ docs/
 - Books are identified by **OSIS/USFM code** (`GEN`, `JHN`, `1CO` …), never by localized name.
 - A verse key is a single integer, `BBCCCVVV` (book ordinal × 10⁶ + chapter × 10³ + verse), e.g. John 3:16 = `43003016`. It is fast to index, sort and compare by range.
 - **Versification:** Amharic sources may number verses differently from English (especially in Psalm titles and Malachi 3–4). A `versification_map` table maps keys between versions for the parallel view and audio sync.
-- The canon is a property of each version: a `canon` table lists which books it includes and in what order (66 Protestant, 73 Catholic, 81 Ethiopian Orthodox).
+- **Canon:** the app uses the 66-book canon only (decided; no Orthodox 81-book canon).
 
 ### 6.2 Content database (`content.db`, read-only)
 
@@ -325,7 +323,7 @@ CREATE TABLE version (
   id TEXT PRIMARY KEY,          -- 'AMH1962', 'WEB'
   name TEXT, local_name TEXT,   -- 'Amharic 1962', 'አማርኛ 1954'
   language TEXT,                -- 'amh', 'eng'
-  canon TEXT,                   -- 'protestant66' | 'orthodox81' ...
+  canon TEXT,                   -- always 'protestant66'
   license_id TEXT, attribution TEXT,
   content_hash TEXT, schema_version INTEGER
 );
@@ -334,7 +332,7 @@ CREATE TABLE book (
   version_id TEXT, code TEXT,   -- 'JHN'
   ordinal INTEGER,              -- canonical order for this version
   name TEXT, short_name TEXT, abbrev TEXT,   -- 'የዮሐንስ ወንጌል', 'ዮሐንስ', 'ዮሐ'
-  testament TEXT,               -- 'OT' | 'NT' | 'DC'
+  testament TEXT,               -- 'OT' | 'NT'
   chapter_count INTEGER,
   PRIMARY KEY (version_id, code)
 );
@@ -538,7 +536,7 @@ Techniques:
 | **0. Foundations** | Content license confirmation, pipeline (USFM → SQLite), normalize + reference parser with tests, Flutter skeleton | 2–3 weeks |
 | **1. MVP (P0)** | Reader, picker, themes and fonts, search, highlights / bookmarks / notes, audio streaming + follow-along, downloads, Amharic/English UI | 6–8 weeks |
 | **2. v1.x (P1)** | Accounts and sync, reading plans, verse of the day + notifications, share-as-image, parallel view, compare, export | 6–8 weeks |
-| **3. Growth (P2)** | 81-book Orthodox canon, Ge'ez text, more UI languages, home-screen widget, web reader, CarPlay / Android Auto, children's Bible | Ongoing |
+| **3. Growth (P2)** | More UI languages, home-screen widget, web reader, CarPlay / Android Auto, children's Bible | Ongoing |
 
 ---
 
@@ -551,7 +549,7 @@ Techniques:
 | Versification differences break audio sync or the parallel view | `versification_map`, validated in the pipeline; fall back to chapter-level sync |
 | Ge'ez search misses due to word affixes | Prefix queries in v1; stemmer in v1.x; collect "no results" queries (opt-in) to tune it |
 | Font rendering differences on old Android | Always use the bundled fonts, never system fonts |
-| **Open:** which canon is the default — 66 or 81? | Decide with the target church communities; the architecture supports both |
+| **Decided:** canon | 66 books only; the Orthodox 81-book canon is out of scope |
 | **Open:** Supabase vs. Firebase for sync | Decide in phase 2; the data model is backend-agnostic |
 
 ---
