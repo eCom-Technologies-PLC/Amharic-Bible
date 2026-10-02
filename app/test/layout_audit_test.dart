@@ -4,8 +4,10 @@
 import 'dart:io';
 
 import 'package:amharic_bible/app.dart';
+import 'package:amharic_bible/core/strings.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
+import 'package:amharic_bible/domain/custom_plan.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/state/providers.dart';
 import 'package:amharic_bible/ui/ui.dart';
@@ -27,6 +29,8 @@ const routes = [
   '/me/plans/nt-90',
   '/me/plans/bible-year',
   '/me/plans/bible-year-mixed',
+  '/me/plans/new',
+  '/me/plans/my-audit',
   '/me/activity',
   '/me/library',
   '/me/settings',
@@ -66,6 +70,16 @@ Future<List<String>> render(
     await UserRepository(user).setHighlight([43003016], HighlightColor.yellow);
     await UserRepository(user).toggleBookmarks([43003016]);
     await UserRepository(user).saveNote(vkeyStart: 43003016, vkeyEnd: 43003016, body: 'ማስታወሻ');
+    // A plan the user built, with a long Amharic name and some chapters carried.
+    final catalog = BibleCatalog.fromPlansJson(File('assets/plans/plans.json').readAsStringSync());
+    final spec = PlanDraft(
+      catalog: catalog,
+      books: catalog.newTestament,
+      weekdays: const {1, 2, 3, 4, 5, 6},
+      start: DateTime(2026, 9, 1),
+      readingDays: 90,
+    ).build(id: 'my-audit', name: 'አዲስ ኪዳን በሦስት ወራት፤ ከእሑድ በስተቀር በየቀኑ');
+    await UserRepository(user).saveCustomPlan('my-audit', spec.copyWith(carriedChapters: 12).encode());
   });
   tester.view.physicalSize = device.size * 2;
   tester.view.devicePixelRatio = 2;
@@ -171,6 +185,22 @@ void main() {
           device: smallLargeText,
           settings: Settings(languageCode: lang),
           interact: (t) => t.tap(find.byIcon(Icons.text_fields)),
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang plan builder book chooser', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/me/plans/new',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang),
+          interact: (t) async {
+            final s = S.forLocale(Locale(lang));
+            await t.tap(find.text(s.whatToRead));
+            await _settle(t);
+            await t.tap(find.text(s.chooseBooks));
+          },
         );
         expect(errors, isEmpty);
       });

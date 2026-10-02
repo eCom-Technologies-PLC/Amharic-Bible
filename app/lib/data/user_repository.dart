@@ -16,7 +16,7 @@ class UserRepository {
   final DateTime Function() _clock;
   static const _uuid = Uuid();
 
-  static const schemaVersion = 3;
+  static const schemaVersion = 4;
 
   /// sqflite onCreate: build version 1, then run every migration.
   static Future<void> createSchema(Database db, [int version = schemaVersion]) async {
@@ -63,6 +63,12 @@ class UserRepository {
           ') GROUP BY day',
       'INSERT INTO sync_outbox (entity, entity_id, op, created_at) '
           "SELECT 'reading_day', day, 'upsert', updated_at FROM reading_day",
+    ],
+    4: [
+      // Plans the user built: spec is CustomPlanSpec JSON (choices and the
+      // day-by-day schedule). Started/stopped through the plan table.
+      'CREATE TABLE custom_plan (id TEXT PRIMARY KEY, spec TEXT NOT NULL, '
+          'updated_at INTEGER NOT NULL, deleted_at INTEGER)',
     ],
   };
 
@@ -297,33 +303,63 @@ class UserRepository {
   // ------------------------------------------------------------------- plans
 
   /// Start (or restart) a plan today; restarting clears its progress.
-  Future<void> startPlan(String planId) async {
+  Future<void> startPlan(String planId) => db.transaction((tx) => _startPlan(tx, planId));
+
+  Future<void> _startPlan(Transaction tx, String planId) async {
     final now = _now;
     final today = _clock();
     final startOfDay = DateTime(today.year, today.month, today.day).millisecondsSinceEpoch;
+    await tx.insert('plan', {
+      'plan_id': planId,
+      'started_at': startOfDay,
+      'updated_at': now,
+      'deleted_at': null,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    await _outbox(tx, 'plan', planId, 'upsert');
+    final done = await tx.query(
+      'plan_progress',
+      columns: ['day'],
+      where: 'plan_id = ? AND completed_at IS NOT NULL',
+      whereArgs: [planId],
+    );
+    for (final r in done) {
+      await tx.update(
+        'plan_progress',
+        {'completed_at': null, 'updated_at': now},
+        where: 'plan_id = ? AND day = ?',
+        whereArgs: [planId, r['day']],
+      );
+      await _outbox(tx, 'plan_progress', '$planId:${r['day']}', 'upsert');
+    }
+  }
+
+  /// Save a plan the user built (or re-planned) and start it with fresh day
+  /// ticks; chapters already read are carried inside the spec.
+  Future<void> saveCustomPlan(String id, String spec) async {
     await db.transaction((tx) async {
-      await tx.insert('plan', {
-        'plan_id': planId,
-        'started_at': startOfDay,
-        'updated_at': now,
+      await tx.insert('custom_plan', {
+        'id': id,
+        'spec': spec,
+        'updated_at': _now,
         'deleted_at': null,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
-      await _outbox(tx, 'plan', planId, 'upsert');
-      final done = await tx.query(
-        'plan_progress',
-        columns: ['day'],
-        where: 'plan_id = ? AND completed_at IS NOT NULL',
-        whereArgs: [planId],
-      );
-      for (final r in done) {
-        await tx.update(
-          'plan_progress',
-          {'completed_at': null, 'updated_at': now},
-          where: 'plan_id = ? AND day = ?',
-          whereArgs: [planId, r['day']],
-        );
-        await _outbox(tx, 'plan_progress', '$planId:${r['day']}', 'upsert');
-      }
+      await _outbox(tx, 'custom_plan', id, 'upsert');
+      await _startPlan(tx, id);
+    });
+  }
+
+  /// Specs of the plans the user built (not deleted), by id.
+  Future<Map<String, String>> customPlans() async {
+    final rows = await db.query('custom_plan', where: 'deleted_at IS NULL', orderBy: 'id');
+    return {for (final r in rows) r['id'] as String: r['spec'] as String};
+  }
+
+  Future<void> deleteCustomPlan(String id) async {
+    await db.transaction((tx) async {
+      await tx.update('custom_plan', {'deleted_at': _now, 'updated_at': _now}, where: 'id = ?', whereArgs: [id]);
+      await _outbox(tx, 'custom_plan', id, 'delete');
+      await tx.update('plan', {'deleted_at': _now, 'updated_at': _now}, where: 'plan_id = ?', whereArgs: [id]);
+      await _outbox(tx, 'plan', id, 'delete');
     });
   }
 

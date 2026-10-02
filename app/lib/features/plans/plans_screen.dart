@@ -55,7 +55,29 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                     onTap: () => context.push('/me/plans/${p.plan.id}'),
                   ),
               ],
-              SectionHeader(active.isEmpty ? s.readingPlans : s.morePlans, first: active.isEmpty),
+              AppCard(
+                onTap: () => context.push('/me/plans/new'),
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_calendar_outlined, color: context.colors.primary),
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.makeYourOwnPlan, style: context.text.titleMedium),
+                          Text(
+                            s.makeYourOwnPlanHint,
+                            style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward),
+                  ],
+                ),
+              ),
+              SectionHeader(active.isEmpty ? s.readingPlans : s.morePlans),
               FilterBar<PlanPeriod?>(
                 options: [
                   FilterOption(null, s.allPlans),

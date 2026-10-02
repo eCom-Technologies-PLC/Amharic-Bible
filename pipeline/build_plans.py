@@ -9,7 +9,9 @@ kept stable for people already reading them) or by verse count ("verses",
 so Psalm 119 is not one day's reading next to Psalm 117). A day's readings
 are compressed into per-book chapter ranges: {"b": "GEN", "f": 1, "t": 3}.
 
-Each plan also gets "minutes": the estimated reading time per day.
+Each plan also gets "minutes": the estimated reading time per day. The file
+also carries "verse_counts" (book code -> verses per chapter, in canonical
+order) for the plans people build in the app.
 
 Usage: python pipeline/build_plans.py [--out app/assets/plans/plans.json]
 """
@@ -294,7 +296,10 @@ def build() -> dict:
             "minutes": max(1, round(total_verses / n * SECONDS_PER_VERSE / 60)),
             "days": [compress(day) for day in days],
         })
-    return {"version": 1, "plans": plans}
+    # Verses per chapter, in canonical book order: the app balances the
+    # plans people build themselves with it.
+    counts = {b.code: verses[b.code] for b in books}
+    return {"version": 1, "plans": plans, "verse_counts": counts}
 
 
 def main(argv: list[str] | None = None) -> int:

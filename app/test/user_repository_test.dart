@@ -111,6 +111,18 @@ void main() {
     expect(await db.query('sync_outbox', where: "entity = 'reading_day'"), hasLength(3));
   });
 
+  test('custom plans: save starts the plan, re-save restarts ticks, delete stops it', () async {
+    await repo.saveCustomPlan('my-1', '{"v":1}');
+    expect(await repo.customPlans(), {'my-1': '{"v":1}'});
+    expect((await repo.activePlans()).keys, ['my-1']);
+    await repo.setDayDone('my-1', 1, true);
+    await repo.saveCustomPlan('my-1', '{"v":1,"re":1}'); // re-planned
+    expect(await repo.completedDays('my-1'), isEmpty);
+    await repo.deleteCustomPlan('my-1');
+    expect(await repo.customPlans(), isEmpty);
+    expect(await repo.activePlans(), isEmpty);
+  });
+
   test('schema migrates from version 1', () async {
     final db = await databaseFactory.openDatabase(
       inMemoryDatabasePath,

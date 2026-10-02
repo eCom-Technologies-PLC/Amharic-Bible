@@ -149,6 +149,23 @@ void main() {
     }
   });
 
+  test('a plan the user built reaches the other device, and so does its deletion', () async {
+    await phone.repo.saveCustomPlan('my-1', '{"v":1,"name":"Mark"}');
+    await phone.repo.setDayDone('my-1', 1, true);
+    await phone.engine.sync();
+    await tablet.engine.sync();
+    expect(await tablet.repo.customPlans(), {'my-1': '{"v":1,"name":"Mark"}'});
+    expect((await tablet.repo.activePlans()).keys, ['my-1']);
+    expect(await tablet.repo.completedDays('my-1'), {1});
+
+    phone.now = phone.now.add(const Duration(minutes: 1));
+    await phone.repo.deleteCustomPlan('my-1');
+    await phone.engine.sync();
+    await tablet.engine.sync();
+    expect(await tablet.repo.customPlans(), isEmpty);
+    expect(await tablet.repo.activePlans(), isEmpty);
+  });
+
   test('records from unknown entities are ignored', () async {
     await server.push([const SyncRecord(entity: 'future_thing', id: 'x', payload: {}, updatedAt: 1)]);
     final r = await tablet.engine.sync();

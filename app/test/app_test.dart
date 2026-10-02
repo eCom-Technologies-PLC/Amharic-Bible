@@ -8,6 +8,7 @@ import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/reader/selection_bar.dart';
 import 'package:amharic_bible/features/share/share_image_screen.dart';
 import 'package:amharic_bible/data/sync/account_service.dart';
+import 'package:amharic_bible/domain/custom_plan.dart';
 import 'package:amharic_bible/domain/streak.dart';
 import 'package:amharic_bible/state/account.dart';
 import 'package:amharic_bible/state/providers.dart';
@@ -149,6 +150,8 @@ void main() {
       settings: const Settings(languageCode: 'en'),
       initial: '/me/plans',
     );
+    await tester.tap(find.text('1 month')); // the plan is below the fold; filter to it
+    await tester.pumpAndSettle();
     await tester.tap(find.text('The Gospels in 30 days'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Start plan'));
@@ -177,6 +180,77 @@ void main() {
     await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
     expect(find.text('The Bible in a year'), findsOneWidget);
+  });
+
+  testWidgets('make your own plan: choose, preview, create', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/plans',
+    );
+    await tester.tap(find.text('Make your own plan'));
+    await tester.pumpAndSettle();
+    expect(find.text('New plan'), findsOneWidget);
+
+    await tester.tap(find.text('What to read'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('The Gospels'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('How long'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1 month').last);
+    await tester.pumpAndSettle();
+    expect(find.text('~3 chapters a day'), findsOneWidget); // 89 chapters over 30 days
+
+    await tester.tap(find.text('Reading days'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Every day except Sunday'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('reading days'), findsOneWidget);
+
+    await tester.tap(find.text('Create plan'));
+    await tester.pumpAndSettle();
+    final specs = await UserRepository(userDb).customPlans();
+    expect(specs, hasLength(1));
+    final spec = CustomPlanSpec.decode(specs.keys.single, specs.values.single)!;
+    expect(spec.name, 'The Gospels · 1 month');
+    expect(spec.weekdays, {1, 2, 3, 4, 5, 6});
+    expect(find.text('The Gospels · 1 month'), findsOneWidget); // now on the plan's screen
+    expect(await UserRepository(userDb).activePlans(), contains(spec.id));
+  });
+
+  testWidgets('a plan you built can be re-planned when behind, keeping progress', (tester) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final catalog = BibleCatalog.fromPlansJson(File('assets/plans/plans.json').readAsStringSync());
+    final spec = PlanDraft(
+      catalog: catalog,
+      books: ['MRK'],
+      weekdays: const {1, 2, 3, 4, 5, 6, 7},
+      start: today.subtract(const Duration(days: 10)),
+      readingDays: 16,
+    ).build(id: 'my-mark', name: 'Mark');
+    await UserRepository(userDb).saveCustomPlan(spec.id, spec.encode());
+    await UserRepository(userDb).setDayDone(spec.id, 1, true);
+
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/plans/my-mark',
+    );
+    expect(find.textContaining('Fallen behind?'), findsOneWidget);
+    await tester.tap(find.text('Re-plan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('One more week'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plan updated'), findsOneWidget);
+
+    final saved = CustomPlanSpec.decode('my-mark', (await UserRepository(userDb).customPlans())['my-mark']!)!;
+    expect(saved.start, DateTime(today.year, today.month, today.day));
+    expect(saved.days, hasLength(13)); // today through the old end (today + 5) plus a week
+    expect(saved.carriedChapters, expandReadings(spec.days.first).length);
+    expect(await UserRepository(userDb).completedDays('my-mark'), isEmpty);
+    expect(find.textContaining('chapters read before re-planning'), findsOneWidget);
   });
 
   testWidgets('staying on a chapter counts today; home and activity show the streak', (tester) async {

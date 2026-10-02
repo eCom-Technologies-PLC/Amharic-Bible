@@ -162,6 +162,49 @@ class S {
   String get paceSteady => _('paceSteady');
   String get paceIntensive => _('paceIntensive');
   String get noPlansForPeriod => _('noPlansForPeriod');
+  String get makeYourOwnPlan => _('makeYourOwnPlan');
+  String get makeYourOwnPlanHint => _('makeYourOwnPlanHint');
+  String get newPlan => _('newPlan');
+  String get createPlan => _('createPlan');
+  String get planName => _('planName');
+  String get whatToRead => _('whatToRead');
+  String get scopeAll => _('scopeAll');
+  String get scopeGospels => _('scopeGospels');
+  String get scopePsalmsProverbs => _('scopePsalmsProverbs');
+  String get chooseBooks => _('chooseBooks');
+  String get howLong => _('howLong');
+  String get chooseEndDate => _('chooseEndDate');
+  String get byChaptersADay => _('byChaptersADay');
+  String get readingDays => _('readingDays');
+  String get everyDay => _('everyDay');
+  String get mondayToFriday => _('mondayToFriday');
+  String get exceptSunday => _('exceptSunday');
+  String get chooseDays => _('chooseDays');
+  String get startDate => _('startDate');
+  String get today => _('today');
+  String get tomorrow => _('tomorrow');
+  String get chooseDate => _('chooseDate');
+  String get done => _('done');
+  String get preview => _('preview');
+  String get tooManyDays => _('tooManyDays');
+  String get heavyPlan => _('heavyPlan');
+  String get noBooksChosen => _('noBooksChosen');
+  String get noReadingDays => _('noReadingDays');
+  String get planTooLong => _('planTooLong');
+  String get endBeforeStart => _('endBeforeStart');
+  String get yourOwnPlan => _('yourOwnPlan');
+  String get replan => _('replan');
+  String get replanTitle => _('replanTitle');
+  String get keepEndDate => _('keepEndDate');
+  String get oneMoreWeek => _('oneMoreWeek');
+  String get oneMoreMonth => _('oneMoreMonth');
+  String get behindHint => _('behindHint');
+  String get planUpdated => _('planUpdated');
+  String get deletePlan => _('deletePlan');
+  String get deletePlanConfirm => _('deletePlanConfirm');
+  List<String> get weekdayNames => isAmharic
+      ? const ['ሰኞ', 'ማክሰኞ', 'ረቡዕ', 'ሐሙስ', 'ዓርብ', 'ቅዳሜ', 'እሑድ']
+      : const ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   List<String> get weekdayInitials =>
       isAmharic ? const ['ሰ', 'ማ', 'ረ', 'ሐ', 'ዓ', 'ቅ', 'እ'] : const ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -175,6 +218,14 @@ class S {
   String behind(int n) => isAmharic ? '$n ቀናት ወደኋላ' : '$n days behind';
   String signedInAs(String email) => isAmharic ? 'በ$email ገብተዋል' : 'Signed in as $email';
   String minutesPerDay(int n) => isAmharic ? 'በቀን ~$n ደቂቃ' : '~$n min a day';
+  String chaptersADay(int n) => isAmharic ? 'በቀን $n ምዕራፍ' : (n == 1 ? '1 chapter a day' : '$n chapters a day');
+  String aboutChaptersADay(String n) => isAmharic ? 'በቀን ~$n ምዕራፍ' : '~$n chapters a day';
+  String readingDayCount(int n) => isAmharic ? '$n የንባብ ቀናት' : (n == 1 ? '1 reading day' : '$n reading days');
+  String finishesOn(String date) => isAmharic ? 'የሚያልቀው፦ $date' : 'Finishes $date';
+  String until(String date) => isAmharic ? 'እስከ $date' : 'Until $date';
+  String booksChosen(int n) => isAmharic ? '$n መጻሕፍት' : (n == 1 ? '1 book' : '$n books');
+  String chaptersLeft(int n) => isAmharic ? '$n ምዕራፎች ቀርተዋል' : (n == 1 ? '1 chapter left' : '$n chapters left');
+  String chaptersCarried(int n) => isAmharic ? '$n ምዕራፎች ቀድመው ተነበዋል' : '$n chapters read before re-planning';
   String streakDays(int n) => isAmharic ? '$n ቀን' : (n == 1 ? '1 day' : '$n days');
   String bestStreakIs(int n) => isAmharic ? 'ምርጥ፦ $n ቀን' : 'Best: ${streakDays(n)}';
   String daysThisWeek(int n) => isAmharic ? 'ባለፉት 7 ቀናት $n ቀን' : '$n of the last 7 days';
@@ -322,6 +373,46 @@ const _am = {
   'paceSteady': 'መካከለኛ',
   'paceIntensive': 'ጠንካራ',
   'noPlansForPeriod': 'በዚህ ርዝመት ሌላ ዕቅድ የለም',
+  'makeYourOwnPlan': 'የራስዎን ዕቅድ ያዘጋጁ',
+  'makeYourOwnPlanHint': 'የሚያነቡትን፣ የሚፈጀውን ጊዜና የንባብ ቀናትን ይምረጡ',
+  'newPlan': 'አዲስ ዕቅድ',
+  'createPlan': 'ዕቅዱን ፍጠር',
+  'planName': 'የዕቅዱ ስም',
+  'whatToRead': 'ምን ያነባሉ?',
+  'scopeAll': 'ሙሉው መጽሐፍ ቅዱስ',
+  'scopeGospels': 'ወንጌላት',
+  'scopePsalmsProverbs': 'መዝሙረ ዳዊትና ምሳሌ',
+  'chooseBooks': 'መጻሕፍትን ይምረጡ…',
+  'howLong': 'ለምን ያህል ጊዜ?',
+  'chooseEndDate': 'የማብቂያ ቀን ይምረጡ…',
+  'byChaptersADay': 'በቀን በምዕራፍ ብዛት…',
+  'readingDays': 'የንባብ ቀናት',
+  'everyDay': 'በየቀኑ',
+  'mondayToFriday': 'ከሰኞ እስከ ዓርብ',
+  'exceptSunday': 'ከእሑድ በስተቀር በየቀኑ',
+  'chooseDays': 'ቀናትን ይምረጡ…',
+  'startDate': 'የሚጀምርበት ቀን',
+  'today': 'ዛሬ',
+  'tomorrow': 'ነገ',
+  'chooseDate': 'ቀን ይምረጡ…',
+  'done': 'ጨርስ',
+  'preview': 'ቅድመ እይታ',
+  'tooManyDays': 'ከምዕራፎቹ ብዛት በላይ ቀናት ስለመረጡ፣ ዕቅዱ ቀደም ብሎ ያልቃል።',
+  'heavyPlan': 'ይህ በቀን ብዙ ንባብ ነው። ረዘም ያለ ጊዜ መምረጥ ያስቡበት።',
+  'noBooksChosen': 'ቢያንስ አንድ መጽሐፍ ይምረጡ።',
+  'noReadingDays': 'ቢያንስ አንድ የንባብ ቀን ይምረጡ።',
+  'planTooLong': 'ዕቅድ ከሁለት ዓመት መብለጥ አይችልም።',
+  'endBeforeStart': 'የማብቂያው ቀን ከመጀመሪያው ቀን በኋላ መሆን አለበት።',
+  'yourOwnPlan': 'የራስዎ ዕቅድ',
+  'replan': 'ዕቅዱን እንደገና አስተካክል',
+  'replanTitle': 'የቀረውን እንደገና ያከፋፍሉ',
+  'keepEndDate': 'የማብቂያውን ቀን ጠብቅ',
+  'oneMoreWeek': 'አንድ ሳምንት ጨምር',
+  'oneMoreMonth': 'አንድ ወር ጨምር',
+  'behindHint': 'ወደኋላ ቀርተዋል? ያነበቡትን ሳያጡ ዕቅዱን እንደገና ያስተካክሉ።',
+  'planUpdated': 'ዕቅዱ ተስተካክሏል',
+  'deletePlan': 'ዕቅዱን ሰርዝ',
+  'deletePlanConfirm': 'ይህ ዕቅድና እድገቱ ይሰረዛል።',
 };
 
 const _en = {
@@ -465,4 +556,44 @@ const _en = {
   'paceSteady': 'Steady',
   'paceIntensive': 'Intensive',
   'noPlansForPeriod': 'No other plans of this length',
+  'makeYourOwnPlan': 'Make your own plan',
+  'makeYourOwnPlanHint': 'Choose what to read, how long, and which days',
+  'newPlan': 'New plan',
+  'createPlan': 'Create plan',
+  'planName': 'Plan name',
+  'whatToRead': 'What to read',
+  'scopeAll': 'The whole Bible',
+  'scopeGospels': 'The Gospels',
+  'scopePsalmsProverbs': 'Psalms and Proverbs',
+  'chooseBooks': 'Choose books…',
+  'howLong': 'How long',
+  'chooseEndDate': 'Choose an end date…',
+  'byChaptersADay': 'By chapters a day…',
+  'readingDays': 'Reading days',
+  'everyDay': 'Every day',
+  'mondayToFriday': 'Monday to Friday',
+  'exceptSunday': 'Every day except Sunday',
+  'chooseDays': 'Choose days…',
+  'startDate': 'Start',
+  'today': 'Today',
+  'tomorrow': 'Tomorrow',
+  'chooseDate': 'Choose a date…',
+  'done': 'Done',
+  'preview': 'Preview',
+  'tooManyDays': 'There are more days than chapters, so the plan finishes sooner.',
+  'heavyPlan': "That's a lot of reading a day. Consider a longer plan.",
+  'noBooksChosen': 'Choose at least one book.',
+  'noReadingDays': 'Choose at least one reading day.',
+  'planTooLong': 'A plan can run for two years at most.',
+  'endBeforeStart': 'The end date must be after the start.',
+  'yourOwnPlan': 'Your own plan',
+  'replan': 'Re-plan',
+  'replanTitle': 'Spread out what is left',
+  'keepEndDate': 'Keep the end date',
+  'oneMoreWeek': 'One more week',
+  'oneMoreMonth': 'One more month',
+  'behindHint': "Fallen behind? Re-plan to catch up; what you've read is kept.",
+  'planUpdated': 'Plan updated',
+  'deletePlan': 'Delete plan',
+  'deletePlanConfirm': 'This plan and its progress will be deleted.',
 };

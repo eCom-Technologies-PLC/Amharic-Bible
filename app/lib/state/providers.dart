@@ -12,6 +12,7 @@ import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
 import '../data/user_repository.dart';
 import '../domain/models.dart';
+import '../domain/custom_plan.dart';
 import '../domain/plans.dart';
 import '../domain/reference_parser.dart';
 import '../domain/streak.dart';
@@ -256,9 +257,27 @@ final notesListProvider = FutureProvider<List<Note>>((ref) => ref.watch(userRepo
 // Decoded here rather than with rootBundle.loadString, which moves files over
 // 50 KB to a background isolate; the plans file is small enough to decode
 // inline.
-final plansProvider = FutureProvider<List<ReadingPlan>>((ref) async {
+final _plansAssetProvider = FutureProvider<String>((ref) async {
   final data = await rootBundle.load('assets/plans/plans.json');
-  return parsePlans(utf8.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
+  return utf8.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+});
+
+/// Books and verses per chapter, for building plans.
+final bibleCatalogProvider = FutureProvider<BibleCatalog>(
+  (ref) async => BibleCatalog.fromPlansJson(await ref.watch(_plansAssetProvider.future)),
+);
+
+/// Plans the user built (not deleted); unreadable specs are skipped.
+final customPlanSpecsProvider = FutureProvider<List<CustomPlanSpec>>((ref) async {
+  final rows = await ref.watch(userRepositoryProvider).customPlans();
+  return [for (final e in rows.entries) ?CustomPlanSpec.decode(e.key, e.value)];
+});
+
+/// Bundled plans, then the user's own.
+final plansProvider = FutureProvider<List<ReadingPlan>>((ref) async {
+  final bundled = parsePlans(await ref.watch(_plansAssetProvider.future));
+  final custom = await ref.watch(customPlanSpecsProvider.future);
+  return [...bundled, for (final c in custom) c.toPlan()];
 });
 
 /// Clock used for plan scheduling; overridden in tests.
@@ -309,6 +328,7 @@ Future<bool> recordReadingDay(Ref ref, int source) async {
 /// Refresh every screen showing user data (after a sync pulled changes).
 void refreshUserData(Ref ref) {
   ref.invalidate(streakProvider);
+  ref.invalidate(customPlanSpecsProvider);
   ref.invalidate(planProgressProvider);
   ref.invalidate(activePlansProvider);
   ref.invalidate(chapterMarksProvider);
@@ -323,6 +343,7 @@ void invalidateUserData(WidgetRef ref) {
   ref.read(userDataWrittenProvider.notifier).bump();
   ref.invalidate(streakProvider);
   ref.invalidate(chaptersReadProvider);
+  ref.invalidate(customPlanSpecsProvider);
   ref.invalidate(planProgressProvider);
   ref.invalidate(activePlansProvider);
   ref.invalidate(chapterMarksProvider);

@@ -59,13 +59,17 @@ Features:
   7 days to the Bible in a year (straight through, or Old and New Testament together). Each shows its
   estimated minutes a day and pace; days are balanced by verse count. Daily progress and a "today's
   reading" card on Home.
+- **Make your own plan:** pick what to read (whole Bible, a testament, the Gospels, Psalms and Proverbs, or any
+  books), how long (a period, an end date or chapters a day), which weekdays, and when to start; a live
+  preview shows chapters and minutes a day and the finish date. Fallen behind? Re-plan spreads what is left
+  from today to a new end date, keeping what you have read.
 - **Reading streak:** on by default (can be turned off). A day counts after 30 seconds on a chapter, reaching
   its end, listening to most of a chapter, or marking a plan day done. One missed day a week is forgiven
   (a rest day). Home shows the streak and the last seven days; Me → Reading activity has a month calendar.
   Reading from before the streak existed is carried over, so updating the app does not reset it.
 - **Share:** verses as text, or as an image card (8 backgrounds, square or story size, 1080 px PNG).
-- **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes, plans and reading days
-  across devices. Export your data as JSON, or delete your account, from inside the app.
+- **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes, plans (including your
+  own) and reading days across devices. Export your data as JSON, or delete your account, from inside the app.
 - Verse of the day, an Amharic or English UI, and the Ethiopian calendar.
 
 The app uses the 66-book canon only. Still to come: notification reminders for plans.

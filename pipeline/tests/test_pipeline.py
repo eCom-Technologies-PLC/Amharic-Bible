@@ -170,6 +170,9 @@ class PlansTest(unittest.TestCase):
             self.assertEqual(len(counts[code]), b.chapters, code)
         self.assertEqual(sum(sum(v) for v in counts.values()), 31102)
         self.assertEqual(counts["PSA"][118], 176)
+        bundled = build_plans.build()["verse_counts"]
+        self.assertEqual(list(bundled)[:2], ["GEN", "EXO"])
+        self.assertEqual(bundled, {c: counts[c] for c in bundled})
 
     def test_plan_lengths_and_streams(self):
         plans = {p["id"]: p for p in build_plans.build()["plans"]}

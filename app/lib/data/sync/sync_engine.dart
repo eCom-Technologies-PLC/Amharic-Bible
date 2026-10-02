@@ -76,6 +76,7 @@ const _entities = {
   'plan': _Entity('plan', ['started_at'], keyColumns: ['plan_id']),
   'plan_progress': _Entity('plan_progress', ['completed_at'], keyColumns: ['plan_id', 'day'], softDelete: false),
   'reading_day': _Entity('reading_day', ['sources'], keyColumns: ['day'], softDelete: false),
+  'custom_plan': _Entity('custom_plan', ['spec']),
 };
 
 class SyncResult {
@@ -269,6 +270,9 @@ class SyncEngine {
         row.remove('created_at');
       case 'reading_day':
         row['sources'] ??= ReadingSource.read;
+        row.remove('created_at');
+      case 'custom_plan':
+        row['spec'] ??= '{}'; // unreadable specs are skipped when loading
         row.remove('created_at');
     }
   }

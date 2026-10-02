@@ -51,6 +51,10 @@ class ReadingPlan {
     required this.description,
     required this.days,
     this.minutesPerDay,
+    this.weekdays,
+    this.start,
+    this.carriedChapters = 0,
+    this.custom = false,
   });
 
   final String id;
@@ -60,6 +64,23 @@ class ReadingPlan {
 
   /// Estimated reading time per day (null for plans without an estimate).
   final int? minutesPerDay;
+
+  /// Weekdays with a reading (DateTime.monday..sunday); null means every day.
+  final Set<int>? weekdays;
+
+  /// First reading day, when the plan sets its own (plans you build may start
+  /// later); otherwise the day the plan was started.
+  final DateTime? start;
+
+  /// Chapters read before the plan was last re-planned (counted as progress).
+  final int carriedChapters;
+
+  /// Built by the user (can be re-planned and deleted, not restarted).
+  final bool custom;
+
+  int get chapterCount => [for (final d in days) ...d].fold(0, (n, r) => n + r.to - r.from + 1);
+
+  int chaptersOnDay(int day) => readingsFor(day).fold(0, (n, r) => n + r.to - r.from + 1);
 
   int get length => days.length;
 
@@ -101,17 +122,12 @@ class PlanProgress {
   final DateTime today;
 
   /// The plan day matching today's date (1 on the start day), capped at the
-  /// plan length.
+  /// plan length. Only reading weekdays count when the plan has them.
   int get scheduledDay {
-    final start = DateTime(startedAt.year, startedAt.month, startedAt.day);
-    final now = DateTime(today.year, today.month, today.day);
-    // Count calendar days, robust to daylight-saving changes.
-    final days = DateTime.utc(
-      now.year,
-      now.month,
-      now.day,
-    ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
-    return (days + 1).clamp(1, plan.length);
+    final start = plan.start ?? startedAt;
+    final weekdays = plan.weekdays;
+    final days = weekdays == null ? calendarDaysBetween(start, today) + 1 : readingDaysThrough(start, today, weekdays);
+    return days.clamp(1, plan.length);
   }
 
   /// First day not yet completed (what "today's reading" shows), or null when
@@ -128,5 +144,38 @@ class PlanProgress {
   /// Scheduled days up to today that are not completed.
   int get behind => [for (var d = 1; d <= scheduledDay; d++) d].where((d) => !completed.contains(d)).length;
 
-  double get fraction => completed.length / plan.length;
+  double get fraction {
+    if (plan.carriedChapters == 0) return completed.length / plan.length;
+    final done = plan.carriedChapters + completed.fold(0, (n, d) => n + plan.chaptersOnDay(d));
+    return done / (plan.carriedChapters + plan.chapterCount);
+  }
+}
+
+DateTime _date(DateTime d) => DateTime.utc(d.year, d.month, d.day);
+
+/// Whole calendar days from [a] to [b] (local dates; daylight saving safe).
+int calendarDaysBetween(DateTime a, DateTime b) => _date(b).difference(_date(a)).inDays;
+
+/// Reading days (dates whose weekday is in [weekdays]) from [start] through
+/// [end], inclusive; 0 when [end] is before [start].
+int readingDaysThrough(DateTime start, DateTime end, Set<int> weekdays) {
+  final total = calendarDaysBetween(start, end) + 1;
+  if (total <= 0 || weekdays.isEmpty) return 0;
+  final weeks = total ~/ 7;
+  var n = weeks * weekdays.length;
+  final first = _date(start);
+  for (var i = weeks * 7; i < total; i++) {
+    if (weekdays.contains(first.add(Duration(days: i)).weekday)) n++;
+  }
+  return n;
+}
+
+/// The first [count] reading dates from [start] (UTC midnights).
+List<DateTime> readingDates(DateTime start, Set<int> weekdays, int count) {
+  if (weekdays.isEmpty) return const [];
+  final out = <DateTime>[];
+  for (var d = _date(start); out.length < count; d = d.add(const Duration(days: 1))) {
+    if (weekdays.contains(d.weekday)) out.add(d);
+  }
+  return out;
 }

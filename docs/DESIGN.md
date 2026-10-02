@@ -32,7 +32,12 @@ differs from this document, the code is current:
   balance days by verse count (`content/verse_counts.json`) and may read several streams each day (e.g.
   Old Testament plus New Testament or Psalms). Each plan carries an estimated `minutes` a day (9 s a
   verse); the app groups plans into periods (week ≤ 7 days, month ≤ 31, 3 months ≤ 92, 6 months ≤ 183,
-  year) and paces (light < 10 min, steady ≤ 20, intensive). The Lent/Hudade plan was replaced by "Gospels in 30 days".
+  year) and paces (light < 10 min, steady ≤ 20, intensive). `plans.json` also carries `verse_counts`.
+- **Plans you build** (`/me/plans/new`) are stored as a `custom_plan` row (schema 4, synced): a
+  `CustomPlanSpec` with the choices and the day-by-day schedule, balanced by verses with the same rule as
+  the pipeline. Reading weekdays are honoured when working out "today". Re-planning keeps the chapters of
+  finished days (`carried`), spreads the rest from today to the chosen end date, and restarts the day ticks.
+  At most 731 reading days, which keeps each synced record small. The Lent/Hudade plan was replaced by "Gospels in 30 days".
 
 ## 1. Overview
 
@@ -392,6 +397,8 @@ CREATE TABLE note (id TEXT PRIMARY KEY, vkey_start INTEGER, vkey_end INTEGER,
 CREATE TABLE plan_progress (plan_id TEXT, day INTEGER, completed_at INTEGER,
   PRIMARY KEY (plan_id, day));
 CREATE TABLE reading_history (vkey INTEGER, version_id TEXT, read_at INTEGER);
+CREATE TABLE custom_plan (id TEXT PRIMARY KEY,   -- "my-<uuid>"; plan/plan_progress use the same id
+  spec TEXT, updated_at INTEGER, deleted_at INTEGER);
 CREATE TABLE reading_day (day TEXT PRIMARY KEY,  -- local date, YYYY-MM-DD
   sources INTEGER, updated_at INTEGER);           -- bits: read 1, audio 2, plan 4
 CREATE TABLE setting (key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER);
