@@ -10,33 +10,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/strings.dart';
-import '../../core/theme.dart';
 import '../../state/providers.dart';
+import '../../ui/tokens/share_card_tokens.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
-
-/// Backgrounds bundled with the app (gradients, so no image assets needed).
-class CardBackground {
-  const CardBackground(this.colors, this.text);
-  final List<Color> colors;
-  final Color text;
-
-  Decoration get decoration => colors.length == 1
-      ? BoxDecoration(color: colors.first)
-      : BoxDecoration(
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
-        );
-}
-
-const cardBackgrounds = [
-  CardBackground([Color(0xFF0F3D2E), Color(0xFF1E6B4E)], Colors.white), // manuscript green
-  CardBackground([Color(0xFFF7C873), Color(0xFFE07A5F)], Color(0xFF2B1A0E)), // sunrise
-  CardBackground([Color(0xFF141E30), Color(0xFF243B55)], Colors.white), // night
-  CardBackground([Color(0xFFF6EEDC)], Color(0xFF3B2F20)), // parchment
-  CardBackground([Color(0xFF5B1A2E), Color(0xFF8E2C48)], Colors.white), // burgundy
-  CardBackground([Color(0xFF2E86AB), Color(0xFF6CC3D5)], Colors.white), // sky
-  CardBackground([Colors.white], Color(0xFF1B1B1B)),
-  CardBackground([Colors.black], Colors.white),
-];
 
 enum CardShape {
   square(1),
@@ -101,82 +78,56 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final content = ref.watch(shareContentProvider(widget.vkeys.join(',')));
-    return Scaffold(
-      appBar: AppBar(title: Text(s.shareImage)),
-      body: AsyncBody(
+    final ready = content.value;
+    return AppScaffold(
+      title: s.shareImage,
+      body: AsyncView(
         value: content,
         data: (c) {
-          if (c == null) return Center(child: Text(s.notInVersion));
-          return Column(
+          if (c == null) return EmptyState(message: s.notInVersion, icon: Icons.image_not_supported_outlined);
+          return AppListView(
             children: [
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: AspectRatio(
-                      aspectRatio: _shape.aspect,
-                      child: FittedBox(
-                        child: RepaintBoundary(
-                          key: _cardKey,
-                          child: VerseCard(
-                            text: c.text,
-                            reference: '${c.reference} (${c.version})',
-                            footer: s.appName,
-                            background: cardBackgrounds[_bg],
-                            shape: _shape,
-                            fontFamily: _serif ? serifFont : sansFont,
-                          ),
-                        ),
+              Gutter(
+                vertical: AppSpacing.sm,
+                child: AspectRatio(
+                  aspectRatio: _shape.aspect,
+                  child: FittedBox(
+                    child: RepaintBoundary(
+                      key: _cardKey,
+                      child: VerseCard(
+                        text: c.text,
+                        reference: '${c.reference} (${c.version})',
+                        footer: s.appName,
+                        background: cardBackgrounds[_bg],
+                        shape: _shape,
+                        fontFamily: _serif ? AppFonts.serif : AppFonts.sans,
                       ),
                     ),
                   ),
                 ),
               ),
-              SizedBox(
-                height: 56,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+              SectionHeader(s.background),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen - AppSpacing.xs),
+                child: Row(
                   children: [
                     for (var i = 0; i < cardBackgrounds.length; i++)
-                      Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Semantics(
-                          button: true,
-                          selected: i == _bg,
-                          label: '${s.background} ${i + 1}',
-                          child: InkWell(
-                            customBorder: const CircleBorder(),
-                            onTap: () => setState(() => _bg = i),
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: cardBackgrounds[i].colors.length > 1
-                                    ? LinearGradient(colors: cardBackgrounds[i].colors)
-                                    : null,
-                                color: cardBackgrounds[i].colors.length == 1 ? cardBackgrounds[i].colors.first : null,
-                                border: Border.all(
-                                  width: i == _bg ? 3 : 1,
-                                  color: i == _bg
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.outlineVariant,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                      SwatchButton(
+                        semanticLabel: '${s.background} ${i + 1}',
+                        selected: i == _bg,
+                        color: cardBackgrounds[i].colors.first,
+                        gradient: cardBackgrounds[i].gradient,
+                        onTap: () => setState(() => _bg = i),
                       ),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              Gutter(
+                vertical: AppSpacing.lg,
                 child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
                   children: [
                     SegmentedButton<CardShape>(
                       segments: const [
@@ -190,11 +141,11 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
                       segments: [
                         ButtonSegment(
                           value: true,
-                          label: Text(s.serif, style: const TextStyle(fontFamily: serifFont)),
+                          label: Text(s.serif, style: context.text.labelLarge?.copyWith(fontFamily: AppFonts.serif)),
                         ),
                         ButtonSegment(
                           value: false,
-                          label: Text(s.sans, style: const TextStyle(fontFamily: sansFont)),
+                          label: Text(s.sans, style: context.text.labelLarge?.copyWith(fontFamily: AppFonts.sans)),
                         ),
                       ],
                       selected: {_serif},
@@ -203,26 +154,24 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
                   ],
                 ),
               ),
-              SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _busy ? null : () => _share('${c.reference} (${c.version})'),
-                      icon: _busy
-                          ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.share),
-                      label: Text(s.share),
-                    ),
-                  ),
-                ),
-              ),
             ],
           );
         },
       ),
+      bottomBar: ready == null
+          ? null
+          : BottomActionBar(
+              children: [
+                AppButton(
+                  label: s.share,
+                  icon: Icons.share,
+                  size: AppButtonSize.lg,
+                  expand: true,
+                  loading: _busy,
+                  onPressed: () => _share('${ready.reference} (${ready.version})'),
+                ),
+              ],
+            ),
     );
   }
 }
@@ -240,8 +189,6 @@ class VerseCard extends StatelessWidget {
     required this.fontFamily,
   });
 
-  static const width = 360.0;
-
   final String text;
   final String reference;
   final String footer;
@@ -249,19 +196,15 @@ class VerseCard extends StatelessWidget {
   final CardShape shape;
   final String fontFamily;
 
-  /// Longer passages get a smaller starting size; FittedBox shrinks further
-  /// only if still needed.
-  double get fontSize => (30 - text.length / 14).clamp(15, 28).toDouble();
-
   @override
   Widget build(BuildContext context) {
-    final height = width / shape.aspect;
+    const width = ShareCardTokens.canvasWidth;
     final color = background.text;
     return Container(
       width: width,
-      height: height,
+      height: width / shape.aspect,
       decoration: background.decoration,
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 20),
+      padding: ShareCardTokens.padding,
       child: Column(
         children: [
           Expanded(
@@ -269,26 +212,40 @@ class VerseCard extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: SizedBox(
-                  width: width - 56,
+                  width: width - ShareCardTokens.padding.horizontal,
                   child: Text(
                     text,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: fontFamily, fontSize: fontSize, height: 1.6, color: color),
+                    style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: ShareCardTokens.verseSize(text.length),
+                      height: ShareCardTokens.lineHeight,
+                      color: color,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: ShareCardTokens.referenceGap),
           Text(
             reference,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: color),
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: ShareCardTokens.referenceSize,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: ShareCardTokens.footerGap),
           Text(
             footer,
-            style: TextStyle(fontFamily: sansFont, fontSize: 11, color: color.withValues(alpha: 0.7)),
+            style: TextStyle(
+              fontFamily: AppFonts.sans,
+              fontSize: ShareCardTokens.footerSize,
+              color: color.withValues(alpha: ShareCardTokens.footerOpacity),
+            ),
           ),
         ],
       ),
@@ -300,7 +257,7 @@ class VerseCard extends StatelessWidget {
 /// size of 1080 px wide.
 Future<Uint8List> renderCardPng(GlobalKey key) async {
   final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-  final ratio = 1080 / boundary.size.width;
+  final ratio = ShareCardTokens.outputWidthPx / boundary.size.width;
   final image = await boundary.toImage(pixelRatio: ratio);
   try {
     final data = await image.toByteData(format: ui.ImageByteFormat.png);

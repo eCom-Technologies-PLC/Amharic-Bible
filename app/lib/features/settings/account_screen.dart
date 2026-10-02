@@ -11,6 +11,7 @@ import '../../data/sync/account_service.dart';
 import '../../data/sync/sync_engine.dart';
 import '../../state/account.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 
 /// Optional sign-in (email one-time code), sync status, export and account
@@ -63,22 +64,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   Future<void> _confirmDelete(AccountService service) async {
     final s = S.of(context);
-    final ok = await showDialog<bool>(
+    final ok = await showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(s.deleteAccount),
-        content: Text(s.deleteAccountConfirm),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(s.cancel)),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(s.delete),
-          ),
-        ],
-      ),
+      title: s.deleteAccount,
+      message: s.deleteAccountConfirm,
+      confirmLabel: s.delete,
+      cancelLabel: s.cancel,
+      destructive: true,
     );
-    if (ok == true) await _run(service.deleteAccount);
+    if (ok) await _run(service.deleteAccount);
   }
 
   @override
@@ -86,125 +80,128 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final s = S.of(context);
     final service = ref.watch(accountServiceProvider);
     final email = ref.watch(accountEmailProvider).value;
-    final t = Theme.of(context).textTheme;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(s.account)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    return AppScaffold(
+      title: s.account,
+      body: AppListView(
         children: [
-          Text(s.accountOptional, style: t.bodyMedium),
-          const SizedBox(height: 16),
+          Gutter(
+            vertical: AppSpacing.sm,
+            child: Text(s.accountOptional, style: context.text.bodyMedium),
+          ),
           if (service == null)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.cloud_off_outlined),
-              title: Text(s.accountsNotConfigured),
-            )
+            AppListTile(leadingIcon: Icons.cloud_off_outlined, title: s.accountsNotConfigured)
           else if (email == null)
-            ..._signInForm(s, service)
+            Gutter(vertical: AppSpacing.sm, child: _signInForm(s, service))
           else
             ..._signedIn(s, service, email),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          if (_error != null && !_codeSent)
+            Gutter(
+              child: Text(_error!, style: context.text.bodySmall?.copyWith(color: context.colors.error)),
             ),
-          const Divider(height: 32),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.file_download_outlined),
-            title: Text(s.exportData),
-            onTap: _export,
-          ),
+          const SizedBox(height: AppSpacing.lg),
+          const Divider(),
+          AppListTile(leadingIcon: Icons.file_download_outlined, title: s.exportData, chevron: true, onTap: _export),
         ],
       ),
     );
   }
 
-  List<Widget> _signInForm(S s, AccountService service) => [
-    TextField(
-      controller: _email,
-      enabled: !_codeSent,
-      keyboardType: TextInputType.emailAddress,
-      onChanged: (_) => setState(() {}),
-      autofillHints: const [AutofillHints.email],
-      decoration: InputDecoration(labelText: s.email, border: const OutlineInputBorder()),
-    ),
-    const SizedBox(height: 12),
-    if (!_codeSent)
-      FilledButton(
-        onPressed: _busy || !_email.text.contains('@')
-            ? null
-            : () => _run(() async {
-                await service.sendCode(_email.text);
-                _codeSent = true;
+  Widget _signInForm(S s, AccountService service) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      AppTextField(
+        controller: _email,
+        label: s.email,
+        enabled: !_codeSent,
+        keyboardType: TextInputType.emailAddress,
+        textInputAction: TextInputAction.send,
+        autofillHints: const [AutofillHints.email],
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      if (!_codeSent)
+        AppButton(
+          label: s.sendCode,
+          expand: true,
+          loading: _busy,
+          onPressed: !_email.text.contains('@')
+              ? null
+              : () => _run(() async {
+                  await service.sendCode(_email.text);
+                  _codeSent = true;
+                }),
+        )
+      else ...[
+        AppTextField(
+          controller: _code,
+          label: s.enterCode,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.oneTimeCode],
+          maxLength: 8,
+          autofocus: true,
+          error: _error,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            AppButton.ghost(label: s.cancel, onPressed: _busy ? null : () => setState(() => _codeSent = false)),
+            const Spacer(),
+            AppButton(
+              label: s.verify,
+              loading: _busy,
+              onPressed: () => _run(() async {
+                await service.verifyCode(_email.text, _code.text);
+                // Start from the email step next time (after sign-out).
+                _codeSent = false;
+                _code.clear();
               }),
-        child: Text(s.sendCode),
-      )
-    else ...[
-      Text(s.enterCode),
-      const SizedBox(height: 8),
-      TextField(
-        controller: _code,
-        keyboardType: TextInputType.number,
-        autofillHints: const [AutofillHints.oneTimeCode],
-        maxLength: 8,
-        decoration: const InputDecoration(border: OutlineInputBorder()),
-      ),
-      Row(
-        children: [
-          TextButton(onPressed: _busy ? null : () => setState(() => _codeSent = false), child: Text(s.cancel)),
-          const Spacer(),
-          FilledButton(
-            onPressed: _busy
-                ? null
-                : () => _run(() async {
-                    await service.verifyCode(_email.text, _code.text);
-                    // Start from the email step next time (after sign-out).
-                    _codeSent = false;
-                    _code.clear();
-                  }),
-            child: Text(s.verify),
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
     ],
-  ];
+  );
 
   List<Widget> _signedIn(S s, AccountService service, String email) {
     final sync = ref.watch(syncControllerProvider);
     final settings = ref.watch(settingsProvider);
     final last = sync.lastSyncedAt;
+    final when = last == null
+        ? s.never
+        : '${formatDate(last, settings, s)} ${last.hour.toString().padLeft(2, '0')}:${last.minute.toString().padLeft(2, '0')}';
     return [
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.account_circle_outlined),
-        title: Text(s.signedInAs(email)),
-      ),
-      ListTile(
-        contentPadding: EdgeInsets.zero,
+      AppListTile(leadingIcon: Icons.account_circle_outlined, title: s.signedInAs(email)),
+      AppListTile(
         leading: sync.busy
-            ? const SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 2))
-            : Icon(sync.failed ? Icons.sync_problem : Icons.cloud_done_outlined),
-        title: Text(sync.busy ? s.syncing : (sync.failed ? s.syncFailed : s.lastSynced)),
-        subtitle: sync.busy || last == null
-            ? (last == null && !sync.busy ? Text(s.never) : null)
-            : Text(
-                '${formatDate(last, settings, s)} ${last.hour.toString().padLeft(2, '0')}:${last.minute.toString().padLeft(2, '0')}',
+            ? const InlineSpinner(size: AppIconSize.md)
+            : Icon(
+                sync.failed ? Icons.sync_problem : Icons.cloud_done_outlined,
+                color: sync.failed ? context.colors.error : context.appColors.success,
               ),
-        trailing: TextButton(
+        title: sync.busy ? s.syncing : (sync.failed ? s.syncFailed : s.lastSynced),
+        subtitle: sync.busy ? null : when,
+        trailing: AppButton.ghost(
+          label: s.syncNow,
+          size: AppButtonSize.sm,
           onPressed: sync.busy ? null : () => ref.read(syncControllerProvider.notifier).sync(),
-          child: Text(s.syncNow),
         ),
       ),
-      const SizedBox(height: 8),
-      OutlinedButton(onPressed: _busy ? null : () => _run(service.signOut), child: Text(s.signOut)),
-      const SizedBox(height: 8),
-      TextButton(
-        style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-        onPressed: _busy ? null : () => _confirmDelete(service),
-        child: Text(s.deleteAccount),
+      Gutter(
+        vertical: AppSpacing.sm,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppButton.outline(label: s.signOut, expand: true, onPressed: _busy ? null : () => _run(service.signOut)),
+            const SizedBox(height: AppSpacing.sm),
+            AppButton.ghost(
+              label: s.deleteAccount,
+              expand: true,
+              onPressed: _busy ? null : () => _confirmDelete(service),
+            ),
+          ],
+        ),
       ),
     ];
   }

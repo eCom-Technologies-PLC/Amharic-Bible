@@ -97,6 +97,12 @@ class S {
   String get recentSearches => _('recentSearches');
   String get tapToSelectHint => _('tapToSelectHint');
   String get privacyNote => _('privacyNote');
+  String get loadError => _('loadError');
+  String get retry => _('retry');
+  String get openSourceLicenses => _('openSourceLicenses');
+  String get total => _('total');
+  String get stopPlanConfirm => _('stopPlanConfirm');
+  String get restartPlanConfirm => _('restartPlanConfirm');
 
   String get readingPlans => _('readingPlans');
   String get todaysReading => _('todaysReading');
@@ -133,10 +139,11 @@ class S {
   String get deleteAccountConfirm => _('deleteAccountConfirm');
 
   String minutes(int n) => isAmharic ? '$n ደቂቃ' : '$n min';
-  String results(int n) => isAmharic ? '$n ውጤቶች' : '$n results';
+  String results(int n) => isAmharic ? '$n ውጤቶች' : (n == 1 ? '1 result' : '$n results');
   String selected(int n) => isAmharic ? '$n ተመርጠዋል' : '$n selected';
   String day(int n) => isAmharic ? 'ቀን $n' : 'Day $n';
   String dayOf(int n, int total) => isAmharic ? 'ቀን $n ከ$total' : 'Day $n of $total';
+  String dayRange(int a, int b) => isAmharic ? 'ቀን $a–$b' : 'Days $a–$b';
   String days(int n) => isAmharic ? '$n ቀናት' : '$n days';
   String behind(int n) => isAmharic ? '$n ቀናት ወደኋላ' : '$n days behind';
   String signedInAs(String email) => isAmharic ? 'በ$email ገብተዋል' : 'Signed in as $email';
@@ -252,6 +259,12 @@ const _am = {
   'exportData': 'ውሂቤን ላክ',
   'deleteAccount': 'መለያዬን ሰርዝ',
   'deleteAccountConfirm': 'መለያዎ እና በአገልጋዩ ላይ ያለው ውሂብዎ ይሰረዛል። በዚህ ስልክ ላይ ያለው ውሂብ ይቀራል።',
+  'loadError': 'ይህን መጫን አልተቻለም።',
+  'retry': 'እንደገና ሞክር',
+  'openSourceLicenses': 'የክፍት ምንጭ ፈቃዶች',
+  'total': 'ጠቅላላ',
+  'stopPlanConfirm': 'ይህን ዕቅድ ማቆም ይፈልጋሉ? ዕቅዱ ከዕቅዶችዎ ይወገዳል።',
+  'restartPlanConfirm': 'እስካሁን ምልክት ያደረጉባቸው ቀናት ይጠፋሉ፤ ዕቅዱ ከዛሬ ይጀምራል።',
 };
 
 const _en = {
@@ -364,4 +377,10 @@ const _en = {
   'exportData': 'Export my data',
   'deleteAccount': 'Delete account',
   'deleteAccountConfirm': 'Your account and its data on the server will be deleted. Data on this phone is kept.',
+  'loadError': "Couldn't load this.",
+  'retry': 'Try again',
+  'openSourceLicenses': 'Open-source licenses',
+  'total': 'Total',
+  'stopPlanConfirm': 'Stop this plan? It will be removed from your plans.',
+  'restartPlanConfirm': 'Your checked days will be cleared and the plan will start again today.',
 };

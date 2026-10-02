@@ -10,6 +10,7 @@ import '../../core/vkey.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../audio/audio_controller.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 import 'chapter_layout.dart';
 import 'paragraph_view.dart';
@@ -72,22 +73,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _showFootnote(String text) {
-    final s = S.of(context);
-    showModalBottomSheet<void>(
+    showAppBottomSheet<void>(
       context: context,
-      showDragHandle: true,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(s.footnote, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Text(text, style: const TextStyle(fontSize: 17, height: 1.6)),
-          ],
-        ),
-      ),
+      title: S.of(context).footnote,
+      builder: (context) => Text(text, style: context.text.bodyLarge),
     );
   }
 
@@ -97,15 +86,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final versionAsync = ref.watch(currentVersionProvider);
     final start = _ref == null ? ref.watch(startRefProvider) : AsyncData(_ref!);
 
-    return versionAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(body: Center(child: Text('$e'))),
-      data: (version) => start.when(
-        loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-        error: (e, _) => Scaffold(body: Center(child: Text('$e'))),
-        data: (r) => _buildReader(context, s, version, r),
+    return switch ((versionAsync, start)) {
+      (AsyncData(value: final version), AsyncData(value: final r)) => _buildReader(context, s, version, r),
+      (AsyncError(), _) || (_, AsyncError()) => AppScaffold(
+        body: ErrorState(
+          onRetry: () {
+            ref.invalidate(currentVersionProvider);
+            ref.invalidate(startRefProvider);
+          },
+        ),
       ),
-    );
+      _ => const AppScaffold(body: LoadingState()),
+    };
   }
 
   Widget _buildReader(BuildContext context, S s, BibleVersion version, BibleRef r) {
@@ -113,31 +105,21 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final content = chapterAsync.value;
     final book = content?.book;
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 8,
-        title: TextButton.icon(
-          onPressed: () => context.push('/books'),
-          iconAlignment: IconAlignment.end,
-          icon: const Icon(Icons.arrow_drop_down),
-          label: Text(
-            book != null ? '${book.shortName} ${formatNumber(r.chapter, ref.watch(settingsProvider))}' : r.bookCode,
-            style: Theme.of(context).textTheme.titleLarge,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        actions: [
-          _VersionMenu(current: version),
-          IconButton(
-            tooltip: s.textSize,
-            icon: const Icon(Icons.text_fields),
-            onPressed: () => showTextSettingsSheet(context),
-          ),
-          if (book != null) _PlayButton(version: version, book: book, chapter: r.chapter),
-        ],
+    return AppScaffold(
+      titleWidget: _ChapterTitle(
+        label: book != null ? '${book.shortName} ${formatNumber(r.chapter, ref.watch(settingsProvider))}' : r.bookCode,
+        onTap: () => context.push('/books'),
       ),
-      bottomNavigationBar: _selected.isEmpty || content == null
+      actions: [
+        _VersionMenu(current: version),
+        IconButton(
+          tooltip: s.textSize,
+          icon: const Icon(Icons.text_fields),
+          onPressed: () => showTextSettingsSheet(context),
+        ),
+        if (book != null) _PlayButton(version: version, book: book, chapter: r.chapter),
+      ],
+      bottomBar: _selected.isEmpty || content == null
           ? null
           : SelectionBar(
               version: version,
@@ -151,13 +133,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         children: [
           const SampleBanner(),
           Expanded(
-            child: chapterAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('$e')),
-              data: (c) => c == null
-                  ? _NotInVersion(onOpenBooks: () => context.push('/books'))
-                  : _buildChapter(context, version, c, r),
-            ),
+            // Matched inline (not via AsyncView) because _buildChapter uses
+            // ref.listen, which must run during this widget's build.
+            child: switch (chapterAsync) {
+              AsyncData(value: final c?) => _buildChapter(context, version, c, r),
+              AsyncData() => EmptyState(
+                message: s.notInVersion,
+                icon: Icons.menu_book_outlined,
+                action: AppButton.secondary(label: s.goTo, onPressed: () => context.push('/books')),
+              ),
+              AsyncError() => ErrorState(onRetry: () => ref.invalidate(chapterProvider)),
+              _ => const LoadingState(),
+            },
           ),
         ],
       ),
@@ -189,7 +176,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       audioControllerProvider.select((a) => a.isChapter(version.id, c.book.code, c.chapter) ? a.currentVerse : null),
       (prev, next) {
         if (next == null || next == prev) return;
-        if (DateTime.now().difference(_lastUserScroll) < const Duration(seconds: 5)) return;
+        if (DateTime.now().difference(_lastUserScroll) < AppMotion.userScrollGrace) return;
         final idx = layout.blockOfVerse[next];
         if (idx == null || !_scroll.isAttached) return;
         final visible = _positions.itemPositions.value
@@ -197,15 +184,17 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             .map((p) => p.index)
             .toSet();
         if (!visible.contains(idx)) {
-          _scroll.scrollTo(index: idx, duration: const Duration(milliseconds: 400), alignment: 0.2);
+          _scroll.scrollTo(
+            index: idx,
+            duration: AppMotion.slow,
+            curve: AppMotion.curve,
+            alignment: _followAlongAlignment,
+          );
         }
       },
     );
 
-    final style = ReaderStyle(
-      fontFamily: settings.fontFamily,
-      fontSize: settings.fontSize,
-      lineHeight: settings.lineHeight,
+    final options = ReaderOptions(
       showNumbers: settings.verseNumbers,
       redLetters: settings.redLetters,
       geezNumerals: settings.geezNumerals,
@@ -222,11 +211,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
     final initial = r.verse != null ? layout.blockOfVerse[vkey(c.book.num, c.chapter, r.verse!)] : null;
     final s = S.of(context);
+    final twoVersions = secondaryVersion != null;
 
     return GestureDetector(
       onHorizontalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
-        if (v.abs() < 400) return;
+        if (v.abs() < AppMotion.chapterSwipeVelocity) return;
         _changeChapter(version, c.book, c.chapter, v < 0 ? 1 : -1);
       },
       child: NotificationListener<UserScrollNotification>(
@@ -239,40 +229,42 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           itemScrollController: _scroll,
           itemPositionsListener: _positions,
           initialScrollIndex: initial ?? 0,
-          initialAlignment: initial != null ? 0.1 : 0,
-          padding: const EdgeInsets.only(top: 8, bottom: 24),
+          initialAlignment: initial != null ? _initialVerseAlignment : 0,
+          padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xl),
           itemCount: layout.blocks.length + 2,
           itemBuilder: (context, i) {
+            final Widget child;
             if (i == 0) {
-              return secondaryVersion == null
-                  ? const SizedBox.shrink()
-                  : _ParallelHeader(left: version.abbrev, right: secondaryVersion.abbrev);
-            }
-            if (i == layout.blocks.length + 1) {
-              return _ChapterNav(
+              child = twoVersions
+                  ? _ParallelHeader(left: version.abbrev, right: secondaryVersion.abbrev)
+                  : const SizedBox.shrink();
+            } else if (i == layout.blocks.length + 1) {
+              child = _ChapterNav(
                 onPrevious: () => _changeChapter(version, c.book, c.chapter, -1),
                 onNext: () => _changeChapter(version, c.book, c.chapter, 1),
                 strings: s,
               );
+            } else {
+              final block = layout.blocks[i - 1];
+              child = switch (block) {
+                HeadingBlock(:final heading) => _HeadingView(heading: heading),
+                ParaBlock() => ParagraphView(
+                  block: block,
+                  options: options,
+                  decor: decor,
+                  onTapVerse: _toggleVerse,
+                  onTapFootnote: _showFootnote,
+                ),
+                PairBlock() => _PairView(
+                  block: block,
+                  options: options,
+                  decor: decor,
+                  onTapVerse: _toggleVerse,
+                  onTapFootnote: _showFootnote,
+                ),
+              };
             }
-            final block = layout.blocks[i - 1];
-            return switch (block) {
-              HeadingBlock(:final heading) => _HeadingView(heading: heading, fontFamily: settings.fontFamily),
-              ParaBlock() => ParagraphView(
-                block: block,
-                style: style,
-                decor: decor,
-                onTapVerse: _toggleVerse,
-                onTapFootnote: _showFootnote,
-              ),
-              PairBlock() => _PairView(
-                block: block,
-                style: style,
-                decor: decor,
-                onTapVerse: _toggleVerse,
-                onTapFootnote: _showFootnote,
-              ),
-            };
+            return _ReadingColumn(wide: twoVersions, child: child);
           },
         ),
       ),
@@ -280,9 +272,31 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 }
 
-/// Width from which the two versions are shown in columns instead of
-/// one under the other.
-const sideBySideMinWidth = 600.0;
+/// Where a verse opened from a link sits on screen (fraction from the top).
+const _initialVerseAlignment = 0.1;
+
+/// Where the verse being read aloud is scrolled to.
+const _followAlongAlignment = 0.2;
+
+/// Centers scripture in a readable column on tablets (twice as wide for
+/// side-by-side reading).
+class _ReadingColumn extends StatelessWidget {
+  const _ReadingColumn({required this.child, required this.wide});
+
+  final Widget child;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: AppDimens.readingMaxWidth * (wide ? 2 : 1)),
+      // Stretch to the column width so headings and buttons keep their
+      // alignment (left edge, opposite ends) instead of shrinking to fit.
+      child: SizedBox(width: double.infinity, child: child),
+    ),
+  );
+}
 
 class _ParallelHeader extends StatelessWidget {
   const _ParallelHeader({required this.left, required this.right});
@@ -292,15 +306,15 @@ class _ParallelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary);
+    final style = context.text.labelLarge?.copyWith(color: context.colors.primary);
     return LayoutBuilder(
       builder: (context, box) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-        child: box.maxWidth >= sideBySideMinWidth
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, 0),
+        child: box.maxWidth >= AppDimens.twoColumnMinWidth
             ? Row(
                 children: [
                   Expanded(child: Text(left, style: style)),
-                  const SizedBox(width: 40),
+                  const SizedBox(width: AppSpacing.screen * 2),
                   Expanded(child: Text(right, style: style)),
                 ],
               )
@@ -314,14 +328,14 @@ class _ParallelHeader extends StatelessWidget {
 class _PairView extends StatelessWidget {
   const _PairView({
     required this.block,
-    required this.style,
+    required this.options,
     required this.decor,
     required this.onTapVerse,
     required this.onTapFootnote,
   });
 
   final PairBlock block;
-  final ReaderStyle style;
+  final ReaderOptions options;
   final VerseDecor decor;
   final ValueChanged<int> onTapVerse;
   final ValueChanged<String> onTapFootnote;
@@ -330,10 +344,10 @@ class _PairView extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, box) {
-        final wide = box.maxWidth >= sideBySideMinWidth;
+        final wide = box.maxWidth >= AppDimens.twoColumnMinWidth;
         final primary = ParagraphView(
           block: block.primary,
-          style: style,
+          options: options,
           decor: decor,
           onTapVerse: onTapVerse,
           onTapFootnote: onTapFootnote,
@@ -343,7 +357,7 @@ class _PairView extends StatelessWidget {
             ? const SizedBox.shrink()
             : ParagraphView(
                 block: second,
-                style: style.secondary(showNumbers: wide && style.showNumbers),
+                options: options.asSecondary(showNumbers: wide && options.showNumbers),
                 decor: decor,
                 onTapVerse: onTapVerse,
                 onTapFootnote: onTapFootnote,
@@ -364,14 +378,21 @@ class _PairView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             primary,
-            Container(
-              margin: const EdgeInsets.only(left: 20, top: 6),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), width: 3),
+            Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.screen, top: AppSpacing.xs),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: context.colors.primary.withValues(alpha: AppOpacity.medium),
+                      width: AppDimens.accentBar,
+                    ),
+                  ),
                 ),
+                // The paragraph adds the screen padding itself; the bar
+                // replaces part of it.
+                child: Transform.translate(offset: const Offset(-AppSpacing.xs, 0), child: secondary),
               ),
-              child: Transform.translate(offset: const Offset(-8, 0), child: secondary),
             ),
           ],
         );
@@ -381,24 +402,23 @@ class _PairView extends StatelessWidget {
 }
 
 class _HeadingView extends StatelessWidget {
-  const _HeadingView({required this.heading, required this.fontFamily});
+  const _HeadingView({required this.heading});
 
   final Heading heading;
-  final String fontFamily;
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
     final descriptive = heading.level == 9; // Psalm titles (\d)
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, descriptive ? 8 : 20, 20, 4),
-      child: Text(
-        heading.text,
-        style: (descriptive ? t.bodyMedium : t.titleMedium)?.copyWith(
-          fontFamily: fontFamily,
-          fontStyle: descriptive ? FontStyle.italic : null,
-          fontWeight: descriptive ? null : FontWeight.w700,
-        ),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screen,
+        descriptive ? AppSpacing.sm : AppSpacing.xl,
+        AppSpacing.screen,
+        AppSpacing.xs,
+      ),
+      child: Semantics(
+        header: !descriptive,
+        child: Text(heading.text, style: descriptive ? context.reading.descriptiveTitle : context.reading.heading),
       ),
     );
   }
@@ -413,23 +433,25 @@ class _ChapterNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 32, 12, 8),
+    padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xxl, AppSpacing.screen, AppSpacing.sm),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Flexible(
-          child: TextButton.icon(
-            onPressed: onPrevious,
-            icon: const Icon(Icons.chevron_left),
-            label: Text(strings.previousChapter, overflow: TextOverflow.ellipsis),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton.ghost(label: strings.previousChapter, icon: Icons.chevron_left, onPressed: onPrevious),
           ),
         ),
-        Flexible(
-          child: TextButton.icon(
-            onPressed: onNext,
-            iconAlignment: IconAlignment.end,
-            icon: const Icon(Icons.chevron_right),
-            label: Text(strings.nextChapter, overflow: TextOverflow.ellipsis),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: AppButton.ghost(
+              label: strings.nextChapter,
+              icon: Icons.chevron_right,
+              iconAtEnd: true,
+              onPressed: onNext,
+            ),
           ),
         ),
       ],
@@ -437,19 +459,30 @@ class _ChapterNav extends StatelessWidget {
   );
 }
 
-class _NotInVersion extends StatelessWidget {
-  const _NotInVersion({required this.onOpenBooks});
-  final VoidCallback onOpenBooks;
+/// Book and chapter title in the reader's app bar; opens the book picker.
+/// The text shrinks with an ellipsis rather than overflowing the bar.
+class _ChapterTitle extends StatelessWidget {
+  const _ChapterTitle({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(S.of(context).notInVersion),
-        const SizedBox(height: 12),
-        FilledButton.tonal(onPressed: onOpenBooks, child: Text(S.of(context).goTo)),
-      ],
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: AppDimens.touchTarget),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
     ),
   );
 }
@@ -466,7 +499,7 @@ class _VersionMenu extends ConsumerWidget {
     final parallel = versions.where((v) => v.id == parallelId && v.id != current.id).firstOrNull;
     final notifier = ref.read(settingsProvider.notifier);
     return PopupMenuButton<String>(
-      tooltip: s.version,
+      tooltip: parallel == null ? current.localName : '${current.abbrev} + ${parallel.abbrev}',
       onSelected: (value) {
         final id = value.substring(2);
         if (value.startsWith('v:')) {
@@ -490,17 +523,25 @@ class _VersionMenu extends ConsumerWidget {
         for (final v in versions.where((v) => v.id != current.id))
           CheckedPopupMenuItem(value: 'p:${v.id}', checked: v.id == parallel?.id, child: Text(v.abbrev)),
       ],
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Tooltip(
-          message: parallel == null ? current.localName : '${current.abbrev} + ${parallel.abbrev}',
-          child: Chip(
-            avatar: parallel == null ? null : const Icon(Icons.view_column_outlined, size: 18),
-            label: Text(current.abbrev),
-            visualDensity: VisualDensity.compact,
-          ),
-        ),
-      ),
+      child: context.isCompact
+          ? SizedBox.square(
+              dimension: AppDimens.touchTarget,
+              child: Icon(parallel == null ? Icons.translate : Icons.view_column_outlined),
+            )
+          : ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: AppDimens.touchTarget),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                child: Center(
+                  widthFactor: 1,
+                  child: Chip(
+                    avatar: parallel == null ? null : const Icon(Icons.view_column_outlined, size: AppIconSize.sm),
+                    label: Text(current.abbrev),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }
@@ -520,7 +561,7 @@ class _PlayButton extends ConsumerWidget {
     return IconButton(
       tooltip: S.of(context).listen,
       icon: here && audio.status == AudioStatus.loading
-          ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+          ? const InlineSpinner()
           : Icon(here && audio.playing ? Icons.pause_circle : Icons.play_circle),
       onPressed: () async {
         if (here && audio.status == AudioStatus.ready) {
@@ -530,7 +571,7 @@ class _PlayButton extends ConsumerWidget {
         await controller.playChapter(version, book, chapter);
         if (!context.mounted) return;
         final err = ref.read(audioControllerProvider).error;
-        if (err != null) showSnack(context, audioErrorText(S.of(context), err));
+        if (err != null) showAppSnack(context, audioErrorText(S.of(context), err));
       },
     );
   }

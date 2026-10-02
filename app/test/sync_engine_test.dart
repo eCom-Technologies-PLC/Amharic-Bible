@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:amharic_bible/core/theme.dart';
+import 'package:amharic_bible/domain/preferences.dart';
 import 'package:amharic_bible/data/sync/sync_engine.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:flutter_test/flutter_test.dart';

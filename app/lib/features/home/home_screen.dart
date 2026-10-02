@@ -7,6 +7,7 @@ import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 import '../plans/plan_widgets.dart';
 
@@ -64,7 +65,6 @@ class HomeScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final votd = ref.watch(verseOfTheDayProvider);
     final version = ref.watch(currentVersionProvider).value;
-    final t = Theme.of(context).textTheme;
     final last = settings.lastRef;
     final lastBook = last != null && version != null
         ? (ref.watch(booksProvider(version.id)).value ?? const <Book>[])
@@ -72,104 +72,100 @@ class HomeScreen extends ConsumerWidget {
               .firstOrNull
         : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(s.appName),
-        actions: [
-          IconButton(
-            tooltip: s.settings,
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.push('/me/settings'),
+    return AppScaffold(
+      title: s.appName,
+      actions: [
+        IconButton(
+          tooltip: s.settings,
+          icon: const Icon(Icons.settings_outlined),
+          onPressed: () => context.push('/me/settings'),
+        ),
+      ],
+      body: AppListView(
+        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+        children: [
+          const SampleBanner(),
+          Gutter(
+            vertical: AppSpacing.md,
+            child: Text(
+              formatDate(DateTime.now(), settings, s),
+              style: context.text.labelLarge?.copyWith(color: context.colors.onSurfaceVariant),
+            ),
+          ),
+          switch (votd) {
+            AsyncData(value: final v?) => _VerseOfTheDayCard(votd: v, amharic: version?.language == 'amh'),
+            AsyncLoading() => const Padding(padding: EdgeInsets.all(AppSpacing.xxl), child: LoadingState()),
+            _ => const SizedBox.shrink(),
+          },
+          const TodaysReadingCards(),
+          AppCard(
+            onTap: () => context.go(last != null ? '/read?ref=${last.encode()}' : '/read'),
+            child: Row(
+              children: [
+                Icon(Icons.menu_book_outlined, color: context.colors.primary),
+                const SizedBox(width: AppSpacing.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(last != null ? s.continueReading : s.startReading, style: context.text.titleMedium),
+                      if (lastBook != null)
+                        Text(
+                          '${lastBook.shortName} ${formatNumber(last!.chapter, settings)}',
+                          style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+                        ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward),
+              ],
+            ),
+          ),
+          Gutter(
+            vertical: AppSpacing.lg,
+            child: Text(
+              s.tapToSelectHint,
+              style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
+            ),
           ),
         ],
       ),
-      body: ListView(
+    );
+  }
+}
+
+class _VerseOfTheDayCard extends StatelessWidget {
+  const _VerseOfTheDayCard({required this.votd, required this.amharic});
+
+  final VerseOfTheDay votd;
+  final bool amharic;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final v = votd.verse;
+    final reference = formatReference(votd.book, vkeyChapter(v.vkey), [vkeyVerse(v.vkey)], amharic: amharic);
+    return AppCard(
+      eyebrow: s.verseOfTheDay,
+      onTap: () => context.go('/read?ref=${BibleRef(votd.book.code, vkeyChapter(v.vkey), vkeyVerse(v.vkey)).encode()}'),
+      actions: [
+        IconButton(
+          tooltip: s.shareImage,
+          icon: const Icon(Icons.image_outlined),
+          onPressed: () => context.push('/share-image?keys=${v.vkey}'),
+        ),
+        IconButton(
+          tooltip: s.share,
+          icon: const Icon(Icons.share_outlined),
+          onPressed: () => SharePlus.instance.share(ShareParams(text: '${v.text}\n— $reference')),
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SampleBanner(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(formatDate(DateTime.now(), settings, s), style: t.labelLarge),
-          ),
-          votd.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (e, _) => const SizedBox.shrink(),
-            data: (v) => v == null
-                ? const SizedBox.shrink()
-                : Card(
-                    margin: const EdgeInsets.all(16),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => context.go(
-                        '/read?ref=${BibleRef(v.book.code, vkeyChapter(v.verse.vkey), vkeyVerse(v.verse.vkey)).encode()}',
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              s.verseOfTheDay,
-                              style: t.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              v.verse.text,
-                              style: TextStyle(fontFamily: settings.fontFamily, fontSize: 20, height: 1.7),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    formatReference(v.book, vkeyChapter(v.verse.vkey), [
-                                      vkeyVerse(v.verse.vkey),
-                                    ], amharic: version?.language == 'amh'),
-                                    style: t.titleSmall,
-                                  ),
-                                ),
-                                IconButton(
-                                  tooltip: s.shareImage,
-                                  icon: const Icon(Icons.image_outlined),
-                                  onPressed: () => context.push('/share-image?keys=${v.verse.vkey}'),
-                                ),
-                                IconButton(
-                                  tooltip: s.share,
-                                  icon: const Icon(Icons.share_outlined),
-                                  onPressed: () => SharePlus.instance.share(
-                                    ShareParams(
-                                      text:
-                                          '${v.verse.text}\n— ${formatReference(v.book, vkeyChapter(v.verse.vkey), [vkeyVerse(v.verse.vkey)], amharic: version?.language == 'amh')}',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-          ),
-          const TodaysReadingCards(),
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: ListTile(
-              leading: const Icon(Icons.menu_book_outlined),
-              title: Text(last != null ? s.continueReading : s.startReading),
-              subtitle: lastBook != null
-                  ? Text('${lastBook.shortName} ${formatNumber(last!.chapter, settings)}')
-                  : null,
-              trailing: const Icon(Icons.arrow_forward),
-              onTap: () => context.go(last != null ? '/read?ref=${last.encode()}' : '/read'),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(s.tapToSelectHint, style: t.bodySmall, textAlign: TextAlign.center),
-          ),
+          Text(v.text, style: context.scriptureFeature),
+          const SizedBox(height: AppSpacing.md),
+          Text(reference, style: context.text.titleSmall),
         ],
       ),
     );

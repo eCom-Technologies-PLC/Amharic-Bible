@@ -6,6 +6,7 @@ import '../../core/geez.dart';
 import '../../core/strings.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 
 /// Book list (Old / New Testament) with an inline chapter grid.
@@ -19,6 +20,13 @@ class BookPickerScreen extends ConsumerStatefulWidget {
 class _BookPickerScreenState extends ConsumerState<BookPickerScreen> {
   String _filter = '';
   String? _expanded;
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -39,45 +47,50 @@ class _BookPickerScreenState extends ConsumerState<BookPickerScreen> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final version = ref.watch(currentVersionProvider).value;
-    if (version == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (version == null) return const AppScaffold(body: LoadingState());
     final booksAsync = ref.watch(booksProvider(version.id));
-
     final lastBook = ref.read(settingsProvider).lastRef?.bookCode;
-    return AsyncBody(
+
+    return AsyncView(
       value: booksAsync,
+      onRetry: () => ref.invalidate(booksProvider(version.id)),
       data: (books) => DefaultTabController(
         length: 2,
         initialIndex: books.where((b) => b.code == lastBook).firstOrNull?.testament == 'NT' ? 1 : 0,
-        child: Scaffold(
-          appBar: AppBar(
-            title: TextField(
-              decoration: InputDecoration(
-                hintText: s.search,
-                prefixIcon: const Icon(Icons.filter_list),
-                border: InputBorder.none,
-              ),
-              onChanged: (v) => setState(() => _filter = v.trim()),
-            ),
-            bottom: TabBar(
-              tabs: [
-                Tab(text: s.oldTestament),
-                Tab(text: s.newTestament),
-              ],
-            ),
+        child: AppScaffold(
+          titleWidget: AppSearchField(
+            controller: _search,
+            hint: s.search,
+            icon: Icons.filter_list,
+            clearTooltip: s.clear,
+            onChanged: (v) => setState(() => _filter = v.trim()),
+            onClear: () => setState(() => _filter = ''),
+          ),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: s.oldTestament),
+              Tab(text: s.newTestament),
+            ],
           ),
           body: TabBarView(
             children: [
               for (final testament in ['OT', 'NT'])
-                ListView(
-                  children: [
-                    for (final b in books.where((b) => b.testament == testament && _matches(b)))
-                      _BookTile(
-                        book: b,
-                        versionId: version.id,
-                        expanded: _expanded == b.code || _filter.isNotEmpty,
-                        onToggle: () => setState(() => _expanded = _expanded == b.code ? null : b.code),
-                      ),
-                  ],
+                Builder(
+                  builder: (context) {
+                    final matching = books.where((b) => b.testament == testament && _matches(b)).toList();
+                    if (matching.isEmpty) return EmptyState(message: s.noResults, icon: Icons.search_off);
+                    return AppListView(
+                      children: [
+                        for (final b in matching)
+                          _BookTile(
+                            book: b,
+                            versionId: version.id,
+                            expanded: _expanded == b.code || _filter.isNotEmpty,
+                            onToggle: () => setState(() => _expanded = _expanded == b.code ? null : b.code),
+                          ),
+                      ],
+                    );
+                  },
                 ),
             ],
           ),
@@ -101,30 +114,29 @@ class _BookTile extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ListTile(
-          title: Text(book.name, style: const TextStyle(fontSize: 17)),
+        AppListTile(
+          title: book.name,
           trailing: Icon(expanded ? Icons.expand_less : Icons.expand_more),
           onTap: onToggle,
         ),
         if (expanded)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, AppSpacing.md),
             child: Consumer(
               builder: (context, ref, _) {
                 final chapters =
                     ref.watch(chapterListProvider((versionId: versionId, book: book.code))).value ?? const [];
                 return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
                   children: [
                     for (final c in chapters)
                       SizedBox(
-                        width: 52,
-                        height: 48,
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
+                        width: AppDimens.chapterCellWidth,
+                        child: AppButton.outline(
+                          label: formatNumber(c, settings),
+                          tight: true,
                           onPressed: () => context.go('/read?ref=${BibleRef(book.code, c).encode()}'),
-                          child: Text(formatNumber(c, settings)),
                         ),
                       ),
                   ],

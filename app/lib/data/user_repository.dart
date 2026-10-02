@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
-import '../core/theme.dart';
+import '../domain/preferences.dart';
 import '../domain/models.dart';
 
 /// Read/write personal data: highlights, bookmarks, notes, settings and

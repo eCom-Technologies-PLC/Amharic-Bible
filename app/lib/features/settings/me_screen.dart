@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
+import '../../ui/ui.dart';
 
 class MeScreen extends StatelessWidget {
   const MeScreen({super.key});
@@ -9,15 +10,11 @@ class MeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    Widget tile(IconData icon, String label, String route) => ListTile(
-      leading: Icon(icon),
-      title: Text(label),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => context.push(route),
-    );
-    return Scaffold(
-      appBar: AppBar(title: Text(s.me)),
-      body: ListView(
+    Widget tile(IconData icon, String label, String route) =>
+        AppListTile(leadingIcon: icon, title: label, chevron: true, onTap: () => context.push(route));
+    return AppScaffold(
+      title: s.me,
+      body: AppListView(
         children: [
           tile(Icons.format_paint_outlined, s.highlights, '/me/library?tab=0'),
           tile(Icons.bookmark_border, s.bookmarks, '/me/library?tab=1'),
@@ -28,9 +25,9 @@ class MeScreen extends StatelessWidget {
           tile(Icons.download_outlined, s.downloads, '/me/downloads'),
           tile(Icons.settings_outlined, s.settings, '/me/settings'),
           tile(Icons.info_outline, '${s.about} · ${s.sources}', '/me/about'),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(s.privacyNote, style: Theme.of(context).textTheme.bodySmall),
+          Gutter(
+            vertical: AppSpacing.lg,
+            child: Text(s.privacyNote, style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant)),
           ),
         ],
       ),

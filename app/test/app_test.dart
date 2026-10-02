@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:amharic_bible/app.dart';
-import 'package:amharic_bible/core/theme.dart';
+import 'package:amharic_bible/domain/preferences.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
@@ -96,7 +96,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'ዓለም');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    expect(find.text('1 results'), findsOneWidget);
+    expect(find.text('1 result'), findsOneWidget);
     expect(find.text('ዮሐንስ 3:17'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'Ps 23:1');

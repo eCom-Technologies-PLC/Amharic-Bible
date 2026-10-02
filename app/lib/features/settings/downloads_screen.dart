@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/strings.dart';
 import '../../state/providers.dart';
-import '../common.dart';
+import '../../ui/ui.dart';
 
 final downloadsProvider = FutureProvider<Map<String, Map<String, int>>>(
   (ref) => ref.watch(audioRepositoryProvider).downloads(),
 );
+
+String _mb(int bytes) => '${(bytes / 1048576).toStringAsFixed(1)} MB';
 
 /// Downloaded audio, per book, with sizes; tap delete to free space.
 class DownloadsScreen extends ConsumerWidget {
@@ -19,25 +21,26 @@ class DownloadsScreen extends ConsumerWidget {
     final version = ref.watch(currentVersionProvider).value;
     final books = version != null ? ref.watch(booksProvider(version.id)).value ?? const [] : const [];
     final names = {for (final b in books) b.code: b.shortName};
-    return Scaffold(
-      appBar: AppBar(title: Text(s.downloads)),
-      body: AsyncBody(
+    return AppScaffold(
+      title: s.downloads,
+      body: AsyncView(
         value: ref.watch(downloadsProvider),
+        onRetry: () => ref.invalidate(downloadsProvider),
         data: (byFileset) {
           final rows = [
             for (final fs in byFileset.entries)
               for (final b in fs.value.entries) (fileset: fs.key, book: b.key, bytes: b.value),
           ];
-          if (rows.isEmpty) return Center(child: Text(s.noDownloads));
+          if (rows.isEmpty) return EmptyState(message: s.noDownloads, icon: Icons.download_outlined);
           final total = rows.fold<int>(0, (a, r) => a + r.bytes);
-          return ListView(
+          return AppListView(
             children: [
-              ListTile(title: Text('${(total / 1048576).toStringAsFixed(1)} MB')),
+              SectionHeader(s.total, first: true, trailing: Text(_mb(total), style: context.text.labelLarge)),
               for (final r in rows)
-                ListTile(
-                  leading: const Icon(Icons.headphones_outlined),
-                  title: Text(names[r.book] ?? r.book),
-                  subtitle: Text('${(r.bytes / 1048576).toStringAsFixed(1)} MB'),
+                AppListTile(
+                  leadingIcon: Icons.headphones_outlined,
+                  title: names[r.book] ?? r.book,
+                  subtitle: _mb(r.bytes),
                   trailing: IconButton(
                     tooltip: s.delete,
                     icon: const Icon(Icons.delete_outline),

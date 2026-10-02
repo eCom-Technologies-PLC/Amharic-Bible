@@ -1,4 +1,4 @@
-import 'package:amharic_bible/core/theme.dart';
+import 'package:amharic_bible/domain/preferences.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';

@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
 import '../../state/providers.dart';
-import '../common.dart';
+import '../../ui/ui.dart';
 import '../reader/reader_screen.dart' show audioErrorText;
 import '../settings/downloads_screen.dart';
 import 'audio_controller.dart';
@@ -29,34 +29,39 @@ class MiniPlayer extends ConsumerWidget {
     final c = ref.read(audioControllerProvider.notifier);
     final dur = a.duration ?? Duration.zero;
     final progress = dur.inMilliseconds > 0 ? a.position.inMilliseconds / dur.inMilliseconds : 0.0;
-    final scheme = Theme.of(context).colorScheme;
 
     return Material(
-      color: scheme.surfaceContainerHighest,
+      color: context.colors.surfaceContainerHighest,
       child: InkWell(
         onTap: () => context.push('/player'),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            LinearProgressIndicator(value: progress.clamp(0, 1), minHeight: 2),
+            LinearProgressIndicator(value: progress.clamp(0, 1), minHeight: AppDimens.progressThin),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
               child: Row(
                 children: [
                   IconButton(
                     tooltip: s.listen,
                     icon: a.status == AudioStatus.loading
-                        ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const InlineSpinner()
                         : Icon(a.playing ? Icons.pause : Icons.play_arrow),
                     onPressed: a.status == AudioStatus.ready ? c.togglePlay : null,
                   ),
                   Expanded(
                     child: Text(
                       a.error != null ? audioErrorText(s, a.error!) : '${a.book!.shortName} ${a.chapter}',
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: context.text.bodyLarge,
                     ),
                   ),
-                  Text('${_fmt(a.position)} · ${a.speed}×', style: Theme.of(context).textTheme.labelSmall),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    '${_fmt(a.position)} · ${a.speed}×',
+                    style: context.text.labelSmall?.copyWith(color: context.colors.onSurfaceVariant),
+                  ),
                   IconButton(tooltip: s.clear, icon: const Icon(Icons.close), onPressed: c.stop),
                 ],
               ),
@@ -72,123 +77,171 @@ class PlayerScreen extends ConsumerWidget {
   const PlayerScreen({super.key});
 
   static const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+  static const sleepMinutes = [5, 15, 30, 60];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
     final a = ref.watch(audioControllerProvider);
     final c = ref.read(audioControllerProvider.notifier);
-    final t = Theme.of(context).textTheme;
     if (a.book == null) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: Center(child: Text(s.audioNotAvailable)),
+      return AppScaffold(
+        body: EmptyState(message: s.audioNotAvailable, icon: Icons.headphones_outlined),
       );
     }
     final dur = a.duration ?? Duration.zero;
     final pos = a.position > dur ? dur : a.position;
+    final sleepLabel = a.sleepAtEndOfChapter
+        ? s.endOfChapter
+        : a.sleepAt != null
+        ? s.minutes(a.sleepAt!.difference(DateTime.now()).inMinutes + 1)
+        : s.sleepTimer;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(a.version?.localName ?? ''),
-        actions: [
-          if (a.version?.audioAllowDownload ?? false)
-            IconButton(
-              tooltip: s.downloadBook,
-              icon: const Icon(Icons.download_outlined),
-              onPressed: () => _downloadBook(context, ref, a),
-            ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const Spacer(),
-            Icon(Icons.menu_book, size: 96, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 24),
-            Text('${a.book!.shortName} ${a.chapter}', style: t.headlineMedium),
-            if (a.error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(audioErrorText(s, a.error!), style: TextStyle(color: Theme.of(context).colorScheme.error)),
-              ),
-            const Spacer(),
-            Slider(
-              value: pos.inMilliseconds.toDouble(),
-              max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1,
-              onChanged: dur.inMilliseconds > 0 ? (v) => c.seek(Duration(milliseconds: v.round())) : null,
-            ),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_fmt(pos)), Text(_fmt(dur))]),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  tooltip: s.previousChapter,
-                  iconSize: 32,
-                  icon: const Icon(Icons.skip_previous),
-                  onPressed: c.previous,
-                ),
-                IconButton(
-                  tooltip: '−10s',
-                  iconSize: 32,
-                  icon: const Icon(Icons.replay_10),
-                  onPressed: () => c.skip(const Duration(seconds: -10)),
-                ),
-                IconButton.filled(
-                  tooltip: s.listen,
-                  iconSize: 48,
-                  icon: Icon(a.playing ? Icons.pause : Icons.play_arrow),
-                  onPressed: a.status == AudioStatus.ready ? c.togglePlay : null,
-                ),
-                IconButton(
-                  tooltip: '+10s',
-                  iconSize: 32,
-                  icon: const Icon(Icons.forward_10),
-                  onPressed: () => c.skip(const Duration(seconds: 10)),
-                ),
-                IconButton(tooltip: s.nextChapter, iconSize: 32, icon: const Icon(Icons.skip_next), onPressed: c.next),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                PopupMenuButton<double>(
-                  tooltip: s.speed,
-                  initialValue: a.speed,
-                  onSelected: c.setSpeed,
-                  itemBuilder: (_) => [for (final x in speeds) PopupMenuItem(value: x, child: Text('$x×'))],
-                  child: Chip(avatar: const Icon(Icons.speed, size: 18), label: Text('${a.speed}×')),
-                ),
-                PopupMenuButton<int>(
-                  tooltip: s.sleepTimer,
-                  onSelected: (m) => switch (m) {
-                    0 => c.setSleepTimer(null),
-                    -1 => c.setSleepTimer(null, endOfChapter: true),
-                    _ => c.setSleepTimer(Duration(minutes: m)),
-                  },
-                  itemBuilder: (_) => [
-                    PopupMenuItem(value: 0, child: Text(s.off)),
-                    for (final m in [5, 15, 30, 60]) PopupMenuItem(value: m, child: Text(s.minutes(m))),
-                    PopupMenuItem(value: -1, child: Text(s.endOfChapter)),
-                  ],
-                  child: Chip(
-                    avatar: const Icon(Icons.bedtime_outlined, size: 18),
-                    label: Text(
-                      a.sleepAtEndOfChapter
-                          ? s.endOfChapter
-                          : a.sleepAt != null
-                          ? s.minutes(a.sleepAt!.difference(DateTime.now()).inMinutes + 1)
-                          : s.sleepTimer,
+    return AppScaffold(
+      title: a.version?.localName ?? '',
+      actions: [
+        if (a.version?.audioAllowDownload ?? false)
+          IconButton(
+            tooltip: s.downloadBook,
+            icon: const Icon(Icons.download_outlined),
+            onPressed: () => _downloadBook(context, ref, a),
+          ),
+      ],
+      // Scrolls instead of overflowing on small screens / large text, while
+      // still spreading out on tall screens.
+      body: LayoutBuilder(
+        builder: (context, box) => SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.screen),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: box.maxHeight - AppSpacing.screen * 2),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Spacer(),
+                  Icon(Icons.menu_book, size: AppIconSize.hero, color: context.colors.primary),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    '${a.book!.shortName} ${a.chapter}',
+                    textAlign: TextAlign.center,
+                    style: context.text.headlineMedium,
+                  ),
+                  if (a.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: Text(
+                        audioErrorText(s, a.error!),
+                        textAlign: TextAlign.center,
+                        style: context.text.bodyMedium?.copyWith(color: context.colors.error),
+                      ),
+                    ),
+                  const Spacer(),
+                  Slider(
+                    value: pos.inMilliseconds.toDouble(),
+                    max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1,
+                    onChanged: dur.inMilliseconds > 0 ? (v) => c.seek(Duration(milliseconds: v.round())) : null,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_fmt(pos), style: context.text.labelMedium),
+                        Text(_fmt(dur), style: context.text.labelMedium),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.sm),
+                  Wrap(
+                    alignment: WrapAlignment.spaceEvenly,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      IconButton(
+                        tooltip: s.previousChapter,
+                        iconSize: AppIconSize.lg,
+                        icon: const Icon(Icons.skip_previous),
+                        onPressed: c.previous,
+                      ),
+                      IconButton(
+                        tooltip: '−10s',
+                        iconSize: AppIconSize.lg,
+                        icon: const Icon(Icons.replay_10),
+                        onPressed: () => c.skip(const Duration(seconds: -10)),
+                      ),
+                      IconButton.filled(
+                        tooltip: s.listen,
+                        iconSize: AppIconSize.xl,
+                        icon: Icon(a.playing ? Icons.pause : Icons.play_arrow),
+                        onPressed: a.status == AudioStatus.ready ? c.togglePlay : null,
+                      ),
+                      IconButton(
+                        tooltip: '+10s',
+                        iconSize: AppIconSize.lg,
+                        icon: const Icon(Icons.forward_10),
+                        onPressed: () => c.skip(const Duration(seconds: 10)),
+                      ),
+                      IconButton(
+                        tooltip: s.nextChapter,
+                        iconSize: AppIconSize.lg,
+                        icon: const Icon(Icons.skip_next),
+                        onPressed: c.next,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      AppButton.secondary(
+                        label: '${a.speed}×',
+                        icon: Icons.speed,
+                        size: AppButtonSize.sm,
+                        onPressed: () async {
+                          final v = await showOptionPicker(
+                            context: context,
+                            title: s.speed,
+                            selected: a.speed,
+                            options: [for (final x in speeds) PickerOption(x, '$x×')],
+                          );
+                          if (v != null) await c.setSpeed(v);
+                        },
+                      ),
+                      AppButton.secondary(
+                        label: sleepLabel,
+                        icon: Icons.bedtime_outlined,
+                        size: AppButtonSize.sm,
+                        onPressed: () async {
+                          final m = await showOptionPicker<int>(
+                            context: context,
+                            title: s.sleepTimer,
+                            selected: a.sleepAtEndOfChapter ? -1 : null,
+                            options: [
+                              PickerOption(0, s.off),
+                              for (final m in sleepMinutes) PickerOption(m, s.minutes(m)),
+                              PickerOption(-1, s.endOfChapter),
+                            ],
+                          );
+                          switch (m) {
+                            case null:
+                              break;
+                            case 0:
+                              c.setSleepTimer(null);
+                            case -1:
+                              c.setSleepTimer(null, endOfChapter: true);
+                            default:
+                              c.setSleepTimer(Duration(minutes: m));
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                ],
+              ),
             ),
-            const Spacer(),
-          ],
+          ),
         ),
       ),
     );
@@ -205,23 +258,21 @@ class PlayerScreen extends ConsumerWidget {
         .listen(
           (n) => progress.value = n,
           onError: (Object e) {
-            if (context.mounted) showSnack(context, s.audioNotAvailable);
+            if (context.mounted) showAppSnack(context, s.audioNotAvailable);
           },
           onDone: () {
             ref.invalidate(downloadsProvider);
             if (context.mounted) Navigator.of(context, rootNavigator: true).maybePop();
           },
         );
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(s.downloading),
-        content: ValueListenableBuilder<int>(
-          valueListenable: progress,
-          builder: (_, n, _) => LinearProgressIndicator(value: chapters.isEmpty ? null : n / chapters.length),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(s.cancel))],
+      title: s.downloading,
+      content: ValueListenableBuilder<int>(
+        valueListenable: progress,
+        builder: (_, n, _) => LinearProgressIndicator(value: chapters.isEmpty ? null : n / chapters.length),
       ),
+      actions: [AppButton.ghost(label: s.cancel, onPressed: () => Navigator.pop(context))],
     );
     unawaited(sub.cancel());
   }

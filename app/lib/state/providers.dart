@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../core/theme.dart';
+import '../domain/preferences.dart';
+import '../ui/tokens/tokens.dart';
 import '../core/vkey.dart';
 import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
@@ -29,7 +30,7 @@ final userRepositoryProvider = Provider<UserRepository>((ref) => UserRepository(
 class Settings {
   const Settings({
     this.readerTheme = ReaderTheme.system,
-    this.fontSizeIndex = defaultFontSizeIndex,
+    this.fontSizeIndex = AppFonts.defaultReadingSizeIndex,
     this.lineHeight = 1.7,
     this.serif = true,
     this.verseNumbers = true,
@@ -61,8 +62,8 @@ class Settings {
   final BibleRef? lastRef;
   final List<String> recentSearches;
 
-  double get fontSize => readingFontSizes[fontSizeIndex.clamp(0, readingFontSizes.length - 1)];
-  String get fontFamily => serif ? serifFont : sansFont;
+  double get fontSize => AppFonts.readingSizes[fontSizeIndex.clamp(0, AppFonts.readingSizes.length - 1)];
+  String get fontFamily => serif ? AppFonts.serif : AppFonts.sans;
   Locale get locale => Locale(languageCode);
 
   Settings copyWith({

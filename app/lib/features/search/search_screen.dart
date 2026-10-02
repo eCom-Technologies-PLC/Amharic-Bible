@@ -11,6 +11,7 @@ import '../../data/content_repository.dart';
 import '../../domain/models.dart';
 import '../../domain/reference_parser.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -38,7 +39,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   void _onChanged(String q) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () => _run(q));
+    _debounce = Timer(AppMotion.debounce, () => _run(q));
   }
 
   Future<void> _run(String q, {bool remember = false}) async {
@@ -78,53 +79,31 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final books = ref.watch(currentVersionProvider).value?.id;
     final bookList = books != null ? ref.watch(booksProvider(books)).value ?? const <Book>[] : const <Book>[];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: TextField(
-          controller: _controller,
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            hintText: s.searchHint,
-            border: InputBorder.none,
-            suffixIcon: _query.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: s.clear,
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      _controller.clear();
-                      _run('');
-                    },
-                  ),
-          ),
-          onChanged: _onChanged,
-          onSubmitted: (q) => _run(q, remember: true),
-        ),
+    return AppScaffold(
+      titleWidget: AppSearchField(
+        controller: _controller,
+        hint: s.searchHint,
+        clearTooltip: s.clear,
+        onChanged: _onChanged,
+        onSubmitted: (q) => _run(q, remember: true),
+        onClear: () => _run(''),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                for (final (f, label) in [
-                  (TestamentFilter.all, s.all),
-                  (TestamentFilter.oldTestament, s.oldTestament),
-                  (TestamentFilter.newTestament, s.newTestament),
-                ])
-                  ChoiceChip(
-                    label: Text(label),
-                    selected: _filter == f,
-                    onSelected: (_) {
-                      setState(() => _filter = f);
-                      _run(_query);
-                    },
-                  ),
-              ],
-            ),
+          FilterBar<TestamentFilter>(
+            selected: _filter,
+            onSelected: (f) {
+              setState(() => _filter = f);
+              _run(_query);
+            },
+            options: [
+              FilterOption(TestamentFilter.all, s.all),
+              FilterOption(TestamentFilter.oldTestament, s.oldTestament),
+              FilterOption(TestamentFilter.newTestament, s.newTestament),
+            ],
           ),
-          const Divider(height: 1),
+          const Divider(),
           Expanded(child: _results(context, s, settings, bookList)),
         ],
       ),
@@ -133,17 +112,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _results(BuildContext context, S s, Settings settings, List<Book> books) {
     if (_query.isEmpty) {
-      return ListView(
+      if (settings.recentSearches.isEmpty) return EmptyState(message: s.searchHint, icon: Icons.search);
+      return AppListView(
         children: [
-          if (settings.recentSearches.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(s.recentSearches, style: Theme.of(context).textTheme.titleSmall),
-            ),
+          SectionHeader(s.recentSearches, first: true),
           for (final q in settings.recentSearches)
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: Text(q),
+            AppListTile(
+              leadingIcon: Icons.history,
+              title: q,
               onTap: () {
                 _controller.text = q;
                 _run(q);
@@ -152,54 +128,52 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ],
       );
     }
-    if (_loading && _hits == null) return const Center(child: CircularProgressIndicator());
+    if (_loading && _hits == null) return const LoadingState();
     final hits = _hits ?? const [];
     final terms = normalize(_query).split(' ').where((t) => t.isNotEmpty).toList();
     final reference = _reference;
     final refBook = reference != null ? books.where((b) => b.code == reference.bookCode).firstOrNull : null;
+    if (hits.isEmpty && refBook == null) return EmptyState(message: s.noResults, icon: Icons.search_off);
+    final snippet = context.scriptureSnippet;
+    final match = snippet.copyWith(fontWeight: FontWeight.w700, color: context.colors.primary);
 
     return ListView.separated(
+      padding: AppListView.defaultPadding,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       itemCount: hits.length + 2,
-      separatorBuilder: (_, i) => i == 0 ? const SizedBox.shrink() : const Divider(height: 1, indent: 16),
+      separatorBuilder: (_, i) => i < 2 ? const SizedBox.shrink() : const Divider(indent: AppSpacing.screen),
       itemBuilder: (context, i) {
         if (i == 0) {
           if (reference == null || refBook == null) return const SizedBox.shrink();
-          return Card(
-            margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: ListTile(
-              leading: const Icon(Icons.menu_book),
-              title: Text(
-                formatReference(refBook, reference.chapter, [
-                  if (reference.verse case final v?)
-                    for (var x = v; x <= (reference.verseEnd ?? v); x++) x,
-                ], amharic: s.isAmharic),
-              ),
-              subtitle: Text(s.goTo),
-              trailing: const Icon(Icons.arrow_forward),
-              onTap: () => _open(BibleRef(reference.bookCode, reference.chapter, reference.verse)),
+          return AppCard(
+            eyebrow: s.goTo,
+            onTap: () => _open(BibleRef(reference.bookCode, reference.chapter, reference.verse)),
+            trailing: const Icon(Icons.arrow_forward),
+            child: Row(
+              children: [
+                const Icon(Icons.menu_book),
+                const SizedBox(width: AppSpacing.iconGap),
+                Expanded(
+                  child: Text(
+                    formatReference(refBook, reference.chapter, [
+                      if (reference.verse case final v?)
+                        for (var x = v; x <= (reference.verseEnd ?? v); x++) x,
+                    ], amharic: s.isAmharic),
+                    style: context.text.titleMedium,
+                  ),
+                ),
+              ],
             ),
           );
         }
         if (i == 1) {
-          if (hits.isEmpty && refBook != null) return const SizedBox.shrink();
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text(
-              hits.isEmpty ? s.noResults : s.results(hits.length),
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-          );
+          if (hits.isEmpty) return const SizedBox.shrink();
+          return SectionHeader(s.results(hits.length), first: true);
         }
         final h = hits[i - 2];
-        return ListTile(
-          title: Text(
-            formatReference(h.book, vkeyChapter(h.vkey), [vkeyVerse(h.vkey)], amharic: s.isAmharic),
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          subtitle: Text.rich(
-            highlightMatches(h.text, terms, Theme.of(context).colorScheme.primary),
-            style: TextStyle(fontFamily: settings.fontFamily, fontSize: 16, height: 1.5),
-          ),
+        return AppListTile(
+          title: formatReference(h.book, vkeyChapter(h.vkey), [vkeyVerse(h.vkey)], amharic: s.isAmharic),
+          subtitleWidget: Text.rich(highlightMatches(h.text, terms, match), style: snippet),
           onTap: () => _open(BibleRef(h.book.code, vkeyChapter(h.vkey), vkeyVerse(h.vkey))),
         );
       },
@@ -207,9 +181,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
-/// Bolds words whose normalized form starts with a search term (also after a
-/// fused prefix such as በ/ለ/ከ/የ, matching how the index was built).
-TextSpan highlightMatches(String text, List<String> terms, Color color) {
+/// Emphasizes words whose normalized form starts with a search term (also
+/// after a fused prefix such as በ/ለ/ከ/የ, matching how the index was built).
+TextSpan highlightMatches(String text, List<String> terms, TextStyle matchStyle) {
   final parts = <InlineSpan>[];
   final re = RegExp(r'\S+|\s+');
   for (final m in re.allMatches(text)) {
@@ -218,12 +192,7 @@ TextSpan highlightMatches(String text, List<String> terms, Color color) {
     final hit =
         n.isNotEmpty &&
         terms.any((t) => n.startsWith(t) || (n.length > 2 && 'በለከየ'.contains(n[0]) && n.substring(1).startsWith(t)));
-    parts.add(
-      TextSpan(
-        text: word,
-        style: hit ? TextStyle(fontWeight: FontWeight.w700, color: color) : null,
-      ),
-    );
+    parts.add(TextSpan(text: word, style: hit ? matchStyle : null));
   }
   return TextSpan(children: parts);
 }

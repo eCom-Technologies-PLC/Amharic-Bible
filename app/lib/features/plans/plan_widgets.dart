@@ -6,6 +6,7 @@ import '../../core/strings.dart';
 import '../../domain/models.dart';
 import '../../domain/plans.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 
 /// Book code -> short name in the current version (falls back to the code).
@@ -33,12 +34,12 @@ class ReadingChips extends ConsumerWidget {
     final names = ref.watch(bookNamesProvider).value ?? const {};
     final settings = ref.watch(settingsProvider);
     return Wrap(
-      spacing: 8,
-      runSpacing: 4,
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
       children: [
         for (final r in readings)
           ActionChip(
-            avatar: const Icon(Icons.menu_book_outlined, size: 18),
+            avatar: const Icon(Icons.menu_book_outlined, size: AppIconSize.sm),
             label: Text(formatReading(r, names, settings)),
             onPressed: () => context.go('/read?ref=${BibleRef(r.book, r.from).encode()}'),
           ),
@@ -59,50 +60,34 @@ class TodaysReadingCards extends ConsumerWidget {
     return Column(
       children: [
         for (final p in active)
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => context.push('/me/plans/${p.plan.id}'),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(s.todaysReading, style: Theme.of(context).textTheme.labelLarge),
-                              Text(p.plan.nameFor(lang), style: Theme.of(context).textTheme.bodySmall),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (!p.finished)
-                        IconButton(
-                          tooltip: s.markAsRead,
-                          icon: const Icon(Icons.check_circle_outline),
-                          onPressed: () async {
-                            await ref.read(userRepositoryProvider).setDayDone(p.plan.id, p.nextDay!, true);
-                            invalidateUserData(ref);
-                          },
-                        ),
-                    ],
+          AppCard(
+            eyebrow: s.todaysReading,
+            onTap: () => context.push('/me/plans/${p.plan.id}'),
+            trailing: p.finished
+                ? null
+                : IconButton(
+                    tooltip: s.markAsRead,
+                    icon: const Icon(Icons.check_circle_outline),
+                    onPressed: () async {
+                      await ref.read(userRepositoryProvider).setDayDone(p.plan.id, p.nextDay!, true);
+                      invalidateUserData(ref);
+                    },
                   ),
-                  const SizedBox(height: 4),
-                  if (p.finished)
-                    Text(s.planFinished)
-                  else ...[
-                    Text(s.dayOf(p.nextDay!, p.plan.length), style: Theme.of(context).textTheme.bodySmall),
-                    const SizedBox(height: 4),
-                    ReadingChips(readings: p.plan.readingsFor(p.nextDay!)),
-                  ],
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(value: p.fraction),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(p.plan.nameFor(lang), style: context.text.titleMedium),
+                const SizedBox(height: AppSpacing.xs),
+                if (p.finished)
+                  Text(s.planFinished, style: context.text.bodyMedium)
+                else ...[
+                  Text(s.dayOf(p.nextDay!, p.plan.length), style: context.text.bodySmall),
+                  const SizedBox(height: AppSpacing.sm),
+                  ReadingChips(readings: p.plan.readingsFor(p.nextDay!)),
                 ],
-              ),
+                const SizedBox(height: AppSpacing.md),
+                LinearProgressIndicator(value: p.fraction),
+              ],
             ),
           ),
       ],

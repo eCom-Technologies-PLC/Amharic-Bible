@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/strings.dart';
-import 'core/theme.dart';
+import 'ui/ui.dart';
 import 'domain/models.dart';
 import 'features/audio/player_widgets.dart';
 import 'features/home/home_screen.dart';
@@ -116,7 +116,13 @@ class AmharicBibleApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'መጽሐፍ ቅዱስ',
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(settings.readerTheme, brightness),
+      theme: buildAppTheme(
+        mode: settings.readerTheme,
+        platformBrightness: brightness,
+        readingFontSize: settings.fontSize,
+        readingLineHeight: settings.lineHeight,
+        serif: settings.serif,
+      ),
       locale: settings.locale,
       supportedLocales: S.supported,
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

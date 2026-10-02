@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/geez.dart';
-import '../../core/theme.dart';
+import '../../ui/ui.dart';
 import 'chapter_layout.dart';
 
 /// How verses in a paragraph should look.
@@ -22,36 +22,25 @@ class VerseDecor {
   final int? playing; // verse being read aloud
 }
 
-class ReaderStyle {
-  const ReaderStyle({
-    required this.fontFamily,
-    required this.fontSize,
-    required this.lineHeight,
+/// Reading options that change what is shown (not how it is styled — styles
+/// come from the theme's [ReadingStyles]).
+class ReaderOptions {
+  const ReaderOptions({
     required this.showNumbers,
     required this.redLetters,
     required this.geezNumerals,
-    this.muted = false,
+    this.secondary = false,
   });
 
-  final String fontFamily;
-  final double fontSize;
-  final double lineHeight;
   final bool showNumbers;
   final bool redLetters;
   final bool geezNumerals;
 
-  /// Secondary text in side-by-side reading: softer color, slightly smaller.
-  final bool muted;
+  /// The second version in side-by-side reading (softer text style).
+  final bool secondary;
 
-  ReaderStyle secondary({required bool showNumbers}) => ReaderStyle(
-    fontFamily: fontFamily,
-    fontSize: fontSize * 0.92,
-    lineHeight: lineHeight,
-    showNumbers: showNumbers,
-    redLetters: redLetters,
-    geezNumerals: geezNumerals,
-    muted: true,
-  );
+  ReaderOptions asSecondary({required bool showNumbers}) =>
+      ReaderOptions(showNumbers: showNumbers, redLetters: redLetters, geezNumerals: geezNumerals, secondary: true);
 }
 
 /// One paragraph or poetry line, rendered as a single RichText so text flows
@@ -60,14 +49,14 @@ class ParagraphView extends StatefulWidget {
   const ParagraphView({
     super.key,
     required this.block,
-    required this.style,
+    required this.options,
     required this.decor,
     required this.onTapVerse,
     required this.onTapFootnote,
   });
 
   final ParaBlock block;
-  final ReaderStyle style;
+  final ReaderOptions options;
   final VerseDecor decor;
   final ValueChanged<int> onTapVerse;
   final ValueChanged<String> onTapFootnote;
@@ -92,17 +81,11 @@ class _ParagraphViewState extends State<ParagraphView> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dark = isDarkTheme(theme);
-    final scheme = theme.colorScheme;
-    final s = widget.style;
+    final scheme = context.colors;
+    final reading = context.reading;
+    final o = widget.options;
     final d = widget.decor;
-    final base = TextStyle(
-      fontFamily: s.fontFamily,
-      fontSize: s.fontSize,
-      height: s.lineHeight,
-      color: s.muted ? scheme.onSurfaceVariant : scheme.onSurface,
-    );
+    final base = o.secondary ? reading.verseSecondary : reading.verse;
 
     final spans = <InlineSpan>[];
     var first = true;
@@ -110,48 +93,39 @@ class _ParagraphViewState extends State<ParagraphView> {
     for (final seg in widget.block.segs) {
       final k = seg.vkey;
       final hl = d.highlights[k];
-      Color? bg = hl != null ? highlightBackground(hl, dark: dark) : null;
+      Color? bg = hl != null ? context.appColors.highlight(hl) : null;
       if (d.playing == k) bg = scheme.primaryContainer;
       final selected = d.selected.contains(k);
-      var style = base.copyWith(
+      final style = base.copyWith(
         backgroundColor: bg,
         decoration: selected ? TextDecoration.underline : null,
         decorationStyle: TextDecorationStyle.dotted,
         decorationColor: scheme.primary,
-        decorationThickness: 2,
+        decorationThickness: AppDimens.selectionUnderline,
       );
       final tap = _tap(k, () => widget.onTapVerse(k));
       switch (seg.kind) {
         case 'num':
           if (!first) spans.add(TextSpan(text: ' ', style: base));
-          if (s.showNumbers) {
+          if (o.showNumbers) {
             final n = int.tryParse(seg.text);
             spans.add(
               TextSpan(
-                text: '${n != null && s.geezNumerals ? intToGeez(n) : seg.text} ',
-                style: base.copyWith(
-                  fontSize: s.fontSize * 0.6,
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w600,
-                  backgroundColor: bg,
-                ),
+                text: '${n != null && o.geezNumerals ? intToGeez(n) : seg.text}\u2009',
+                style: reading.verseNumber.copyWith(backgroundColor: bg),
                 recognizer: tap,
                 semanticsLabel: 'ቁጥር ${seg.text}',
               ),
             );
           }
-          if (d.bookmarks.contains(k)) {
-            spans.add(_icon(Icons.bookmark, scheme.primary, s.fontSize));
-          }
-          if (d.notes.contains(k)) {
-            spans.add(_icon(Icons.sticky_note_2_outlined, scheme.primary, s.fontSize));
-          }
+          if (d.bookmarks.contains(k)) spans.add(_icon(context, Icons.bookmark));
+          if (d.notes.contains(k)) spans.add(_icon(context, Icons.sticky_note_2_outlined));
         case 'n':
           final idx = footnoteIndex++;
           spans.add(
             TextSpan(
               text: '*',
-              style: base.copyWith(fontSize: s.fontSize * 0.7, color: scheme.primary, fontWeight: FontWeight.bold),
+              style: reading.footnoteMarker,
               recognizer: _tap('n$k-$idx', () => widget.onTapFootnote(seg.text)),
             ),
           );
@@ -159,7 +133,7 @@ class _ParagraphViewState extends State<ParagraphView> {
           spans.add(
             TextSpan(
               text: seg.text,
-              style: s.redLetters ? style.copyWith(color: wordsOfJesusColor(dark: dark)) : style,
+              style: o.redLetters ? style.copyWith(color: context.appColors.wordsOfJesus) : style,
               recognizer: tap,
             ),
           );
@@ -169,18 +143,23 @@ class _ParagraphViewState extends State<ParagraphView> {
       first = false;
     }
 
-    final indent = widget.block.poetry ? 12.0 + 20.0 * (widget.block.indent - 1) : 0.0;
+    final block = widget.block;
+    final indent = block.poetry ? AppSpacing.md + AppSpacing.xl * (block.indent - 1) : 0.0;
     return Padding(
-      padding: EdgeInsets.only(left: 20 + indent, right: 20, top: widget.block.poetry ? 0 : s.fontSize * 0.5),
+      padding: EdgeInsets.only(
+        left: AppSpacing.screen + indent,
+        right: AppSpacing.screen,
+        top: block.poetry ? 0 : AppSpacing.sm,
+      ),
       child: Text.rich(TextSpan(children: spans)),
     );
   }
 
-  InlineSpan _icon(IconData icon, Color color, double size) => WidgetSpan(
+  InlineSpan _icon(BuildContext context, IconData icon) => WidgetSpan(
     alignment: PlaceholderAlignment.middle,
     child: Padding(
-      padding: const EdgeInsets.only(right: 2),
-      child: Icon(icon, size: size * 0.7, color: color),
+      padding: const EdgeInsets.only(right: AppSpacing.xs),
+      child: Icon(icon, size: context.reading.inlineIconSize, color: context.colors.primary),
     ),
   );
 }

@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/ethiopian_calendar.dart';
 import '../../core/geez.dart';
 import '../../core/strings.dart';
-import '../../core/theme.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../reader/text_settings_sheet.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  static const _languages = {'am': 'አማርኛ', 'en': 'English'};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,64 +20,78 @@ class SettingsScreen extends ConsumerWidget {
     final notifier = ref.read(settingsProvider.notifier);
     final versions = ref.watch(versionsProvider).value ?? const [];
     final current = ref.watch(currentVersionProvider).value;
+    final others = versions.where((v) => v.id != current?.id).toList();
+    final parallel = others.where((v) => v.id == settings.parallelVersionId).firstOrNull;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(s.settings)),
-      body: ListView(
+    return AppScaffold(
+      title: s.settings,
+      body: AppListView(
         children: [
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(s.language),
-            trailing: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'am', label: Text('አማርኛ')),
-                ButtonSegment(value: 'en', label: Text('English')),
-              ],
-              selected: {settings.languageCode},
-              onSelectionChanged: (v) => notifier.update((x) => x.copyWith(languageCode: v.first)),
-            ),
+          AppListTile(
+            leadingIcon: Icons.language,
+            title: s.language,
+            subtitle: _languages[settings.languageCode],
+            chevron: true,
+            onTap: () async {
+              final v = await showOptionPicker(
+                context: context,
+                title: s.language,
+                selected: settings.languageCode,
+                options: [for (final e in _languages.entries) PickerOption(e.key, e.value)],
+              );
+              if (v != null) await notifier.update((x) => x.copyWith(languageCode: v));
+            },
           ),
-          ListTile(
-            leading: const Icon(Icons.menu_book_outlined),
-            title: Text(s.version),
-            trailing: DropdownButton<String>(
-              value: current?.id,
-              underline: const SizedBox.shrink(),
-              items: [for (final v in versions) DropdownMenuItem(value: v.id, child: Text(v.abbrev))],
-              onChanged: (id) => notifier.update((x) => x.copyWith(versionId: id)),
-            ),
+          AppListTile(
+            leadingIcon: Icons.menu_book_outlined,
+            title: s.version,
+            subtitle: current?.localName,
+            chevron: true,
+            onTap: () async {
+              final v = await showOptionPicker(
+                context: context,
+                title: s.version,
+                selected: current?.id,
+                options: [for (final v in versions) PickerOption(v.id, v.localName, subtitle: v.abbrev)],
+              );
+              if (v != null) await notifier.update((x) => x.copyWith(versionId: v));
+            },
           ),
-          ListTile(
-            leading: const Icon(Icons.view_column_outlined),
-            title: Text(s.sideBySide),
-            trailing: DropdownButton<String>(
-              value: versions.any((v) => v.id == settings.parallelVersionId && v.id != current?.id)
-                  ? settings.parallelVersionId
-                  : '',
-              underline: const SizedBox.shrink(),
-              items: [
-                DropdownMenuItem(value: '', child: Text(s.none)),
-                for (final v in versions.where((v) => v.id != current?.id))
-                  DropdownMenuItem(value: v.id, child: Text(v.abbrev)),
-              ],
-              onChanged: (id) =>
-                  notifier.update((x) => x.copyWith(parallelVersionId: () => id == null || id.isEmpty ? null : id)),
-            ),
+          AppListTile(
+            leadingIcon: Icons.view_column_outlined,
+            title: s.sideBySide,
+            subtitle: parallel?.localName ?? s.none,
+            chevron: true,
+            onTap: () async {
+              final v = await showOptionPicker(
+                context: context,
+                title: s.sideBySide,
+                selected: parallel?.id ?? '',
+                options: [
+                  PickerOption('', s.none),
+                  for (final v in others) PickerOption(v.id, v.localName, subtitle: v.abbrev),
+                ],
+              );
+              if (v != null) await notifier.update((x) => x.copyWith(parallelVersionId: () => v.isEmpty ? null : v));
+            },
           ),
-          ListTile(
-            leading: const Icon(Icons.palette_outlined),
-            title: Text(s.theme),
-            subtitle: Text(themeLabel(s, settings.readerTheme)),
+          SectionHeader(s.read),
+          AppListTile(
+            leadingIcon: Icons.palette_outlined,
+            title: s.theme,
+            subtitle: themeLabel(s, settings.readerTheme),
+            chevron: true,
             onTap: () => showTextSettingsSheet(context),
           ),
-          ListTile(
-            leading: const Icon(Icons.text_fields),
-            title: Text(s.textSize),
-            subtitle: Slider(
+          AppListTile(
+            leadingIcon: Icons.text_fields,
+            title: s.textSize,
+            subtitleWidget: Slider(
               value: settings.fontSizeIndex.toDouble(),
               min: 0,
-              max: (readingFontSizes.length - 1).toDouble(),
-              divisions: readingFontSizes.length - 1,
+              max: (AppFonts.readingSizes.length - 1).toDouble(),
+              divisions: AppFonts.readingSizes.length - 1,
+              label: '${settings.fontSize.round()}',
               onChanged: (v) => notifier.update((x) => x.copyWith(fontSizeIndex: v.round())),
             ),
           ),

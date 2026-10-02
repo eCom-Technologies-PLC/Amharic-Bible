@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/strings.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 
 /// App info and the attribution for every bundled text (from
@@ -13,36 +14,47 @@ class AboutScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
-    final t = Theme.of(context).textTheme;
-    return Scaffold(
-      appBar: AppBar(title: Text(s.about)),
-      body: AsyncBody(
+    return AppScaffold(
+      title: s.about,
+      body: AsyncView(
         value: ref.watch(versionsProvider),
-        data: (versions) => ListView(
-          padding: const EdgeInsets.all(16),
+        onRetry: () => ref.invalidate(versionsProvider),
+        data: (versions) => AppListView(
           children: [
-            Text(s.appName, style: t.headlineSmall),
-            const SizedBox(height: 8),
-            Text(s.privacyNote),
             const SampleBanner(),
-            const SizedBox(height: 24),
-            Text(s.sources, style: t.titleMedium),
-            for (final v in versions)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text('${v.localName} (${v.abbrev})'),
-                subtitle: Text([v.attribution, if (v.licenseStatus != 'confirmed') s.licenseUnverified].join('\n')),
+            Gutter(
+              vertical: AppSpacing.lg,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(s.appName, style: context.text.headlineSmall),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(s.privacyNote, style: context.text.bodyMedium),
+                ],
               ),
-            const SizedBox(height: 16),
-            Text(s.font, style: t.titleMedium),
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text('Noto Serif Ethiopic, Noto Sans Ethiopic'),
-              subtitle: Text('SIL Open Font License 1.1'),
             ),
-            TextButton(
-              onPressed: () => showLicensePage(context: context, applicationName: s.appName),
-              child: const Text('Open-source licenses'),
+            SectionHeader(s.sources),
+            for (final v in versions)
+              AppListTile(
+                title: '${v.localName} (${v.abbrev})',
+                subtitleWidget: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(v.attribution),
+                    if (v.licenseStatus != 'confirmed') ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      StatusBadge(s.licenseUnverified, tone: BadgeTone.warning, icon: Icons.gavel_outlined),
+                    ],
+                  ],
+                ),
+              ),
+            SectionHeader(s.font),
+            const AppListTile(title: 'Noto Serif Ethiopic, Noto Sans Ethiopic', subtitle: 'SIL Open Font License 1.1'),
+            AppListTile(
+              leadingIcon: Icons.description_outlined,
+              title: s.openSourceLicenses,
+              chevron: true,
+              onTap: () => showLicensePage(context: context, applicationName: s.appName),
             ),
           ],
         ),

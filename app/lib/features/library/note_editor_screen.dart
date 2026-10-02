@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/strings.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 
 /// Create or edit a note attached to a verse range.
@@ -73,28 +74,18 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         : [widget.vkeyStart, widget.vkeyEnd];
     final title = formatKeys(books, keys, amharic: s.isAmharic);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title.isEmpty ? s.note : title),
-        actions: [
-          if (widget.noteId != null)
-            IconButton(tooltip: s.delete, icon: const Icon(Icons.delete_outline), onPressed: _delete),
-          TextButton(onPressed: _loaded ? _save : null, child: Text(s.save)),
-        ],
-      ),
+    return AppScaffold(
+      title: title.isEmpty ? s.note : title,
+      actions: [
+        if (widget.noteId != null)
+          IconButton(tooltip: s.delete, icon: const Icon(Icons.delete_outline), onPressed: _delete),
+        AppButton.ghost(label: s.save, size: AppButtonSize.sm, onPressed: _loaded ? _save : null),
+      ],
       body: !_loaded
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingState()
           : Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                controller: _controller,
-                autofocus: true,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                style: const TextStyle(fontSize: 17, height: 1.6),
-                decoration: InputDecoration(hintText: s.noteHint, border: InputBorder.none),
-              ),
+              padding: const EdgeInsets.all(AppSpacing.screen),
+              child: AppTextField(controller: _controller, hint: s.noteHint, autofocus: true, multiline: true),
             ),
     );
   }

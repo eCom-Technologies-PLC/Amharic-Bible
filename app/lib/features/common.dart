@@ -8,6 +8,7 @@ import '../core/strings.dart';
 import '../core/vkey.dart';
 import '../domain/models.dart';
 import '../state/providers.dart';
+import '../ui/ui.dart';
 
 /// Compresses verse numbers into ranges: [1,2,3,5] -> "1-3, 5".
 String verseRanges(Iterable<int> verses) {
@@ -52,26 +53,6 @@ String formatDate(DateTime d, Settings s, S strings) {
   return DateFormat.yMMMd(strings.locale.languageCode).format(d.toLocal());
 }
 
-/// Renders an [AsyncValue] with standard loading and error states.
-class AsyncBody<T> extends StatelessWidget {
-  const AsyncBody({super.key, required this.value, required this.data});
-
-  final AsyncValue<T> value;
-  final Widget Function(T) data;
-
-  @override
-  Widget build(BuildContext context) => value.when(
-    data: data,
-    loading: () => const Center(child: CircularProgressIndicator()),
-    error: (e, _) => Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text('$e', textAlign: TextAlign.center),
-      ),
-    ),
-  );
-}
-
 /// Banner shown when the bundled content is sample text only.
 class SampleBanner extends ConsumerWidget {
   const SampleBanner({super.key});
@@ -80,18 +61,24 @@ class SampleBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sample = ref.watch(isSampleProvider).value ?? false;
     if (!sample) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
+    final scheme = context.colors;
+    return Material(
       color: scheme.tertiaryContainer,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Text(S.of(context).sampleBanner, style: TextStyle(color: scheme.onTertiaryContainer, fontSize: 13)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen, vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, size: AppIconSize.sm, color: scheme.onTertiaryContainer),
+            const SizedBox(width: AppSpacing.iconGap),
+            Expanded(
+              child: Text(
+                S.of(context).sampleBanner,
+                style: context.text.bodySmall?.copyWith(color: scheme.onTertiaryContainer),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
-}
-
-void showSnack(BuildContext context, String message) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
 }

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../core/theme.dart';
+import 'preferences.dart';
 import '../core/vkey.dart';
 
 class BibleVersion {

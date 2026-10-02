@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
-import '../../core/theme.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../../ui/ui.dart';
 import '../common.dart';
 
 /// Highlights, bookmarks and notes, newest first.
@@ -21,16 +21,14 @@ class LibraryScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 3,
       initialIndex: initialTab.clamp(0, 2),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(s.me),
-          bottom: TabBar(
-            tabs: [
-              Tab(text: s.highlights),
-              Tab(text: s.bookmarks),
-              Tab(text: s.notes),
-            ],
-          ),
+      child: AppScaffold(
+        title: s.me,
+        bottom: TabBar(
+          tabs: [
+            Tab(text: s.highlights),
+            Tab(text: s.bookmarks),
+            Tab(text: s.notes),
+          ],
         ),
         body: const TabBarView(children: [_HighlightsTab(), _BookmarksTab(), _NotesTab()]),
       ),
@@ -61,22 +59,21 @@ class _VerseTile extends ConsumerWidget {
     final version = ref.watch(currentVersionProvider).value;
     final books = version != null ? ref.watch(booksProvider(version.id)).value ?? const <Book>[] : const <Book>[];
     final reference = formatKeys(books, [vkey], amharic: s.isAmharic);
-    final settings = ref.watch(settingsProvider);
-    return ListTile(
+    return AppListTile(
       leading: leading,
-      title: Text(reference.isEmpty ? '$vkey' : reference, style: Theme.of(context).textTheme.titleSmall),
-      subtitle: Column(
+      title: reference.isEmpty ? '$vkey' : reference,
+      subtitleWidget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             verse?.text ?? s.notInVersion,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: settings.fontFamily, fontSize: 15, height: 1.5),
+            style: context.scriptureSnippet.copyWith(color: context.colors.onSurfaceVariant),
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: AppSpacing.xs),
+            Text(subtitle!, style: context.text.bodySmall),
           ],
         ],
       ),
@@ -89,23 +86,19 @@ class _VerseTile extends ConsumerWidget {
   }
 }
 
-class _Empty extends StatelessWidget {
-  const _Empty(this.text, this.icon);
-  final String text;
-  final IconData icon;
+/// Small color dot used as a list leading element and filter avatar.
+class _ColorDot extends StatelessWidget {
+  const _ColorDot(this.color);
+  final HighlightColor color;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(text, textAlign: TextAlign.center),
-        ],
-      ),
+  Widget build(BuildContext context) => Container(
+    width: AppIconSize.sm,
+    height: AppIconSize.sm,
+    decoration: BoxDecoration(
+      color: context.appColors.highlight(color),
+      shape: BoxShape.circle,
+      border: Border.all(color: context.colors.outlineVariant),
     ),
   );
 }
@@ -123,46 +116,29 @@ class _HighlightsTabState extends ConsumerState<_HighlightsTab> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final dark = isDarkTheme(Theme.of(context));
-    return AsyncBody(
+    return AsyncView(
       value: ref.watch(highlightsListProvider),
+      onRetry: () => ref.invalidate(highlightsListProvider),
       data: (all) {
-        if (all.isEmpty) return _Empty(s.emptyHighlights, Icons.format_paint_outlined);
+        if (all.isEmpty) return EmptyState(message: s.emptyHighlights, icon: Icons.format_paint_outlined);
         final items = _color == null ? all : all.where((h) => h.color == _color).toList();
         final verses = ref.watch(_versesProvider(items.map((h) => h.vkey).join(','))).value ?? const {};
         return Column(
           children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  ChoiceChip(
-                    label: Text(s.all),
-                    selected: _color == null,
-                    onSelected: (_) => setState(() => _color = null),
-                  ),
-                  for (final c in HighlightColor.values)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: ChoiceChip(
-                        avatar: CircleAvatar(backgroundColor: highlightBackground(c, dark: dark)),
-                        label: Text('${all.where((h) => h.color == c).length}'),
-                        selected: _color == c,
-                        onSelected: (_) => setState(() => _color = c),
-                      ),
-                    ),
-                ],
-              ),
+            FilterBar<HighlightColor?>(
+              selected: _color,
+              onSelected: (c) => setState(() => _color = c),
+              options: [
+                FilterOption(null, s.all),
+                for (final c in HighlightColor.values)
+                  FilterOption(c, '${all.where((h) => h.color == c).length}', avatar: _ColorDot(c)),
+              ],
             ),
             Expanded(
               child: ListView.builder(
                 itemCount: items.length,
-                itemBuilder: (_, i) => _VerseTile(
-                  vkey: items[i].vkey,
-                  verse: verses[items[i].vkey],
-                  leading: CircleAvatar(radius: 8, backgroundColor: highlightBackground(items[i].color, dark: dark)),
-                ),
+                itemBuilder: (_, i) =>
+                    _VerseTile(vkey: items[i].vkey, verse: verses[items[i].vkey], leading: _ColorDot(items[i].color)),
               ),
             ),
           ],
@@ -179,10 +155,11 @@ class _BookmarksTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
     final settings = ref.watch(settingsProvider);
-    return AsyncBody(
+    return AsyncView(
       value: ref.watch(bookmarksListProvider),
+      onRetry: () => ref.invalidate(bookmarksListProvider),
       data: (items) {
-        if (items.isEmpty) return _Empty(s.emptyBookmarks, Icons.bookmark_border);
+        if (items.isEmpty) return EmptyState(message: s.emptyBookmarks, icon: Icons.bookmark_border);
         final verses = ref.watch(_versesProvider(items.map((b) => b.vkey).join(','))).value ?? const {};
         return ListView.builder(
           itemCount: items.length,
@@ -213,29 +190,30 @@ class _NotesTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
     final settings = ref.watch(settingsProvider);
-    return AsyncBody(
+    return AsyncView(
       value: ref.watch(notesListProvider),
+      onRetry: () => ref.invalidate(notesListProvider),
       data: (items) {
-        if (items.isEmpty) return _Empty(s.emptyNotes, Icons.sticky_note_2_outlined);
+        if (items.isEmpty) return EmptyState(message: s.emptyNotes, icon: Icons.sticky_note_2_outlined);
         final version = ref.watch(currentVersionProvider).value;
         final books = version != null ? ref.watch(booksProvider(version.id)).value ?? const <Book>[] : const <Book>[];
         return ListView.separated(
           itemCount: items.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (_, _) => const Divider(indent: AppSpacing.screen),
           itemBuilder: (_, i) {
             final n = items[i];
             final keys = n.vkeyStart ~/ 1000 == n.vkeyEnd ~/ 1000
                 ? [for (var k = n.vkeyStart; k <= n.vkeyEnd; k++) k]
                 : [n.vkeyStart, n.vkeyEnd];
-            return ListTile(
-              leading: const Icon(Icons.sticky_note_2_outlined),
-              title: Text(formatKeys(books, keys, amharic: s.isAmharic)),
-              subtitle: Column(
+            return AppListTile(
+              leadingIcon: Icons.sticky_note_2_outlined,
+              title: formatKeys(books, keys, amharic: s.isAmharic),
+              subtitleWidget: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(n.body, maxLines: 4, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text(formatDate(n.updatedAt, settings, s), style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(formatDate(n.updatedAt, settings, s), style: context.text.bodySmall),
                 ],
               ),
               onTap: () => context.push('/note?start=${n.vkeyStart}&end=${n.vkeyEnd}&id=${n.id}'),

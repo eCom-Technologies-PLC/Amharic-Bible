@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
 import '../../state/providers.dart';
-import '../common.dart';
+import '../../ui/ui.dart';
 
 class PlansScreen extends ConsumerWidget {
   const PlansScreen({super.key});
@@ -13,45 +13,42 @@ class PlansScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
     final lang = s.locale.languageCode;
-    final t = Theme.of(context).textTheme;
     final active = ref.watch(activePlansProvider).value ?? const [];
     final activeIds = {for (final p in active) p.plan.id};
 
-    return Scaffold(
-      appBar: AppBar(title: Text(s.readingPlans)),
-      body: AsyncBody(
+    return AppScaffold(
+      title: s.readingPlans,
+      body: AsyncView(
         value: ref.watch(plansProvider),
-        data: (plans) => ListView(
+        onRetry: () => ref.invalidate(plansProvider),
+        data: (plans) => AppListView(
           children: [
             if (active.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                child: Text(s.myPlans, style: t.titleSmall),
-              ),
+              SectionHeader(s.myPlans, first: true),
               for (final p in active)
-                ListTile(
-                  leading: CircularProgressIndicator(value: p.fraction, backgroundColor: Colors.black12),
-                  title: Text(p.plan.nameFor(lang)),
-                  subtitle: Text(
-                    p.finished
-                        ? s.planFinished
-                        : [s.dayOf(p.nextDay!, p.plan.length), if (p.behind > 1) s.behind(p.behind - 1)].join(' · '),
+                AppListTile(
+                  leading: ProgressRing(value: p.fraction),
+                  title: p.plan.nameFor(lang),
+                  subtitleWidget: Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(p.finished ? s.planFinished : s.dayOf(p.nextDay!, p.plan.length)),
+                      if (!p.finished && p.behind > 1) StatusBadge(s.behind(p.behind - 1), tone: BadgeTone.warning),
+                    ],
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  chevron: true,
                   onTap: () => context.push('/me/plans/${p.plan.id}'),
                 ),
-              const Divider(),
             ],
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(active.isEmpty ? s.readingPlans : s.morePlans, style: t.titleSmall),
-            ),
+            SectionHeader(active.isEmpty ? s.readingPlans : s.morePlans, first: active.isEmpty),
             for (final plan in plans.where((p) => !activeIds.contains(p.id)))
-              ListTile(
-                leading: const Icon(Icons.event_note_outlined),
-                title: Text(plan.nameFor(lang)),
-                subtitle: Text('${plan.descriptionFor(lang)}\n${s.days(plan.length)}'),
-                isThreeLine: true,
+              AppListTile(
+                leadingIcon: Icons.event_note_outlined,
+                title: plan.nameFor(lang),
+                subtitle: '${plan.descriptionFor(lang)}\n${s.days(plan.length)}',
+                chevron: true,
                 onTap: () => context.push('/me/plans/${plan.id}'),
               ),
           ],
