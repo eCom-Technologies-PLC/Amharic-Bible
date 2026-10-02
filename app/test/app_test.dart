@@ -162,6 +162,23 @@ void main() {
     expect(await UserRepository(userDb).readingDays(), hasLength(1));
   });
 
+  testWidgets('plans can be filtered by length', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/plans',
+    );
+    expect(find.text('The Bible in a year'), findsOneWidget);
+    await tester.tap(find.text('1 week'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mark in 7 days'), findsOneWidget);
+    expect(find.text('Romans in 7 days'), findsOneWidget);
+    expect(find.text('The Bible in a year'), findsNothing);
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    expect(find.text('The Bible in a year'), findsOneWidget);
+  });
+
   testWidgets('staying on a chapter counts today; home and activity show the streak', (tester) async {
     await pumpApp(
       tester,

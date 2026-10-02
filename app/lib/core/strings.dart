@@ -152,6 +152,16 @@ class S {
   String get previousMonth => _('previousMonth');
   String get nextMonth => _('nextMonth');
   String get dayReadLabel => _('dayReadLabel');
+  String get allPlans => _('allPlans');
+  String get periodWeek => _('periodWeek');
+  String get periodMonth => _('periodMonth');
+  String get periodThreeMonths => _('periodThreeMonths');
+  String get periodSixMonths => _('periodSixMonths');
+  String get periodYear => _('periodYear');
+  String get paceLight => _('paceLight');
+  String get paceSteady => _('paceSteady');
+  String get paceIntensive => _('paceIntensive');
+  String get noPlansForPeriod => _('noPlansForPeriod');
   List<String> get weekdayInitials =>
       isAmharic ? const ['ሰ', 'ማ', 'ረ', 'ሐ', 'ዓ', 'ቅ', 'እ'] : const ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -164,6 +174,7 @@ class S {
   String days(int n) => isAmharic ? '$n ቀናት' : '$n days';
   String behind(int n) => isAmharic ? '$n ቀናት ወደኋላ' : '$n days behind';
   String signedInAs(String email) => isAmharic ? 'በ$email ገብተዋል' : 'Signed in as $email';
+  String minutesPerDay(int n) => isAmharic ? 'በቀን ~$n ደቂቃ' : '~$n min a day';
   String streakDays(int n) => isAmharic ? '$n ቀን' : (n == 1 ? '1 day' : '$n days');
   String bestStreakIs(int n) => isAmharic ? 'ምርጥ፦ $n ቀን' : 'Best: ${streakDays(n)}';
   String daysThisWeek(int n) => isAmharic ? 'ባለፉት 7 ቀናት $n ቀን' : '$n of the last 7 days';
@@ -301,6 +312,16 @@ const _am = {
   'previousMonth': 'ያለፈው ወር',
   'nextMonth': 'የሚቀጥለው ወር',
   'dayReadLabel': 'ተነቧል',
+  'allPlans': 'ሁሉም',
+  'periodWeek': '1 ሳምንት',
+  'periodMonth': '1 ወር',
+  'periodThreeMonths': '3 ወራት',
+  'periodSixMonths': '6 ወራት',
+  'periodYear': '1 ዓመት',
+  'paceLight': 'ቀላል',
+  'paceSteady': 'መካከለኛ',
+  'paceIntensive': 'ጠንካራ',
+  'noPlansForPeriod': 'በዚህ ርዝመት ሌላ ዕቅድ የለም',
 };
 
 const _en = {
@@ -434,4 +455,14 @@ const _en = {
   'previousMonth': 'Previous month',
   'nextMonth': 'Next month',
   'dayReadLabel': 'Read',
+  'allPlans': 'All',
+  'periodWeek': '1 week',
+  'periodMonth': '1 month',
+  'periodThreeMonths': '3 months',
+  'periodSixMonths': '6 months',
+  'periodYear': '1 year',
+  'paceLight': 'Light',
+  'paceSteady': 'Steady',
+  'paceIntensive': 'Intensive',
+  'noPlansForPeriod': 'No other plans of this length',
 };

@@ -253,9 +253,13 @@ final notesListProvider = FutureProvider<List<Note>>((ref) => ref.watch(userRepo
 
 // --------------------------------------------------------------------- plans
 
-final plansProvider = FutureProvider<List<ReadingPlan>>(
-  (ref) async => parsePlans(await rootBundle.loadString('assets/plans/plans.json')),
-);
+// Decoded here rather than with rootBundle.loadString, which moves files over
+// 50 KB to a background isolate; the plans file is small enough to decode
+// inline.
+final plansProvider = FutureProvider<List<ReadingPlan>>((ref) async {
+  final data = await rootBundle.load('assets/plans/plans.json');
+  return parsePlans(utf8.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
+});
 
 /// Clock used for plan scheduling; overridden in tests.
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);

@@ -55,8 +55,10 @@ Features:
 - **Side by side:** any two versions (e.g. Amharic + English), in columns on tablets and interleaved on phones.
 - **Study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16").
 - **Audio:** follow-along verse highlighting, background playback, speed, sleep timer and book downloads.
-- **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
-  60 days, with daily progress and a "today's reading" card on Home.
+- **Reading plans:** 15 plans grouped by length (1 week, 1 month, 3 months, 6 months, 1 year), from Mark in
+  7 days to the Bible in a year (straight through, or Old and New Testament together). Each shows its
+  estimated minutes a day and pace; days are balanced by verse count. Daily progress and a "today's
+  reading" card on Home.
 - **Reading streak:** on by default (can be turned off). A day counts after 30 seconds on a chapter, reaching
   its end, listening to most of a chapter, or marking a plan day done. One missed day a week is forgiven
   (a rest day). Home shows the streak and the last seven days; Me → Reading activity has a month calendar.

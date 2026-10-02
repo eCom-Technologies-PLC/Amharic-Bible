@@ -3,14 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
+import '../../domain/plans.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
+import 'plan_widgets.dart';
 
-class PlansScreen extends ConsumerWidget {
+class PlansScreen extends ConsumerStatefulWidget {
   const PlansScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PlansScreen> createState() => _PlansScreenState();
+}
+
+class _PlansScreenState extends ConsumerState<PlansScreen> {
+  /// Period filter for the plans not yet started; null shows all.
+  PlanPeriod? _period;
+
+  @override
+  Widget build(BuildContext context) {
     final s = S.of(context);
     final lang = s.locale.languageCode;
     final active = ref.watch(activePlansProvider).value ?? const [];
@@ -21,38 +31,60 @@ class PlansScreen extends ConsumerWidget {
       body: AsyncView(
         value: ref.watch(plansProvider),
         onRetry: () => ref.invalidate(plansProvider),
-        data: (plans) => AppListView(
-          children: [
-            if (active.isNotEmpty) ...[
-              SectionHeader(s.myPlans, first: true),
-              for (final p in active)
-                AppListTile(
-                  leading: ProgressRing(value: p.fraction),
-                  title: p.plan.nameFor(lang),
-                  subtitleWidget: Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.xs,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(p.finished ? s.planFinished : s.dayOf(p.nextDay!, p.plan.length)),
-                      if (!p.finished && p.behind > 1) StatusBadge(s.behind(p.behind - 1), tone: BadgeTone.warning),
-                    ],
+        data: (plans) {
+          final available = plans.where((p) => !activeIds.contains(p.id)).toList();
+          final shown = available.where((p) => _period == null || p.period == _period).toList();
+          return AppListView(
+            children: [
+              if (active.isNotEmpty) ...[
+                SectionHeader(s.myPlans, first: true),
+                for (final p in active)
+                  AppListTile(
+                    leading: ProgressRing(value: p.fraction),
+                    title: p.plan.nameFor(lang),
+                    subtitleWidget: Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(p.finished ? s.planFinished : s.dayOf(p.nextDay!, p.plan.length)),
+                        if (!p.finished && p.behind > 1) StatusBadge(s.behind(p.behind - 1), tone: BadgeTone.warning),
+                      ],
+                    ),
+                    chevron: true,
+                    onTap: () => context.push('/me/plans/${p.plan.id}'),
                   ),
-                  chevron: true,
-                  onTap: () => context.push('/me/plans/${p.plan.id}'),
-                ),
-            ],
-            SectionHeader(active.isEmpty ? s.readingPlans : s.morePlans, first: active.isEmpty),
-            for (final plan in plans.where((p) => !activeIds.contains(p.id)))
-              AppListTile(
-                leadingIcon: Icons.event_note_outlined,
-                title: plan.nameFor(lang),
-                subtitle: '${plan.descriptionFor(lang)}\n${s.days(plan.length)}',
-                chevron: true,
-                onTap: () => context.push('/me/plans/${plan.id}'),
+              ],
+              SectionHeader(active.isEmpty ? s.readingPlans : s.morePlans, first: active.isEmpty),
+              FilterBar<PlanPeriod?>(
+                options: [
+                  FilterOption(null, s.allPlans),
+                  for (final p in PlanPeriod.values) FilterOption(p, periodLabel(p, s)),
+                ],
+                selected: _period,
+                onSelected: (p) => setState(() => _period = p),
               ),
-          ],
-        ),
+              if (shown.isEmpty)
+                EmptyState(message: s.noPlansForPeriod, icon: Icons.event_note_outlined)
+              else
+                for (final plan in shown)
+                  AppListTile(
+                    leadingIcon: Icons.event_note_outlined,
+                    title: plan.nameFor(lang),
+                    subtitleWidget: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(plan.descriptionFor(lang)),
+                        const SizedBox(height: AppSpacing.xs),
+                        PlanFacts(plan: plan),
+                      ],
+                    ),
+                    chevron: true,
+                    onTap: () => context.push('/me/plans/${plan.id}'),
+                  ),
+            ],
+          );
+        },
       ),
     );
   }

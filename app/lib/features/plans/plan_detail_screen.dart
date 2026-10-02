@@ -98,7 +98,7 @@ class _NotStarted extends StatelessWidget {
             children: [
               Text(plan.descriptionFor(lang), style: context.text.bodyLarge),
               const SizedBox(height: AppSpacing.sm),
-              StatusBadge(s.days(plan.length), icon: Icons.event_note_outlined),
+              PlanFacts(plan: plan),
             ],
           ),
         ),

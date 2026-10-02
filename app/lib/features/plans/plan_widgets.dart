@@ -96,3 +96,39 @@ class TodaysReadingCards extends ConsumerWidget {
     );
   }
 }
+
+String periodLabel(PlanPeriod p, S s) => switch (p) {
+  PlanPeriod.week => s.periodWeek,
+  PlanPeriod.month => s.periodMonth,
+  PlanPeriod.threeMonths => s.periodThreeMonths,
+  PlanPeriod.sixMonths => s.periodSixMonths,
+  PlanPeriod.year => s.periodYear,
+};
+
+/// Length, daily reading time and pace of a plan, as badges.
+class PlanFacts extends StatelessWidget {
+  const PlanFacts({super.key, required this.plan});
+
+  final ReadingPlan plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final minutes = plan.minutesPerDay;
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        StatusBadge(s.days(plan.length), icon: Icons.event_note_outlined),
+        if (minutes != null) StatusBadge(s.minutesPerDay(minutes), icon: Icons.schedule_outlined),
+        if (plan.pace case final pace?)
+          StatusBadge(switch (pace) {
+            PlanPace.light => s.paceLight,
+            PlanPace.steady => s.paceSteady,
+            PlanPace.intensive => s.paceIntensive,
+          }, tone: pace == PlanPace.intensive ? BadgeTone.warning : BadgeTone.info),
+      ],
+    );
+  }
+}

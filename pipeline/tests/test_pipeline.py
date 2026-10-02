@@ -142,6 +142,49 @@ class PlansTest(unittest.TestCase):
         self.assertEqual(total, sum(b.chapters for b in books.values()))
         self.assertEqual(year["days"][0][0], {"b": "GEN", "f": 1, "t": 4})
 
+    def test_split_balanced(self):
+        ranges = build_plans.split_balanced([1, 1, 10, 1, 1, 1, 1, 1, 1, 1, 1], 3)
+        self.assertEqual(ranges[0][0], 0)
+        self.assertEqual(ranges[-1][1], 11)
+        self.assertTrue(all(a < z for a, z in ranges))
+        self.assertTrue(all(ranges[i][1] == ranges[i + 1][0] for i in range(len(ranges) - 1)))
+        # Cuts land nearest each day's share (total 20, so about 6.7 per day).
+        self.assertEqual(ranges, [(0, 2), (2, 4), (4, 11)])
+        # Every day gets a chapter even when weights are lopsided.
+        self.assertEqual(build_plans.split_balanced([100, 1, 1], 3), [(0, 1), (1, 2), (2, 3)])
+        with self.assertRaises(ValueError):
+            build_plans.split_balanced([1, 1], 3)
+
+    def test_select_books(self):
+        books = sorted(load_books().values(), key=lambda b: b.num)
+        codes = [b.code for b in build_plans.select_books(["GEN-DEU", "MAT"], books)]
+        self.assertEqual(codes, ["GEN", "EXO", "LEV", "NUM", "DEU", "MAT"])
+        self.assertEqual(len(build_plans.select_books("NT", books)), 27)
+        self.assertEqual(len(build_plans.select_books(["1SA-2KI"], books)), 4)
+
+    def test_verse_counts_match_books(self):
+        counts = build_plans.load_verse_counts()
+        books = load_books()
+        self.assertEqual(set(counts), set(books))
+        for code, b in books.items():
+            self.assertEqual(len(counts[code]), b.chapters, code)
+        self.assertEqual(sum(sum(v) for v in counts.values()), 31102)
+        self.assertEqual(counts["PSA"][118], 176)
+
+    def test_plan_lengths_and_streams(self):
+        plans = {p["id"]: p for p in build_plans.build()["plans"]}
+        lengths = {i: len(p["days"]) for i, p in plans.items()}
+        # At least one plan for each period: week, month, 3 months, 6 months, year.
+        for lo, hi in [(1, 7), (8, 31), (32, 92), (93, 183), (184, 366)]:
+            self.assertTrue(any(lo <= n <= hi for n in lengths.values()), (lo, hi))
+        self.assertTrue(all(p["minutes"] >= 1 for p in plans.values()))
+        # Mixed plans read from every stream every day.
+        for day in plans["bible-year-mixed"]["days"]:
+            testaments = {load_books()[r["b"]].testament for r in day}
+            self.assertIn("OT", testaments)
+        self.assertEqual(lengths["proverbs-31"], 31)
+        self.assertTrue(all(len(day) == 1 and day[0]["f"] == day[0]["t"] for day in plans["proverbs-31"]["days"]))
+
     def test_bundled_plans_are_up_to_date(self):
         bundled = json.loads((HERE.parents[1] / "app/assets/plans/plans.json").read_text(encoding="utf-8"))
         self.assertEqual(bundled, build_plans.build(), "run python pipeline/build_plans.py")
