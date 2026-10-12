@@ -68,9 +68,10 @@ The app uses the 66-book canon only. Still to come: notification reminders for p
 
 **English (WEB)** audio needs no setup: its versions.json entry uses the `direct` provider. `fetch_sources.py` reads
 eBible.org's public-domain chapter MP3 listing into `content/sources/WEB/audio.json`, `build_db.py` stores the URLs
-in the `audio_chapter` table, and the app streams them (or downloads a book) without the proxy. The recordings
-may follow a slightly different WEB edition than the text, and they have no verse timestamps, so there is no
-follow-along highlighting.
+in the `audio_chapter` table, and the app streams them (or downloads a book) without the proxy. Today the most
+complete listing is the WEB British Edition (`eng-webbe`, all 1,189 chapters), so the audio can differ slightly in
+wording and spelling from the WEB text. The recordings have no verse timestamps, so there is no follow-along
+highlighting.
 
 To build only the English Bible, run the **Build full content** workflow with `versions` = `WEB`, or locally:
 `python pipeline/fetch_sources.py WEB && python pipeline/build_db.py --sources content/sources --out build/content.db --only WEB`.

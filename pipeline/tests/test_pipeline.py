@@ -136,6 +136,16 @@ class BuildTest(unittest.TestCase):
             self.assertEqual(rows, [("ENGWEB-MP3", "JHN", 3, "https://example.org/mp3/44_JHN_03.mp3")])
 
 
+class ValidateTest(unittest.TestCase):
+    def test_verse_given_only_in_a_footnote_is_not_an_error(self):
+        from validate import validate_version
+        b = usfm.parse("\\id ACT\n\\c 8\n\\p\n\\v 36 Water.\n"
+                       "\\v 37 \\f + \\fr 8:37 \\ft Some manuscripts add...\\f*\n\\v 38 Stop.\n\\v 39\n")
+        r = validate_version("WEB", [b], load_books(), complete=False)
+        self.assertEqual(r.errors, ["ACT 8:39: empty verse"])
+        self.assertEqual(r.warnings, ["ACT 8:37: text only in a footnote"])
+
+
 class AudioListingTest(unittest.TestCase):
     CODES = set(load_books())
 

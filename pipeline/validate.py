@@ -49,7 +49,13 @@ def validate_version(vid: str, books: list[Book], catalog: dict[str, BookInfo],
             seen.add(key)
             text = v.text
             if not text:
-                r.errors.append(f"{ref}: empty verse")
+                # Some translations (e.g. the WEB at Acts 8:37) keep the verse
+                # number but give the text only in a footnote. Only flag empty
+                # verses that have no footnote.
+                if any(tok[0] == "n" for tok in v.markup):
+                    r.warnings.append(f"{ref}: text only in a footnote")
+                else:
+                    r.errors.append(f"{ref}: empty verse")
             if "\\" in text:
                 r.errors.append(f"{ref}: unparsed USFM marker in text: {text[:60]!r}")
             if unicodedata.normalize("NFC", text) != text:
