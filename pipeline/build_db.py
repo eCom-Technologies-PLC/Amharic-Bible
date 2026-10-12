@@ -49,6 +49,10 @@ CREATE TABLE heading (version_id TEXT, vkey INTEGER, level INTEGER, text TEXT);
 CREATE INDEX heading_idx ON heading (version_id, vkey);
 CREATE TABLE crossref (version_id TEXT, vkey INTEGER, text TEXT);
 CREATE INDEX crossref_idx ON crossref (version_id, vkey);
+CREATE TABLE audio_chapter (
+  fileset TEXT, book TEXT, chapter INTEGER, url TEXT,
+  PRIMARY KEY (fileset, book, chapter)
+) WITHOUT ROWID;
 CREATE TABLE book_alias (alias TEXT, code TEXT, PRIMARY KEY (alias, code)) WITHOUT ROWID;
 CREATE VIRTUAL TABLE verse_fts USING fts5(
   norm_text, version_id UNINDEXED, vkey UNINDEXED,
@@ -64,6 +68,29 @@ def read_version_dir(path: Path) -> list[usfm.Book]:
         b = usfm.parse(f.read_text(encoding="utf-8-sig"))
         books.append(b)
     return books
+
+
+def load_direct_audio(db: sqlite3.Connection, vid: str, vdir: Path, audio: dict,
+                      books: list[usfm.Book]) -> int:
+    """Insert chapter MP3 URLs from <vdir>/audio.json (written by fetch_sources.py)."""
+    path = vdir / "audio.json"
+    if not path.exists():
+        print(f"[{vid}] warning: audio provider is 'direct' but {path} is missing; no audio", file=sys.stderr)
+        return 0
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    fileset = audio.get("fileset_id")
+    if not fileset:
+        print(f"[{vid}] ERROR: direct audio needs audio.fileset_id", file=sys.stderr)
+        return 1
+    wanted = {(b.code, c) for b in books for c in b.chapters_seen}
+    n = 0
+    for code, chapters in doc["chapters"].items():
+        for ch, url in chapters.items():
+            if (code, int(ch)) in wanted:
+                db.execute("INSERT INTO audio_chapter VALUES (?,?,?,?)", (fileset, code, int(ch), url))
+                n += 1
+    print(f"[{vid}] audio: {n} of {len(wanted)} chapters ({doc.get('source')})")
+    return 0
 
 
 def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
@@ -137,6 +164,8 @@ def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
                            (vid, vkey(info.num, x.chapter, x.verse), x.text))
 
         audio = reg.get("audio") or {}
+        if audio.get("provider") == "direct":
+            errors += load_direct_audio(db, vid, vdir, audio, books)
         db.execute(
             "INSERT INTO version VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (vid, reg["name"], reg["local_name"], reg["abbrev"], reg["language"], reg["canon"],

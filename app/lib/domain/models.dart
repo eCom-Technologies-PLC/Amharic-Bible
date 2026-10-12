@@ -12,6 +12,7 @@ class BibleVersion {
     required this.language,
     required this.attribution,
     required this.licenseStatus,
+    this.audioProvider,
     this.audioFilesetId,
     this.audioAllowDownload = false,
   });
@@ -23,10 +24,14 @@ class BibleVersion {
   final String language;
   final String attribution;
   final String licenseStatus;
+  final String? audioProvider; // 'biblebrain' (through the audio proxy) or 'direct' (MP3 URLs in content.db)
   final String? audioFilesetId;
   final bool audioAllowDownload;
 
   bool get hasAudio => audioFilesetId != null && audioFilesetId!.isNotEmpty;
+
+  /// Plays straight from public URLs in the content DB; needs no audio proxy.
+  bool get hasDirectAudio => hasAudio && audioProvider == 'direct';
 
   factory BibleVersion.fromRow(Map<String, Object?> r) => BibleVersion(
     id: r['id'] as String,
@@ -36,6 +41,7 @@ class BibleVersion {
     language: r['language'] as String,
     attribution: r['attribution'] as String,
     licenseStatus: r['license_status'] as String,
+    audioProvider: r['audio_provider'] as String?,
     audioFilesetId: r['audio_fileset_id'] as String?,
     audioAllowDownload: (r['audio_allow_download'] as int? ?? 0) == 1,
   );

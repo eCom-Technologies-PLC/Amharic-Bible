@@ -5,6 +5,10 @@ name: Build full content
 on:
   workflow_dispatch:
     inputs:
+      versions:
+        description: "Version IDs to build, space-separated (empty = all in content/versions.json), e.g. WEB"
+        type: string
+        default: ""
       allow_unverified:
         description: "Package versions whose license is not yet confirmed (internal testing only)"
         type: boolean
@@ -23,11 +27,16 @@ jobs:
         with:
           python-version: "3.11"
       - name: Fetch sources
-        run: python pipeline/fetch_sources.py
+        env:
+          VERSIONS: ${{ inputs.versions }}
+        run: python pipeline/fetch_sources.py $VERSIONS
       - name: Build content.db
+        env:
+          VERSIONS: ${{ inputs.versions }}
         run: |
           python pipeline/build_db.py --sources content/sources --out build/content.db \
-            ${{ inputs.allow_unverified && '--allow-unverified' || '' }}
+            ${{ inputs.allow_unverified && '--allow-unverified' || '' }} \
+            ${VERSIONS:+--only $VERSIONS}
       - uses: actions/upload-artifact@v4
         with:
           name: content-db

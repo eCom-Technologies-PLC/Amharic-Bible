@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/config.dart';
 import 'data/audio_repository.dart';
+import 'data/content_repository.dart';
 import 'data/databases.dart';
 import 'data/sync/account_service.dart';
 import 'data/user_repository.dart';
@@ -45,7 +46,11 @@ Future<void> main() async {
         initialSettingsProvider.overrideWithValue(settings),
         accountServiceProvider.overrideWithValue(account),
         audioRepositoryProvider.overrideWithValue(
-          AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support.path, 'audio'))),
+          AudioRepository(
+            baseUrl: AppConfig.audioProxyUrl,
+            storageDir: Directory(p.join(support.path, 'audio')),
+            directUrl: ContentRepository(contentDb).audioUrl,
+          ),
         ),
       ],
       child: const AmharicBibleApp(),

@@ -66,7 +66,16 @@ The app uses the 66-book canon only. Still to come: notification reminders for p
 
 ## Audio
 
-Audio comes from Bible Brain (Faith Comes By Hearing) through `server/audio-proxy`:
+**English (WEB)** audio needs no setup: its versions.json entry uses the `direct` provider. `fetch_sources.py` reads
+eBible.org's public-domain chapter MP3 listing into `content/sources/WEB/audio.json`, `build_db.py` stores the URLs
+in the `audio_chapter` table, and the app streams them (or downloads a book) without the proxy. The recordings
+may follow a slightly different WEB edition than the text, and they have no verse timestamps, so there is no
+follow-along highlighting.
+
+To build only the English Bible, run the **Build full content** workflow with `versions` = `WEB`, or locally:
+`python pipeline/fetch_sources.py WEB && python pipeline/build_db.py --sources content/sources --out build/content.db --only WEB`.
+
+**Amharic** audio comes from Bible Brain (Faith Comes By Hearing) through `server/audio-proxy`:
 
 1. Get a Bible Brain API key and find the Amharic audio fileset ID.
 2. Set `audio.fileset_id` for AMH1962 in `content/versions.json` and rebuild the content DB. Set

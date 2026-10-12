@@ -52,18 +52,27 @@ class AudioUnavailable implements Exception {
   String toString() => 'AudioUnavailable: $reason';
 }
 
-/// Resolves chapter audio through the audio proxy (server/audio-proxy), which
-/// keeps the Bible Brain key off the device. Signed stream URLs expire, so
-/// they are resolved right before playback and never stored. Downloaded
-/// chapters (where the fileset's license allows it) are played from disk.
+/// Looks up a public MP3 URL for a chapter (the content DB's audio_chapter
+/// table), or returns null when the fileset has none.
+typedef DirectAudioLookup = Future<String?> Function(String fileset, String book, int chapter);
+
+/// Resolves chapter audio. Filesets with public MP3 URLs in the content DB
+/// (provider 'direct', e.g. the World English Bible) play straight from those
+/// URLs. Everything else goes through the audio proxy (server/audio-proxy),
+/// which keeps the Bible Brain key off the device; its signed stream URLs
+/// expire, so they are resolved right before playback and never stored.
+/// Downloaded chapters (where the fileset's license allows it) are played
+/// from disk.
 class AudioRepository {
-  AudioRepository({required this.baseUrl, required this.storageDir, http.Client? client})
+  AudioRepository({required this.baseUrl, required this.storageDir, this.directUrl, http.Client? client})
     : _client = client ?? http.Client();
 
   final String baseUrl;
   final Directory storageDir;
+  final DirectAudioLookup? directUrl;
   final http.Client _client;
 
+  /// Whether the Bible Brain audio proxy is set up. Direct filesets work without it.
   bool get configured => baseUrl.isNotEmpty;
 
   File _audioFile(String fileset, String book, int chapter) =>
@@ -90,6 +99,8 @@ class AudioRepository {
   }
 
   Future<Map<String, dynamic>> _fetchChapter(String fileset, String book, int chapter) async {
+    final direct = await directUrl?.call(fileset, book, chapter);
+    if (direct != null) return {'url': direct, 'timestamps': const []};
     if (!configured) throw const AudioUnavailable('audio is not configured');
     final uri = Uri.parse('$baseUrl/chapter')
         .replace(queryParameters: {'fileset': fileset, 'book': book, 'chapter': '$chapter'});

@@ -149,7 +149,7 @@ class AudioController extends Notifier<AudioState> {
       currentVerse: () => null,
       error: () => null,
     );
-    if (!_repo.configured) {
+    if (!_repo.configured && !version.hasDirectAudio) {
       state = state.copyWith(status: AudioStatus.error, error: () => AudioError.notConfigured);
       return;
     }

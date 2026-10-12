@@ -43,7 +43,17 @@
         "attribution": "World English Bible — public domain (eBible.org)."
       },
       "bundle": true,
-      "audio": null
+      "audio": {
+        "provider": "direct",
+        "fileset_id": "ENGWEB-MP3",
+        "index_urls": [
+          "https://ebible.org/engwebu/mp3/",
+          "https://ebible.org/eng-webbe/mp3/",
+          "https://ebible.org/eng-web/mp3/"
+        ],
+        "_note": "Public-domain chapter MP3s from eBible.org. fetch_sources.py uses the index that lists the most chapters.",
+        "allow_download": true
+      }
     }
   ]
 }

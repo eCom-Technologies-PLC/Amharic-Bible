@@ -21,6 +21,21 @@ class ContentRepository {
 
   Future<bool> isSample() async => (await meta())['is_sample'] == '1';
 
+  /// Public MP3 URL for a chapter of a 'direct' audio fileset, or null.
+  Future<String?> audioUrl(String fileset, String book, int chapter) async {
+    try {
+      final rows = await db.query(
+        'audio_chapter',
+        columns: ['url'],
+        where: 'fileset = ? AND book = ? AND chapter = ?',
+        whereArgs: [fileset, book, chapter],
+      );
+      return rows.isEmpty ? null : rows.first['url'] as String?;
+    } on DatabaseException {
+      return null; // content DB built before audio_chapter existed
+    }
+  }
+
   Future<List<BibleVersion>> versions() async {
     final rows = await db.query('version', orderBy: "language = 'amh' DESC, id");
     return rows.map(BibleVersion.fromRow).toList();

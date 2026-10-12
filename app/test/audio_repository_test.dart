@@ -63,6 +63,20 @@ void main() {
     expect(none.resolve('F', 'GEN', 1), throwsA(isA<AudioUnavailable>()));
   });
 
+  test('direct filesets play public URLs without the proxy', () async {
+    final repo = AudioRepository(
+      baseUrl: '',
+      storageDir: await Directory.systemTemp.createTemp(),
+      directUrl: (fileset, book, chapter) async =>
+          fileset == 'ENGWEB-MP3' ? 'https://ebible.example/mp3/${book}_$chapter.mp3' : null,
+      client: MockClient((_) async => fail('the proxy must not be called')),
+    );
+    final a = await repo.resolve('ENGWEB-MP3', 'JHN', 3);
+    expect(a.uri.toString(), 'https://ebible.example/mp3/JHN_3.mp3');
+    expect(a.hasTimings, isFalse);
+    expect(repo.resolve('OTHER', 'JHN', 3), throwsA(isA<AudioUnavailable>()));
+  });
+
   test('downloaded chapters play from disk', () async {
     final dir = await Directory.systemTemp.createTemp();
     final client = MockClient((req) async {

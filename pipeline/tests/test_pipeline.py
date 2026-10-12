@@ -1,4 +1,5 @@
 import json
+import shutil
 import sqlite3
 import sys
 import tempfile
@@ -11,6 +12,7 @@ sys.path.insert(0, str(HERE.parent))
 import build_db  # noqa: E402
 import build_plans  # noqa: E402
 from abible import usfm  # noqa: E402
+from abible.audio import parse_listing  # noqa: E402
 from abible.catalog import alias_key, load_books, split_vkey, vkey  # noqa: E402
 from abible.geez import geez_to_int, index_terms, int_to_geez, normalize  # noqa: E402
 
@@ -117,6 +119,42 @@ class BuildTest(unittest.TestCase):
             rc = build_db.build(FIXTURES, out, sample=True, allow_unverified=False)
             self.assertEqual(rc, 1)
             self.assertFalse(out.exists())
+
+    def test_direct_audio_loaded_for_chapters_with_text(self):
+        with tempfile.TemporaryDirectory() as d:
+            src = Path(d) / "src"
+            shutil.copytree(FIXTURES / "WEB", src / "WEB")
+            (src / "WEB" / "audio.json").write_text(json.dumps({
+                "source": "https://example.org/mp3/",
+                "chapters": {"JHN": {"3": "https://example.org/mp3/44_JHN_03.mp3",
+                                     "4": "https://example.org/mp3/44_JHN_04.mp3"}},
+            }), encoding="utf-8")
+            out = Path(d) / "content.db"
+            self.assertEqual(build_db.build(src, out, sample=True, allow_unverified=False), 0)
+            rows = sqlite3.connect(out).execute("SELECT fileset, book, chapter, url FROM audio_chapter").fetchall()
+            # JHN 4 has no text in the sample, so it is left out.
+            self.assertEqual(rows, [("ENGWEB-MP3", "JHN", 3, "https://example.org/mp3/44_JHN_03.mp3")])
+
+
+class AudioListingTest(unittest.TestCase):
+    CODES = set(load_books())
+
+    def test_parses_common_file_names(self):
+        html = """
+        <a href="02_GEN_01.mp3">02_GEN_01.mp3</a>
+        <a href='02_GEN_02.mp3'>x</a>
+        <a href="eng-webbe_012_1KI_01.mp3">x</a>
+        <a href="/eng/PSA_119.mp3">x</a>
+        <a href="44_JHN_03.MP3">x</a>
+        <a href="readme.txt">x</a><a href="cover.mp3">x</a><a href="99_XYZ_01.mp3">x</a>
+        """
+        tracks = parse_listing(html, "https://ebible.org/engwebu/mp3/", self.CODES)
+        self.assertEqual(tracks["GEN"], {1: "https://ebible.org/engwebu/mp3/02_GEN_01.mp3",
+                                         2: "https://ebible.org/engwebu/mp3/02_GEN_02.mp3"})
+        self.assertEqual(tracks["1KI"], {1: "https://ebible.org/engwebu/mp3/eng-webbe_012_1KI_01.mp3"})
+        self.assertEqual(tracks["PSA"], {119: "https://ebible.org/eng/PSA_119.mp3"})
+        self.assertIn(3, tracks["JHN"])
+        self.assertEqual(set(tracks), {"GEN", "1KI", "PSA", "JHN"})
 
 
 class PlansTest(unittest.TestCase):
