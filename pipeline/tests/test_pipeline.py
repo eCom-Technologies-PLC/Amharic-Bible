@@ -1,3 +1,5 @@
+import gzip
+import hashlib
 import json
 import sqlite3
 import sys
@@ -255,6 +257,30 @@ class BuildTest(unittest.TestCase):
             name = db.execute("SELECT short_name FROM book WHERE version_id='SBLGNT' AND code='JHN'").fetchone()[0]
             self.assertEqual(name, load_books()["JHN"].short)
             db.close()
+
+    def test_packs(self):
+        with tempfile.TemporaryDirectory() as d:
+            out, packs = Path(d) / "content.db", Path(d) / "packs"
+            self.assertEqual(build_db.build(FIXTURES, out, sample=True, allow_unverified=True, packs=packs), 0)
+            # Versions with "bundle": false leave content.db for their own pack.
+            db = sqlite3.connect(out)
+            self.assertEqual({r[0] for r in db.execute("SELECT id FROM version")}, {"AMH1962", "WEB"})
+            db.close()
+            manifest = json.loads((packs / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual([p["id"] for p in manifest["packs"]], ["SBLGNT", "WLC"])
+            for p in manifest["packs"]:
+                data = (packs / p["file"]).read_bytes()
+                self.assertEqual((len(data), hashlib.sha256(data).hexdigest()), (p["bytes"], p["sha256"]))
+                raw = gzip.decompress(data)
+                self.assertEqual(len(raw), p["db_bytes"])
+                path = Path(d) / f"{p['id']}.db"
+                path.write_bytes(raw)
+                pack = sqlite3.connect(path)
+                self.assertEqual([r[0] for r in pack.execute("SELECT id FROM version")], [p["id"]])
+                self.assertEqual(pack.execute("SELECT value FROM meta WHERE key='pack'").fetchone()[0], p["id"])
+                self.assertGreater(pack.execute("SELECT count(*) FROM verse_fts").fetchone()[0], 0)
+                pack.close()
+            self.assertEqual(list(packs.glob("*.db")), [])  # only the compressed packs remain
 
     def test_unverified_license_is_refused(self):
         with tempfile.TemporaryDirectory() as d:

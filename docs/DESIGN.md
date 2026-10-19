@@ -82,8 +82,8 @@ needs a recorded license before it is bundled or streamed.
 The Hebrew and Greek texts cover one testament each and use Amharic book names. Hebrew is shown right to
 left with its points and cantillation (bundled Noto Serif Hebrew); Greek uses a bundled Noto Serif Greek
 subset. Search ignores Hebrew points, Greek accents and breathings, and final letter forms, and also finds
-Hebrew words after the prefixes ו and ה/ב/ל/כ/מ/ש. Together they add about 26 MB to `content.db` (about
-6 MB compressed in the APK); downloadable content packs (§6.2) would make them optional.
+Hebrew words after the prefixes ו and ה/ב/ל/כ/מ/ש. They are downloadable content packs (§6.2), not part
+of the app: WLC is a 4.5 MB download (20 MB installed), SBLGNT 1.4 MB (6 MB installed).
 
 ### 2.2 Audio
 
@@ -375,7 +375,7 @@ CREATE TABLE book_alias (alias_norm TEXT, code TEXT);   -- 'ዮሐ', 'ዮሐን�
 CREATE TABLE versification_map (from_version TEXT, from_vkey INTEGER, to_version TEXT, to_vkey INTEGER);
 ```
 
-Each additional version comes as a separate **content pack** (`AMHxxxx.db.zst`), attached with `ATTACH DATABASE`, so downloaded versions never require rewriting the bundled DB.
+Each additional version (registry `"bundle": false`) comes as a separate **content pack**: a DB with this same schema holding one version, built by `build_db.py --packs` as `<ID>.db.gz` next to a `manifest.json` (id, names, download and installed size, sha256, content hash, schema version). The app downloads packs from `CONTENT_PACKS_URL` (Me → Downloads, or "More versions…" in the reader's version menu), checks size, sha256 and that the DB holds that version, and stores it as `packs/<ID>.db` in app support storage. Each pack is opened as its own read-only connection and `ContentRepository` sends a version's queries to the DB that holds it, so the bundled DB is never rewritten and there is no `ATTACH` limit. A pack whose content hash differs from the manifest's offers an update; a failed download or update leaves the installed copy untouched. Highlights and notes are keyed by verse, so removing a pack keeps them.
 
 ### 6.3 User database (`user.db`, read/write)
 
@@ -457,17 +457,17 @@ USFM/USX sources ─► ingest_usfm.py ─► intermediate JSON (per book)
                                           │    versification, empty verses,
                                           │    stray markers, Unicode sanity)
                                           ▼
-                                    build_db.py ─► content.db / packs (.db.zst)
+                                    build_db.py ─► content.db / packs (<ID>.db.gz)
                                           │          + FTS index (normalized)
                                           ▼
-                       manifest.json (versions, sizes, sha256, min_app_version)
+                       manifest.json (versions, sizes, sha256, schema_version)
                                           │
-                                   upload to CDN / GitHub Releases
+                                   GitHub release assets (content.yml, packs_release_tag)
 ```
 
 - Runs in GitHub Actions on every change to `content/` or `pipeline/`.
 - **Validation gates:** the expected chapter count per book, a verse-count diff against a reference versification, no unmatched USFM markers, NFC normalization, and spot-check snapshots (Gen 1:1, Ps 23, John 3:16, Rev 22:21) compared with expected text.
-- The app checks `manifest.json` at most once a week (and only on Wi-Fi by default) for new or updated packs, and verifies sha256 before attaching a pack.
+- The app reads `manifest.json` when Downloads opens, shows new packs and updates (content hash changed), and verifies size and sha256 before installing a pack. Packs for another content schema version are not offered.
 
 ---
 

@@ -1,5 +1,5 @@
 {
-  "_note": "License registry and source list. build_db.py refuses to package a version whose license.status is not 'confirmed' unless --allow-unverified is passed (dev and sample builds only). Optional fields: \"testaments\" (default [\"OT\", \"NT\"]) lists the testaments a version covers; \"book_names\": \"amh\" shows Amharic book names for a version in another language.",
+  "_note": "License registry and source list. build_db.py refuses to package a version whose license.status is not 'confirmed' unless --allow-unverified is passed (dev and sample builds only). Optional fields: \"testaments\" (default [\"OT\", \"NT\"]) lists the testaments a version covers; \"book_names\": \"amh\" shows Amharic book names for a version in another language. \"bundle\": false makes a version a downloadable content pack (build_db.py --packs) instead of part of content.db.",
   "versions": [
     {
       "id": "AMH1962",
@@ -65,7 +65,7 @@
         "summary": "WLC text public domain; OSHB lemma and morphology data CC BY 4.0 (https://github.com/openscriptures/morphhb/blob/master/LICENSE.md).",
         "attribution": "Westminster Leningrad Codex (public domain), from the Open Scriptures Hebrew Bible, https://github.com/openscriptures/morphhb (CC BY 4.0)."
       },
-      "bundle": true,
+      "bundle": false,
       "audio": null
     },
     {
@@ -88,7 +88,7 @@
         "summary": "CC BY 4.0 (https://github.com/LogosBible/SBLGNT/blob/master/LICENSE).",
         "attribution": "SBL Greek New Testament. Copyright 2010 Society of Biblical Literature and Logos Bible Software. CC BY 4.0, https://sblgnt.com."
       },
-      "bundle": true,
+      "bundle": false,
       "audio": null
     }
   ]

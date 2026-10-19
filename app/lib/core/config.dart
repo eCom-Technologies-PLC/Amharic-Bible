@@ -6,6 +6,10 @@ class AppConfig {
 
   static bool get audioConfigured => audioProxyUrl.isNotEmpty;
 
+  /// Base URL of the content packs (`manifest.json` and `<ID>.db.gz`, built by
+  /// pipeline/build_db.py --packs). Empty disables downloadable versions.
+  static const contentPacksUrl = String.fromEnvironment('CONTENT_PACKS_URL');
+
   /// Supabase project for optional accounts and sync. Both empty disables
   /// accounts.
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');

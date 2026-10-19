@@ -494,6 +494,9 @@ class _ChapterTitle extends StatelessWidget {
   );
 }
 
+/// Version menu item that opens Downloads to get more versions.
+const _moreVersions = 'more';
+
 class _VersionMenu extends ConsumerWidget {
   const _VersionMenu({required this.current});
   final BibleVersion current;
@@ -505,9 +508,14 @@ class _VersionMenu extends ConsumerWidget {
     final parallelId = ref.watch(settingsProvider.select((x) => x.parallelVersionId));
     final parallel = versions.where((v) => v.id == parallelId && v.id != current.id).firstOrNull;
     final notifier = ref.read(settingsProvider.notifier);
+    final canDownload = ref.watch(packStoreProvider).configured;
     return PopupMenuButton<String>(
       tooltip: parallel == null ? current.localName : '${current.abbrev} + ${parallel.abbrev}',
       onSelected: (value) {
+        if (value == _moreVersions) {
+          context.push('/me/downloads');
+          return;
+        }
         final id = value.substring(2);
         if (value.startsWith('v:')) {
           notifier.update(
@@ -529,6 +537,19 @@ class _VersionMenu extends ConsumerWidget {
         CheckedPopupMenuItem(value: 'p:', checked: parallel == null, child: Text(s.none)),
         for (final v in versions.where((v) => v.id != current.id))
           CheckedPopupMenuItem(value: 'p:${v.id}', checked: v.id == parallel?.id, child: Text(v.abbrev)),
+        if (canDownload) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: _moreVersions,
+            child: Row(
+              children: [
+                const Icon(Icons.download_outlined),
+                const SizedBox(width: AppSpacing.iconGap),
+                Flexible(child: Text(s.moreVersions, maxLines: 1, overflow: TextOverflow.ellipsis)),
+              ],
+            ),
+          ),
+        ],
       ],
       child: context.isCompact
           ? SizedBox.square(

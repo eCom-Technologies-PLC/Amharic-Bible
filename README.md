@@ -25,10 +25,16 @@ python -m unittest discover -s pipeline/tests
 python pipeline/build_db.py --sources pipeline/tests/fixtures/usfm \
   --out app/assets/content/content.db --sample --allow-unverified
 
-# Full text: download sources listed in content/versions.json, then build
+# Full text: download sources listed in content/versions.json, then build content.db
+# and the downloadable packs (versions with "bundle": false, e.g. WLC and SBLGNT)
 python pipeline/fetch_sources.py
-python pipeline/build_db.py --sources content/sources --out build/content.db
+python pipeline/build_db.py --sources content/sources --out build/content.db --packs build/packs
 ```
+
+Content packs (`build/packs/<ID>.db.gz` + `manifest.json`) can be served from any static host; build the app
+with `--dart-define=CONTENT_PACKS_URL=<base URL of manifest.json>`. The **Build full content** workflow publishes
+them as assets of a GitHub release when `packs_release_tag` is set and builds the APK against that release
+(the repository must be public for readers to download release assets).
 
 The Hebrew (WLC, from the Open Scriptures Hebrew Bible) and Greek (SBLGNT) texts are converted from their XML
 editions to USFM by `fetch_sources.py` (`pipeline/abible/oshb.py`, `pipeline/abible/sblgnt.py`), together with a
