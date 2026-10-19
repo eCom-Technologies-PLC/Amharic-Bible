@@ -93,7 +93,11 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           switch (votd) {
-            AsyncData(value: final v?) => _VerseOfTheDayCard(votd: v, amharic: version?.language == 'amh'),
+            AsyncData(value: final v?) => _VerseOfTheDayCard(
+              votd: v,
+              amharic: version?.language == 'amh',
+              textDirection: scriptureDirection(version),
+            ),
             AsyncLoading() => const Padding(padding: EdgeInsets.all(AppSpacing.xxl), child: LoadingState()),
             _ => const SizedBox.shrink(),
           },
@@ -135,10 +139,11 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _VerseOfTheDayCard extends StatelessWidget {
-  const _VerseOfTheDayCard({required this.votd, required this.amharic});
+  const _VerseOfTheDayCard({required this.votd, required this.amharic, required this.textDirection});
 
   final VerseOfTheDay votd;
   final bool amharic;
+  final TextDirection textDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +168,7 @@ class _VerseOfTheDayCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(v.text, style: context.scriptureFeature),
+          Text(v.text, textDirection: textDirection, style: context.scriptureFeature),
           const SizedBox(height: AppSpacing.md),
           Text(reference, style: context.text.titleSmall),
         ],

@@ -30,11 +30,15 @@ python pipeline/fetch_sources.py
 python pipeline/build_db.py --sources content/sources --out build/content.db
 ```
 
+The Hebrew (WLC, from the Open Scriptures Hebrew Bible) and Greek (SBLGNT) texts are converted from their XML
+editions to USFM by `fetch_sources.py` (`pipeline/abible/oshb.py`, `pipeline/abible/sblgnt.py`), together with a
+`versification.json` that `build_db.py` uses to renumber them into the shared KJV-style versification.
+
 `build_db.py` refuses to package a version whose `license.status` in `content/versions.json` is not `confirmed`.
 **AMH1962 is still `verify`.** Confirm its terms (and the eBible.org source ID) before a release. Then run the
 **Build full content** workflow, which builds `content.db` and a release APK that bundles it.
 
-The Ge'ez search normalization exists in Python (`pipeline/abible/geez.py`) and Dart (`app/lib/core/geez.dart`).
+The search normalization (Ge'ez spelling variants; Hebrew points, Greek accents and final letter forms) exists in Python (`pipeline/abible/geez.py`) and Dart (`app/lib/core/geez.dart`).
 Both are tested against `pipeline/tests/normalize_vectors.json`, so the app's queries always match the index.
 
 ## App
@@ -97,5 +101,5 @@ Postgres (PGlite): `cd server/supabase/test && npm ci && npm test`.
 
 ## Licenses
 
-Fonts: Noto Serif/Sans Ethiopic, SIL Open Font License (`app/assets/fonts/OFL.txt`). Bible texts: see
+Fonts: Noto Serif/Sans Ethiopic, Noto Serif Hebrew and Noto Serif (Greek subset), SIL Open Font License (`app/assets/fonts/OFL.txt`). Bible texts: see
 `content/versions.json`. Each version's attribution is shown in the app under About → Sources.

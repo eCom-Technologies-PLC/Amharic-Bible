@@ -146,6 +146,35 @@ void main() {
     }
   });
 
+  group('Hebrew and Greek texts', () {
+    final rtl = find.byWidgetPredicate((w) => w is Directionality && w.textDirection == TextDirection.rtl);
+    const cases = [
+      ('/read?ref=PSA.3', Settings(versionId: 'WLC'), true),
+      ('/read?ref=GEN.1', Settings(versionId: 'AMH1962', parallelVersionId: 'WLC'), true),
+      ('/read?ref=GEN.1', Settings(versionId: 'WLC', parallelVersionId: 'AMH1962'), true),
+      ('/read?ref=JHN.3', Settings(versionId: 'SBLGNT', parallelVersionId: 'AMH1962'), false),
+      ('/home', Settings(versionId: 'WLC'), false),
+      ('/me/library', Settings(versionId: 'SBLGNT'), false),
+      ('/share-image?keys=1001001', Settings(versionId: 'WLC'), false),
+    ];
+    for (final device in [smallLargeText, tablet]) {
+      for (final (route, settings, rightToLeft) in cases) {
+        testWidgets('${device.name} ${settings.versionId}+${settings.parallelVersionId} $route', (tester) async {
+          final errors = await render(
+            tester,
+            route: route,
+            device: device,
+            settings: settings,
+            interact: (t) async {
+              if (rightToLeft) expect(rtl, findsWidgets);
+            },
+          );
+          expect(errors, isEmpty);
+        });
+      }
+    }
+  });
+
   group('interactive states on a small phone with large text', () {
     for (final lang in ['am', 'en']) {
       testWidgets('$lang reader with a verse selected', (tester) async {

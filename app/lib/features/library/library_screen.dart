@@ -67,6 +67,7 @@ class _VerseTile extends ConsumerWidget {
         children: [
           Text(
             verse?.text ?? s.notInVersion,
+            textDirection: verse != null ? scriptureDirection(version) : null,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: context.scriptureSnippet.copyWith(color: context.colors.onSurfaceVariant),

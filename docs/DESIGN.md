@@ -76,6 +76,14 @@ needs a recorded license before it is bundled or streamed.
 | Amharic Standard Version (1980 / 2000s revisions) | Ethiopian Bible Society | Copyrighted | Seek a license; ship only with permission |
 | New Amharic Standard Version and others | Bible Brain / YouVersion | Per-version terms | Optional streaming via API if licensed |
 | English (WEB, KJV) | eBible.org | Public domain | Bundled for the parallel view |
+| Hebrew OT: Westminster Leningrad Codex (`WLC`) | Open Scriptures Hebrew Bible (OSIS XML) | Text public domain; OSHB lemma/morphology CC BY 4.0 | Bundled for the parallel view and word study |
+| Greek NT: SBL Greek New Testament (`SBLGNT`) | LogosBible/SBLGNT (XML) | CC BY 4.0 | Bundled for the parallel view and word study |
+
+The Hebrew and Greek texts cover one testament each and use Amharic book names. Hebrew is shown right to
+left with its points and cantillation (bundled Noto Serif Hebrew); Greek uses a bundled Noto Serif Greek
+subset. Search ignores Hebrew points, Greek accents and breathings, and final letter forms, and also finds
+Hebrew words after the prefixes ו and ה/ב/ל/כ/מ/ש. Together they add about 26 MB to `content.db` (about
+6 MB compressed in the APK); downloadable content packs (§6.2) would make them optional.
 
 ### 2.2 Audio
 
@@ -321,7 +329,7 @@ docs/
 
 - Books are identified by **OSIS/USFM code** (`GEN`, `JHN`, `1CO` …), never by localized name.
 - A verse key is a single integer, `BBCCCVVV` (book ordinal × 10⁶ + chapter × 10³ + verse), e.g. John 3:16 = `43003016`. It is fast to index, sort and compare by range.
-- **Versification:** Amharic sources may number verses differently from English (especially in Psalm titles and Malachi 3–4). A `versification_map` table maps keys between versions for the parallel view and audio sync.
+- **Versification:** every version is stored in one shared, KJV-style numbering, so the parallel view, highlights, notes and plans line up by verse key. A source that numbers verses differently ships a map (`versification.json` next to its USFM) that `pipeline/abible/versification.py` applies at build time: the Hebrew text uses OSHB's WLC→KJV `VerseMap.xml` (Malachi 3:19–24 → 4:1–6, Joel 3 → 2:28–32, Psalm titles → headings, and so on), the Greek a short table in `abible/sblgnt.py` (2 Cor 13:12–13, 3 John 15, Rev 12:18). Source verses that share a KJV verse are joined; a source verse covering two KJV verses becomes a bridge (`5-6`). Amharic sources can use the same mechanism if they differ.
 - **Canon:** the app uses the 66-book canon only (decided; no Orthodox 81-book canon).
 
 ### 6.2 Content database (`content.db`, read-only)

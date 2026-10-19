@@ -49,7 +49,10 @@ class AboutScreen extends ConsumerWidget {
                 ),
               ),
             SectionHeader(s.font),
-            const AppListTile(title: 'Noto Serif Ethiopic, Noto Sans Ethiopic', subtitle: 'SIL Open Font License 1.1'),
+            const AppListTile(
+              title: 'Noto Serif Ethiopic, Noto Sans Ethiopic, Noto Serif Hebrew, Noto Serif (Greek)',
+              subtitle: 'SIL Open Font License 1.1',
+            ),
             AppListTile(
               leadingIcon: Icons.description_outlined,
               title: s.openSourceLicenses,

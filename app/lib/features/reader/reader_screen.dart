@@ -198,6 +198,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       showNumbers: settings.verseNumbers,
       redLetters: settings.redLetters,
       geezNumerals: settings.geezNumerals,
+      textDirection: scriptureDirection(version),
+      secondaryTextDirection: scriptureDirection(secondaryVersion),
     );
     final decor = VerseDecor(
       highlights: marks.highlights,
@@ -247,7 +249,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             } else {
               final block = layout.blocks[i - 1];
               child = switch (block) {
-                HeadingBlock(:final heading) => _HeadingView(heading: heading),
+                HeadingBlock(:final heading) => _HeadingView(heading: heading, textDirection: options.textDirection),
                 ParaBlock() => ParagraphView(
                   block: block,
                   options: options,
@@ -402,9 +404,10 @@ class _PairView extends StatelessWidget {
 }
 
 class _HeadingView extends StatelessWidget {
-  const _HeadingView({required this.heading});
+  const _HeadingView({required this.heading, required this.textDirection});
 
   final Heading heading;
+  final TextDirection textDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -418,7 +421,11 @@ class _HeadingView extends StatelessWidget {
       ),
       child: Semantics(
         header: !descriptive,
-        child: Text(heading.text, style: descriptive ? context.reading.descriptiveTitle : context.reading.heading),
+        child: Text(
+          heading.text,
+          textDirection: textDirection,
+          style: descriptive ? context.reading.descriptiveTitle : context.reading.heading,
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:amharic_bible/core/geez.dart';
+import 'package:amharic_bible/features/search/search_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers.dart';
@@ -9,6 +10,13 @@ void main() {
   test('normalize matches the pipeline vectors', () {
     for (final v in vectors['normalize'] as List) {
       expect(normalize(v[0] as String), v[1], reason: 'input ${v[0]}');
+    }
+  });
+
+  test('search highlighting knows the same word forms as the index', () {
+    for (final v in vectors['index_terms'] as List) {
+      final forms = {for (final w in normalize(v[0] as String).split(' ')) ...indexForms(w)};
+      expect(forms, (v[1] as String).split(' ').toSet(), reason: 'input ${v[0]}');
     }
   });
 

@@ -22,7 +22,8 @@ class ContentRepository {
   Future<bool> isSample() async => (await meta())['is_sample'] == '1';
 
   Future<List<BibleVersion>> versions() async {
-    final rows = await db.query('version', orderBy: "language = 'amh' DESC, id");
+    // Amharic first, then English, then the Hebrew and Greek texts.
+    final rows = await db.query('version', orderBy: "language = 'amh' DESC, language = 'eng' DESC, id");
     return rows.map(BibleVersion.fromRow).toList();
   }
 

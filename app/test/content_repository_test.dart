@@ -17,6 +17,29 @@ void main() {
     expect(await repo.isSample(), isTrue);
   });
 
+  test('Hebrew and Greek versions', () async {
+    final versions = await repo.versions();
+    expect(versions.map((v) => v.id), ['AMH1962', 'WEB', 'SBLGNT', 'WLC']);
+    final wlc = versions.firstWhere((v) => v.id == 'WLC');
+    expect(wlc.isRightToLeft, isTrue);
+    expect(versions.firstWhere((v) => v.id == 'SBLGNT').isRightToLeft, isFalse);
+    // One testament each, with Amharic book names.
+    final books = await repo.books('WLC');
+    expect(books.map((b) => b.code), ['GEN', 'PSA']);
+    expect(books.first.shortName, (await repo.books('AMH1962')).first.shortName);
+    expect(await repo.chapter('SBLGNT', 'GEN', 1), isNull);
+    // Psalm 3 in KJV numbering: the title is a heading, not verse 1.
+    final ps3 = (await repo.chapter('WLC', 'PSA', 3))!;
+    expect(ps3.headings[19003001]!.single.level, 9);
+    expect(ps3.verses.first.text, startsWith('יְ֭הוָה'));
+  });
+
+  test('search ignores Hebrew points and Greek accents', () async {
+    // הָאָֽרֶץ (Genesis 1:1) found by the unpointed word without its article.
+    expect((await repo.search('WLC', 'ארץ')).map((h) => h.vkey), contains(1001001));
+    expect((await repo.search('SBLGNT', 'ΚΟΣΜΟΝ')).map((h) => h.vkey), [43003016, 43003017]);
+  });
+
   test('chapter with headings and markup', () async {
     final c = (await repo.chapter('AMH1962', 'PSA', 23))!;
     expect(c.verses, hasLength(2));

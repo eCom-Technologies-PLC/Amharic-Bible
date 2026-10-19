@@ -24,21 +24,23 @@ enum CardShape {
 }
 
 /// The verses and their reference, in the current version.
-final shareContentProvider = FutureProvider.family<({String text, String reference, String version})?, String>((
-  ref,
-  joinedKeys,
-) async {
-  final version = await ref.watch(currentVersionProvider.future);
-  final keys = joinedKeys.split(',').map(int.parse).toList();
-  final verses = await ref.watch(contentRepositoryProvider).verses(version.id, keys);
-  if (verses.isEmpty) return null;
-  final books = await ref.watch(booksProvider(version.id).future);
-  return (
-    text: verses.map((v) => v.text).join(' '),
-    reference: formatKeys(books, [for (final v in verses) v.vkey], amharic: version.language == 'amh'),
-    version: version.abbrev,
-  );
-});
+final shareContentProvider =
+    FutureProvider.family<({String text, String reference, String version, TextDirection direction})?, String>((
+      ref,
+      joinedKeys,
+    ) async {
+      final version = await ref.watch(currentVersionProvider.future);
+      final keys = joinedKeys.split(',').map(int.parse).toList();
+      final verses = await ref.watch(contentRepositoryProvider).verses(version.id, keys);
+      if (verses.isEmpty) return null;
+      final books = await ref.watch(booksProvider(version.id).future);
+      return (
+        text: verses.map((v) => v.text).join(' '),
+        reference: formatKeys(books, [for (final v in verses) v.vkey], amharic: version.language == 'amh'),
+        version: version.abbrev,
+        direction: scriptureDirection(version),
+      );
+    });
 
 class ShareImageScreen extends ConsumerStatefulWidget {
   const ShareImageScreen({super.key, required this.vkeys});
@@ -101,6 +103,7 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
                         background: cardBackgrounds[_bg],
                         shape: _shape,
                         fontFamily: _serif ? AppFonts.serif : AppFonts.sans,
+                        textDirection: c.direction,
                       ),
                     ),
                   ),
@@ -187,6 +190,7 @@ class VerseCard extends StatelessWidget {
     required this.background,
     required this.shape,
     required this.fontFamily,
+    this.textDirection = TextDirection.ltr,
   });
 
   final String text;
@@ -195,6 +199,9 @@ class VerseCard extends StatelessWidget {
   final CardBackground background;
   final CardShape shape;
   final String fontFamily;
+
+  /// Direction of the verse text (right to left for Hebrew).
+  final TextDirection textDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -216,8 +223,10 @@ class VerseCard extends StatelessWidget {
                   child: Text(
                     text,
                     textAlign: TextAlign.center,
+                    textDirection: textDirection,
                     style: TextStyle(
                       fontFamily: fontFamily,
+                      fontFamilyFallback: AppFonts.scriptureFallback,
                       fontSize: ShareCardTokens.verseSize(text.length),
                       height: ShareCardTokens.lineHeight,
                       color: color,

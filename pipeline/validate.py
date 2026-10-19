@@ -9,6 +9,11 @@ from abible.catalog import BookInfo
 from abible.usfm import Book
 
 
+# Languages whose text is stored exactly as the source has it. NFC reorders
+# Hebrew points, so the Hebrew text is not NFC-normalized (search still is).
+UNNORMALIZED_LANGUAGES = {"hbo"}
+
+
 @dataclass
 class Report:
     errors: list[str] = field(default_factory=list)
@@ -16,12 +21,13 @@ class Report:
 
 
 def validate_version(vid: str, books: list[Book], catalog: dict[str, BookInfo],
-                     complete: bool = True) -> Report:
+                     complete: bool = True, testaments: tuple[str, ...] = ("OT", "NT"),
+                     language: str = "") -> Report:
     r = Report()
     codes = {b.code for b in books}
 
     if complete:
-        missing = [c for c in catalog if c not in codes]
+        missing = [c for c, info in catalog.items() if info.testament in testaments and c not in codes]
         if missing:
             r.errors.append(f"missing books: {' '.join(missing)}")
 
@@ -52,7 +58,7 @@ def validate_version(vid: str, books: list[Book], catalog: dict[str, BookInfo],
                 r.errors.append(f"{ref}: empty verse")
             if "\\" in text:
                 r.errors.append(f"{ref}: unparsed USFM marker in text: {text[:60]!r}")
-            if unicodedata.normalize("NFC", text) != text:
+            if language not in UNNORMALIZED_LANGUAGES and unicodedata.normalize("NFC", text) != text:
                 r.errors.append(f"{ref}: text is not NFC-normalized")
             if complete and last and last[0] == v.chapter and v.verse != last[1] + 1 \
                     and v.verse > bridged_to + 1:

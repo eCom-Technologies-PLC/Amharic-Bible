@@ -8,6 +8,8 @@ Usage:
 
 --sources holds one directory per version ID (e.g. AMH1962/, WEB/) with
 .SFM/.usfm files. Versions must be registered in content/versions.json.
+A version directory may also hold versification.json, which renumbers its
+verses into the shared versification (see abible/versification.py).
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from abible import usfm  # noqa: E402
+from abible import usfm, versification  # noqa: E402
 from abible.catalog import book_aliases, load_books, load_versions, vkey  # noqa: E402
 from abible.geez import index_terms  # noqa: E402
 from validate import validate_version  # noqa: E402
@@ -101,22 +103,37 @@ def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
 
         books = [b for b in read_version_dir(vdir) if b.code in catalog]
         books.sort(key=lambda b: catalog[b.code].num)
-        report = validate_version(vid, books, catalog, complete=not sample)
+        vmap = vdir / versification.MAP_FILE
+        if vmap.exists():
+            entries = versification.load(vmap)
+            remapped = []
+            for b in books:
+                b, warnings = versification.remap(b, entries)
+                for w in warnings:
+                    print(f"[{vid}] versification: {w}")
+                remapped.append(b)
+            books = remapped
+        report = validate_version(vid, books, catalog, complete=not sample,
+                                  testaments=tuple(reg.get("testaments", ("OT", "NT"))),
+                                  language=reg["language"])
         for w in report.warnings:
             print(f"[{vid}] warning: {w}")
         for e in report.errors:
             print(f"[{vid}] ERROR: {e}", file=sys.stderr)
         errors += len(report.errors)
 
+        # Book names: Amharic for Amharic versions and for the Hebrew and Greek
+        # texts (registry "book_names": "amh"), else the source's own names.
+        amharic_names = reg.get("book_names", reg["language"]) == "amh"
         h = hashlib.sha256()
         for ordinal, b in enumerate(books, 1):
             info = catalog[b.code]
             db.execute(
                 "INSERT INTO book VALUES (?,?,?,?,?,?,?,?,?)",
                 (vid, b.code, info.num, ordinal,
-                 info.name if reg["language"] == "amh" else (b.long_title or info.en),
-                 info.short if reg["language"] == "amh" else (b.title or info.en),
-                 info.abbrev if reg["language"] == "amh" else info.en_abbrevs[0].title(),
+                 info.name if amharic_names else (b.long_title or info.en),
+                 info.short if amharic_names else (b.title or info.en),
+                 info.abbrev if amharic_names else info.en_abbrevs[0].title(),
                  info.testament, max(b.chapters_seen, default=0)),
             )
             for a in book_aliases(info, tuple(x for x in (b.title,) if x)):
