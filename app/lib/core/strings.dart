@@ -85,6 +85,17 @@ class S {
   String get downloadBook => _('downloadBook');
   String get downloading => _('downloading');
   String get noDownloads => _('noDownloads');
+  String get bibleVersions => _('bibleVersions');
+  String get audio => _('audio');
+  String get download => _('download');
+  String get update => _('update');
+  String get updateAvailable => _('updateAvailable');
+  String get moreVersions => _('moreVersions');
+  String get packsNotConfigured => _('packsNotConfigured');
+  String get packsOffline => _('packsOffline');
+  String get downloadFailed => _('downloadFailed');
+  String get deleteVersion => _('deleteVersion');
+  String get deleteVersionMessage => _('deleteVersionMessage');
   String get emptyHighlights => _('emptyHighlights');
   String get emptyBookmarks => _('emptyBookmarks');
   String get emptyNotes => _('emptyNotes');
@@ -140,6 +151,8 @@ class S {
 
   String minutes(int n) => isAmharic ? '$n ደቂቃ' : '$n min';
   String results(int n) => isAmharic ? '$n ውጤቶች' : (n == 1 ? '1 result' : '$n results');
+  String downloadSize(String size) => isAmharic ? 'ለማውረድ $size' : '$size download';
+  String downloadedSize(String size) => isAmharic ? 'ወርዷል · $size' : 'Downloaded · $size';
   String selected(int n) => isAmharic ? '$n ተመርጠዋል' : '$n selected';
   String day(int n) => isAmharic ? 'ቀን $n' : 'Day $n';
   String dayOf(int n, int total) => isAmharic ? 'ቀን $n ከ$total' : 'Day $n of $total';
@@ -214,6 +227,17 @@ const _am = {
   'downloadBook': 'መጽሐፉን አውርድ',
   'downloading': 'በማውረድ ላይ…',
   'noDownloads': 'ምንም የወረደ የለም',
+  'bibleVersions': 'የመጽሐፍ ቅዱስ ትርጉሞች',
+  'audio': 'ድምፅ',
+  'download': 'አውርድ',
+  'update': 'አዘምን',
+  'updateAvailable': 'አዲስ እትም አለ',
+  'moreVersions': 'ተጨማሪ ትርጉሞች…',
+  'packsNotConfigured': 'የሚወርዱ ትርጉሞች ገና አልተዘጋጁም',
+  'packsOffline': 'የሚወርዱ ትርጉሞችን ለማየት ከኢንተርኔት ጋር ይገናኙ',
+  'downloadFailed': 'ማውረድ አልተሳካም። እንደገና ይሞክሩ።',
+  'deleteVersion': 'ይህ ትርጉም ይሰረዝ?',
+  'deleteVersionMessage': 'ትርጉሙ ከዚህ መሣሪያ ይሰረዛል፤ በኋላ እንደገና ማውረድ ይችላሉ። ድምቀቶችና ማስታወሻዎች አይሰረዙም።',
   'emptyHighlights': 'ጥቅስ ለማድመቅ በንባብ ጊዜ ጥቅሱን ይንኩ',
   'emptyBookmarks': 'ገና ዕልባት የለም',
   'emptyNotes': 'ገና ማስታወሻ የለም',
@@ -331,6 +355,18 @@ const _en = {
   'downloadBook': 'Download book',
   'downloading': 'Downloading…',
   'noDownloads': 'Nothing downloaded',
+  'bibleVersions': 'Bible versions',
+  'audio': 'Audio',
+  'download': 'Download',
+  'update': 'Update',
+  'updateAvailable': 'Update available',
+  'moreVersions': 'More versions…',
+  'packsNotConfigured': 'Downloadable versions are not set up yet',
+  'packsOffline': 'Connect to the internet to see versions you can download',
+  'downloadFailed': 'Download failed. Please try again.',
+  'deleteVersion': 'Delete this version?',
+  'deleteVersionMessage':
+      'It is removed from this device; you can download it again later. Your highlights and notes are kept.',
   'emptyHighlights': 'Tap a verse while reading to highlight it',
   'emptyBookmarks': 'No bookmarks yet',
   'emptyNotes': 'No notes yet',

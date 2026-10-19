@@ -76,6 +76,14 @@ needs a recorded license before it is bundled or streamed.
 | Amharic Standard Version (1980 / 2000s revisions) | Ethiopian Bible Society | Copyrighted | Seek a license; ship only with permission |
 | New Amharic Standard Version and others | Bible Brain / YouVersion | Per-version terms | Optional streaming via API if licensed |
 | English (WEB, KJV) | eBible.org | Public domain | Bundled for the parallel view |
+| Hebrew OT: Westminster Leningrad Codex (`WLC`) | Open Scriptures Hebrew Bible (OSIS XML) | Text public domain; OSHB lemma/morphology CC BY 4.0 | Bundled for the parallel view and word study |
+| Greek NT: SBL Greek New Testament (`SBLGNT`) | LogosBible/SBLGNT (XML) | CC BY 4.0 | Bundled for the parallel view and word study |
+
+The Hebrew and Greek texts cover one testament each and use Amharic book names. Hebrew is shown right to
+left with its points and cantillation (bundled Noto Serif Hebrew); Greek uses a bundled Noto Serif Greek
+subset. Search ignores Hebrew points, Greek accents and breathings, and final letter forms, and also finds
+Hebrew words after the prefixes ו and ה/ב/ל/כ/מ/ש. They are downloadable content packs (§6.2), not part
+of the app: WLC is a 4.5 MB download (20 MB installed), SBLGNT 1.4 MB (6 MB installed).
 
 ### 2.2 Audio
 
@@ -321,7 +329,7 @@ docs/
 
 - Books are identified by **OSIS/USFM code** (`GEN`, `JHN`, `1CO` …), never by localized name.
 - A verse key is a single integer, `BBCCCVVV` (book ordinal × 10⁶ + chapter × 10³ + verse), e.g. John 3:16 = `43003016`. It is fast to index, sort and compare by range.
-- **Versification:** Amharic sources may number verses differently from English (especially in Psalm titles and Malachi 3–4). A `versification_map` table maps keys between versions for the parallel view and audio sync.
+- **Versification:** every version is stored in one shared, KJV-style numbering, so the parallel view, highlights, notes and plans line up by verse key. A source that numbers verses differently ships a map (`versification.json` next to its USFM) that `pipeline/abible/versification.py` applies at build time: the Hebrew text uses OSHB's WLC→KJV `VerseMap.xml` (Malachi 3:19–24 → 4:1–6, Joel 3 → 2:28–32, Psalm titles → headings, and so on), the Greek a short table in `abible/sblgnt.py` (2 Cor 13:12–13, 3 John 15, Rev 12:18). Source verses that share a KJV verse are joined; a source verse covering two KJV verses becomes a bridge (`5-6`). Amharic sources can use the same mechanism if they differ.
 - **Canon:** the app uses the 66-book canon only (decided; no Orthodox 81-book canon).
 
 ### 6.2 Content database (`content.db`, read-only)
@@ -367,7 +375,7 @@ CREATE TABLE book_alias (alias_norm TEXT, code TEXT);   -- 'ዮሐ', 'ዮሐን�
 CREATE TABLE versification_map (from_version TEXT, from_vkey INTEGER, to_version TEXT, to_vkey INTEGER);
 ```
 
-Each additional version comes as a separate **content pack** (`AMHxxxx.db.zst`), attached with `ATTACH DATABASE`, so downloaded versions never require rewriting the bundled DB.
+Each additional version (registry `"bundle": false`) comes as a separate **content pack**: a DB with this same schema holding one version, built by `build_db.py --packs` as `<ID>.db.gz` next to a `manifest.json` (id, names, download and installed size, sha256, content hash, schema version). The app downloads packs from `CONTENT_PACKS_URL` (Me → Downloads, or "More versions…" in the reader's version menu), checks size, sha256 and that the DB holds that version, and stores it as `packs/<ID>.db` in app support storage. Each pack is opened as its own read-only connection and `ContentRepository` sends a version's queries to the DB that holds it, so the bundled DB is never rewritten and there is no `ATTACH` limit. A pack whose content hash differs from the manifest's offers an update; a failed download or update leaves the installed copy untouched. Highlights and notes are keyed by verse, so removing a pack keeps them.
 
 ### 6.3 User database (`user.db`, read/write)
 
@@ -449,17 +457,17 @@ USFM/USX sources ─► ingest_usfm.py ─► intermediate JSON (per book)
                                           │    versification, empty verses,
                                           │    stray markers, Unicode sanity)
                                           ▼
-                                    build_db.py ─► content.db / packs (.db.zst)
+                                    build_db.py ─► content.db / packs (<ID>.db.gz)
                                           │          + FTS index (normalized)
                                           ▼
-                       manifest.json (versions, sizes, sha256, min_app_version)
+                       manifest.json (versions, sizes, sha256, schema_version)
                                           │
-                                   upload to CDN / GitHub Releases
+                                   GitHub release assets (content.yml, packs_release_tag)
 ```
 
 - Runs in GitHub Actions on every change to `content/` or `pipeline/`.
 - **Validation gates:** the expected chapter count per book, a verse-count diff against a reference versification, no unmatched USFM markers, NFC normalization, and spot-check snapshots (Gen 1:1, Ps 23, John 3:16, Rev 22:21) compared with expected text.
-- The app checks `manifest.json` at most once a week (and only on Wi-Fi by default) for new or updated packs, and verifies sha256 before attaching a pack.
+- The app reads `manifest.json` when Downloads opens, shows new packs and updates (content hash changed), and verifies size and sha256 before installing a pack. Packs for another content schema version are not offered.
 
 ---
 

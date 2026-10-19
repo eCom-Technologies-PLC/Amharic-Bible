@@ -1,0 +1,7 @@
+\id GEN SAMPLE - Westminster Leningrad Codex (public domain), OSHB (CC BY 4.0), test fixture
+\usfm 3.0
+\c 1
+\p
+\v 1 \w בְּרֵאשִׁ֖ית|lemma="b/7225" x-morph="HR/Ncfsa"\w* \w בָּרָ֣א|lemma="1254 a" x-morph="HVqp3ms"\w* \w אֱלֹהִ֑ים|lemma="430" x-morph="HNcmpa"\w* \w אֵ֥ת|lemma="853" x-morph="HTo"\w* \w הַשָּׁמַ֖יִם|lemma="d/8064" x-morph="HTd/Ncmpa"\w* \w וְאֵ֥ת|lemma="c/853" x-morph="HC/To"\w* \w הָאָֽרֶץ|lemma="d/776" x-morph="HTd/Ncbsa"\w*׃
+\v 2 \w וְהָאָ֗רֶץ|lemma="c/d/776" x-morph="HC/Td/Ncbsa"\w* \w הָיְתָ֥ה|lemma="1961" x-morph="HVqp3fs"\w* \w תֹ֨הוּ֙|lemma="8414" x-morph="HNcmsa"\w* \w וָבֹ֔הוּ|lemma="c/922" x-morph="HC/Ncmsa"\w* \w וְחֹ֖שֶׁךְ|lemma="c/2822" x-morph="HC/Ncmsa"\w* \w עַל|lemma="5921 a" x-morph="HR"\w*־\w פְּנֵ֣י|lemma="6440" x-morph="HNcbpc"\w* \w תְה֑וֹם|lemma="8415" x-morph="HNcbsa"\w* \w וְר֣וּחַ|lemma="c/7307" x-morph="HC/Ncbsc"\w* \w אֱלֹהִ֔ים|lemma="430" x-morph="HNcmpa"\w* \w מְרַחֶ֖פֶת|lemma="7363 b" x-morph="HVprfsa"\w* \w עַל|lemma="5921 a" x-morph="HR"\w*־\w פְּנֵ֥י|lemma="6440" x-morph="HNcbpc"\w* \w הַמָּֽיִם|lemma="d/4325" x-morph="HTd/Ncmpa"\w*׃
+\v 3 \w וַיֹּ֥אמֶר|lemma="c/559" x-morph="HC/Vqw3ms"\w* \w אֱלֹהִ֖ים|lemma="430" x-morph="HNcmpa"\w* \w יְהִ֣י|lemma="1961" x-morph="HVqj3ms"\w* \w א֑וֹר|lemma="216" x-morph="HNcbsa"\w* \w וַֽיְהִי|lemma="c/1961" x-morph="HC/Vqw3ms"\w*־\w אֽוֹר|lemma="216" x-morph="HNcbsa"\w*׃

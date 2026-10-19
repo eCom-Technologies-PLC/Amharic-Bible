@@ -1,5 +1,9 @@
 """Ge'ez (Ethiopic) text utilities: search normalization and Ge'ez numerals.
 
+Normalization also covers the original-language versions: Hebrew points and
+accents and Greek accents and breathings are ignored, and final letter forms
+(ך ם ן ף ץ, ς) match their regular forms, so a plain query finds pointed text.
+
 The Dart app has a line-for-line port in app/lib/core/geez.dart. Both are
 checked against the shared vectors in pipeline/tests/normalize_vectors.json,
 so any change here must be mirrored there.
@@ -59,6 +63,16 @@ _GEEZ_NUM_RE = re.compile("[፩-፼]+")
 _PUNCT_RE = re.compile(r"[፠-፨]")
 
 
+# Combining marks ignored by search: Latin/Greek diacritics (accents,
+# breathings, iota subscript) and Hebrew points and cantillation. Hebrew
+# punctuation in the same block (maqaf ־, paseq ׀, sof pasuq ׃, nun hafukha ׆)
+# is left to the punctuation rule below.
+_MARKS_RE = re.compile("[\u0300-\u036F\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7]")
+
+# Final letter forms -> regular forms (applied after lowercasing).
+FINAL_FORMS = {ord("ך"): "כ", ord("ם"): "מ", ord("ן"): "נ", ord("ף"): "פ", ord("ץ"): "צ", ord("ς"): "σ"}
+
+
 def geez_to_int(s: str) -> int:
     total = 0
     cur = 0
@@ -107,12 +121,13 @@ def normalize(text: str) -> str:
     """Normalize text for search: same output for spelling variants."""
     text = unicodedata.normalize("NFC", text)
     text = text.translate(CHAR_MAP)
+    text = unicodedata.normalize("NFC", _MARKS_RE.sub("", unicodedata.normalize("NFD", text)))
     text = _GEEZ_NUM_RE.sub(lambda m: f" {geez_to_int(m.group())} ", text)
     text = _PUNCT_RE.sub(" ", text)
     text = "".join(
         " " if unicodedata.category(ch)[0] in "PS" else ch for ch in text
     )
-    text = text.lower()
+    text = text.lower().translate(FINAL_FORMS)
     return " ".join(text.split())
 
 
@@ -122,8 +137,25 @@ def normalize(text: str) -> str:
 _PREFIXES = ("በ", "ለ", "ከ", "የ")
 
 
+# Hebrew prefixes written as part of the word: ו "and", then one of ה "the",
+# ב "in", ל "to", כ "as", מ "from", ש "that" (וּבָאָרֶץ -> בארץ, ארץ). Stems
+# keep at least three letters, so ארץ also finds וּבָאָרֶץ.
+_HEBREW_PREFIXES = "בהלכמש"
+
+
+def _hebrew_stems(word: str) -> list[str]:
+    out = []
+    if len(word) > 3 and word[0] == "ו":
+        word = word[1:]
+        out.append(word)
+    if len(word) > 3 and word[0] in _HEBREW_PREFIXES:
+        out.append(word[1:])
+    return out
+
+
 def index_terms(text: str) -> str:
     """Normalized text plus prefix-stripped variants, for the FTS index."""
     words = normalize(text).split()
     extra = [w[1:] for w in words if len(w) > 2 and w[0] in _PREFIXES]
+    extra += [s for w in words for s in _hebrew_stems(w)]
     return " ".join(words + extra)

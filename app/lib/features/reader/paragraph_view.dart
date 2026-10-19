@@ -29,6 +29,8 @@ class ReaderOptions {
     required this.showNumbers,
     required this.redLetters,
     required this.geezNumerals,
+    this.textDirection = TextDirection.ltr,
+    this.secondaryTextDirection = TextDirection.ltr,
     this.secondary = false,
   });
 
@@ -36,11 +38,23 @@ class ReaderOptions {
   final bool redLetters;
   final bool geezNumerals;
 
+  /// Direction of the version's text (right to left for Hebrew).
+  final TextDirection textDirection;
+
+  /// Direction of the second version's text in side-by-side reading.
+  final TextDirection secondaryTextDirection;
+
   /// The second version in side-by-side reading (softer text style).
   final bool secondary;
 
-  ReaderOptions asSecondary({required bool showNumbers}) =>
-      ReaderOptions(showNumbers: showNumbers, redLetters: redLetters, geezNumerals: geezNumerals, secondary: true);
+  ReaderOptions asSecondary({required bool showNumbers}) => ReaderOptions(
+    showNumbers: showNumbers,
+    redLetters: redLetters,
+    geezNumerals: geezNumerals,
+    textDirection: secondaryTextDirection,
+    secondaryTextDirection: secondaryTextDirection,
+    secondary: true,
+  );
 }
 
 /// One paragraph or poetry line, rendered as a single RichText so text flows
@@ -145,20 +159,24 @@ class _ParagraphViewState extends State<ParagraphView> {
 
     final block = widget.block;
     final indent = block.poetry ? AppSpacing.md + AppSpacing.xl * (block.indent - 1) : 0.0;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.screen + indent,
-        right: AppSpacing.screen,
-        top: block.poetry ? 0 : AppSpacing.sm,
+    // Right-to-left text (Hebrew) starts, and indents its poetry, on the right.
+    return Directionality(
+      textDirection: o.textDirection,
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(
+          start: AppSpacing.screen + indent,
+          end: AppSpacing.screen,
+          top: block.poetry ? 0 : AppSpacing.sm,
+        ),
+        child: Text.rich(TextSpan(children: spans)),
       ),
-      child: Text.rich(TextSpan(children: spans)),
     );
   }
 
   InlineSpan _icon(BuildContext context, IconData icon) => WidgetSpan(
     alignment: PlaceholderAlignment.middle,
     child: Padding(
-      padding: const EdgeInsets.only(right: AppSpacing.xs),
+      padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
       child: Icon(icon, size: context.reading.inlineIconSize, color: context.colors.primary),
     ),
   );

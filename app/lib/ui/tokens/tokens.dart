@@ -131,6 +131,10 @@ abstract final class AppFonts {
   static const serif = 'NotoSerifEthiopic';
   static const sans = 'NotoSansEthiopic';
 
+  /// Bundled fonts for scripture in other scripts: Hebrew with its points and
+  /// cantillation marks, and polytonic Greek.
+  static const scriptureFallback = ['NotoSerifHebrew', 'NotoSerifGreek'];
+
   /// Reading sizes the user can choose (Ge'ez needs larger sizes than Latin).
   static const readingSizes = [15.0, 17.0, 19.0, 21.0, 24.0, 28.0];
   static const defaultReadingSizeIndex = 2;

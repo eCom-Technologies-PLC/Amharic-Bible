@@ -1,0 +1,11 @@
+\id PSA SAMPLE - Westminster Leningrad Codex (public domain), OSHB (CC BY 4.0), test fixture
+\usfm 3.0
+\c 3
+\p
+\v 1 \w מִזְמ֥וֹר|lemma="4210" x-morph="HNcmsa"\w* \w לְדָוִ֑ד|lemma="l/1732" x-morph="HR/Np"\w* \w בְּ֝בָרְח֗וֹ|lemma="b/1272" x-morph="HR/Vqc/Sp3ms"\w* \w מִפְּנֵ֤י|lemma="m/6440" x-morph="HR/Ncbpc"\w* ׀ \w אַבְשָׁל֬וֹם|lemma="53" x-morph="HNp"\w* \w בְּנֽוֹ|lemma="1121 a" x-morph="HNcmsc/Sp3ms"\w*׃
+\v 2 \w יְ֭הוָה|lemma="3068" x-morph="HNp"\w* \w מָֽה|lemma="4100" x-morph="HTi"\w*־\w רַבּ֣וּ|lemma="7231" x-morph="HVqp3cp"\w* \w צָרָ֑י|lemma="6862 c" x-morph="HNcmpc/Sp1cs"\w* \w רַ֝בִּ֗ים|lemma="7227 a" x-morph="HAampa"\w* \w קָמִ֥ים|lemma="6965 b" x-morph="HVqrmpa"\w* \w עָלָֽי|lemma="5921 a" x-morph="HR/Sp1cs"\w*׃
+\v 3 \w רַבִּים֮|lemma="7227 a" x-morph="HAampa"\w* \w אֹמְרִ֪ים|lemma="559" x-morph="HVqrmpa"\w* \w לְנַ֫פְשִׁ֥י|lemma="l/5315" x-morph="HR/Ncbsc/Sp1cs"\w* \w אֵ֤ין|lemma="369" x-morph="HTn"\w* \w יְֽשׁוּעָ֓תָה|lemma="3444" x-morph="HNcfsa/Sh"\w* \w לּ֬וֹ|lemma="l" x-morph="HR/Sp3ms"\w* \w בֵֽאלֹהִ֬ים|lemma="b/430" x-morph="HR/Ncmpa"\w* \w סֶֽלָה|lemma="5542" x-morph="HTj"\w*׃
+\c 23
+\p
+\v 1 \w מִזְמ֥וֹר|lemma="4210" x-morph="HNcmsa"\w* \w לְדָוִ֑ד|lemma="l/1732" x-morph="HR/Np"\w* \w יְהוָ֥ה|lemma="3068" x-morph="HNp"\w* \w רֹ֝עִ֗י|lemma="7462 b" x-morph="HVqrmsc/Sp1cs"\w* \w לֹ֣א|lemma="3808" x-morph="HTn"\w* \w אֶחְסָֽר|lemma="2637" x-morph="HVqi1cs"\w*׃
+\v 2 \w בִּנְא֣וֹת|lemma="b/4999" x-morph="HR/Ncfpc"\w* \w דֶּ֭שֶׁא|lemma="1877" x-morph="HNcmsa"\w* \w יַרְבִּיצֵ֑נִי|lemma="7257" x-morph="HVhi3ms/Sp1cs"\w* \w עַל|lemma="5921 a" x-morph="HR"\w*־\w מֵ֖י|lemma="4325" x-morph="HNcmpc"\w* \w מְנֻח֣וֹת|lemma="4496" x-morph="HNcbpa"\w* \w יְנַהֲלֵֽנִי|lemma="5095" x-morph="HVpi3ms/Sp1cs"\w*׃

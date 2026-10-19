@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/preferences.dart';
+import '../tokens/tokens.dart';
 
 /// App-specific semantic colors, beyond the Material [ColorScheme].
 @immutable
@@ -142,7 +143,13 @@ class ReadingStyles extends ThemeExtension<ReadingStyles> {
     required double fontSize,
     required double lineHeight,
   }) {
-    final verse = TextStyle(fontFamily: fontFamily, fontSize: fontSize, height: lineHeight, color: scheme.onSurface);
+    final verse = TextStyle(
+      fontFamily: fontFamily,
+      fontFamilyFallback: AppFonts.scriptureFallback,
+      fontSize: fontSize,
+      height: lineHeight,
+      color: scheme.onSurface,
+    );
     return ReadingStyles(
       verse: verse,
       verseSecondary: verse.copyWith(fontSize: fontSize * 0.92, color: scheme.onSurfaceVariant),
@@ -150,6 +157,7 @@ class ReadingStyles extends ThemeExtension<ReadingStyles> {
       footnoteMarker: verse.copyWith(fontSize: fontSize * 0.7, color: scheme.primary, fontWeight: FontWeight.w700),
       heading: TextStyle(
         fontFamily: fontFamily,
+        fontFamilyFallback: AppFonts.scriptureFallback,
         fontSize: fontSize * 0.95,
         height: 1.4,
         fontWeight: FontWeight.w700,
@@ -157,6 +165,7 @@ class ReadingStyles extends ThemeExtension<ReadingStyles> {
       ),
       descriptiveTitle: TextStyle(
         fontFamily: fontFamily,
+        fontFamilyFallback: AppFonts.scriptureFallback,
         fontSize: fontSize * 0.8,
         height: 1.5,
         fontStyle: FontStyle.italic,
@@ -193,10 +202,14 @@ extension AppThemeContext on BuildContext {
 
   /// Scripture quoted in lists and search results (reading font, body size).
   TextStyle get scriptureSnippet =>
-      Theme.of(this).textTheme.bodyMedium!.copyWith(fontFamily: reading.verse.fontFamily, height: 1.6);
+      Theme.of(this).textTheme.bodyMedium!
+          .copyWith(fontFamily: reading.verse.fontFamily, fontFamilyFallback: AppFonts.scriptureFallback, height: 1.6);
 
   /// Scripture featured in a card (verse of the day).
-  TextStyle get scriptureFeature =>
-      Theme.of(this).textTheme.titleLarge!
-          .copyWith(fontFamily: reading.verse.fontFamily, fontWeight: FontWeight.w400, height: 1.6);
+  TextStyle get scriptureFeature => Theme.of(this).textTheme.titleLarge!.copyWith(
+    fontFamily: reading.verse.fontFamily,
+    fontFamilyFallback: AppFonts.scriptureFallback,
+    fontWeight: FontWeight.w400,
+    height: 1.6,
+  );
 }

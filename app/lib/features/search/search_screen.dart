@@ -135,6 +135,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final refBook = reference != null ? books.where((b) => b.code == reference.bookCode).firstOrNull : null;
     if (hits.isEmpty && refBook == null) return EmptyState(message: s.noResults, icon: Icons.search_off);
     final snippet = context.scriptureSnippet;
+    final direction = scriptureDirection(ref.watch(currentVersionProvider).value);
     final match = snippet.copyWith(fontWeight: FontWeight.w700, color: context.colors.primary);
 
     return ListView.separated(
@@ -173,7 +174,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         final h = hits[i - 2];
         return AppListTile(
           title: formatReference(h.book, vkeyChapter(h.vkey), [vkeyVerse(h.vkey)], amharic: s.isAmharic),
-          subtitleWidget: Text.rich(highlightMatches(h.text, terms, match), style: snippet),
+          subtitleWidget: Text.rich(highlightMatches(h.text, terms, match), style: snippet, textDirection: direction),
           onTap: () => _open(BibleRef(h.book.code, vkeyChapter(h.vkey), vkeyVerse(h.vkey))),
         );
       },
@@ -182,17 +183,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 }
 
 /// Emphasizes words whose normalized form starts with a search term (also
-/// after a fused prefix such as በ/ለ/ከ/የ, matching how the index was built).
+/// after a fused prefix such as በ/ለ/ከ/የ or Hebrew ו/ה/ב, matching how the
+/// index was built).
 TextSpan highlightMatches(String text, List<String> terms, TextStyle matchStyle) {
   final parts = <InlineSpan>[];
   final re = RegExp(r'\S+|\s+');
   for (final m in re.allMatches(text)) {
     final word = m[0]!;
     final n = normalize(word);
-    final hit =
-        n.isNotEmpty &&
-        terms.any((t) => n.startsWith(t) || (n.length > 2 && 'በለከየ'.contains(n[0]) && n.substring(1).startsWith(t)));
+    final hit = n.isNotEmpty && indexForms(n).any((f) => terms.any(f.startsWith));
     parts.add(TextSpan(text: word, style: hit ? matchStyle : null));
   }
   return TextSpan(children: parts);
+}
+
+/// A normalized word and the prefix-stripped forms the search index also
+/// holds for it (index_terms() in pipeline/abible/geez.py).
+List<String> indexForms(String n) {
+  final forms = [n];
+  if (n.length > 2 && 'በለከየ'.contains(n[0])) forms.add(n.substring(1));
+  var w = n;
+  if (w.length > 3 && w[0] == 'ו') forms.add(w = w.substring(1));
+  if (w.length > 3 && 'בהלכמש'.contains(w[0])) forms.add(w.substring(1));
+  return forms;
 }

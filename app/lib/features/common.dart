@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 
 import '../core/ethiopian_calendar.dart';
 import '../core/geez.dart';
@@ -45,6 +45,10 @@ String formatKeys(List<Book> books, List<int> keys, {required bool amharic}) {
       if (byNum[e.key.$1] case final b?) formatReference(b, e.key.$2, e.value, amharic: amharic),
   ].join('; ');
 }
+
+/// Direction of a version's scripture text: right to left for Hebrew.
+TextDirection scriptureDirection(BibleVersion? version) =>
+    (version?.isRightToLeft ?? false) ? TextDirection.rtl : TextDirection.ltr;
 
 String formatNumber(int n, Settings s) => s.geezNumerals ? intToGeez(n) : '$n';
 

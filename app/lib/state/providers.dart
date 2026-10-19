@@ -10,6 +10,7 @@ import '../ui/tokens/tokens.dart';
 import '../core/vkey.dart';
 import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
+import '../data/pack_store.dart';
 import '../data/user_repository.dart';
 import '../domain/models.dart';
 import '../domain/plans.dart';
@@ -20,8 +21,41 @@ final contentDbProvider = Provider<Database>((ref) => throw UnimplementedError()
 final userDbProvider = Provider<Database>((ref) => throw UnimplementedError());
 final audioRepositoryProvider = Provider<AudioRepository>((ref) => throw UnimplementedError());
 final initialSettingsProvider = Provider<Settings>((ref) => const Settings());
+final packStoreProvider = Provider<PackStore>((ref) => PackStore.none());
 
-final contentRepositoryProvider = Provider<ContentRepository>((ref) => ContentRepository(ref.watch(contentDbProvider)));
+/// Content packs opened at startup (main.dart).
+final initialPacksProvider = Provider<Map<String, Database>>((ref) => const {});
+
+final contentRepositoryProvider = Provider<ContentRepository>(
+  (ref) => ContentRepository(ref.watch(contentDbProvider), packs: ref.watch(packsProvider)),
+);
+
+/// Open content packs by version ID. Installing or removing one rebuilds the
+/// content repository, so version lists and chapters refresh everywhere.
+final packsProvider = NotifierProvider<PacksNotifier, Map<String, Database>>(PacksNotifier.new);
+
+class PacksNotifier extends Notifier<Map<String, Database>> {
+  @override
+  Map<String, Database> build() => ref.watch(initialPacksProvider);
+
+  /// Downloads and opens [pack] (also to update it); yields the fraction done.
+  Stream<double> install(PackInfo pack) async* {
+    final store = ref.read(packStoreProvider);
+    yield* store.install(pack);
+    final db = await store.open(pack.id);
+    final old = state[pack.id];
+    state = {...state, pack.id: db};
+    await old?.close();
+  }
+
+  Future<void> remove(String id) async {
+    final old = state[id];
+    state = {...state}..remove(id);
+    await old?.close();
+    await ref.read(packStoreProvider).delete(id);
+  }
+}
+
 final userRepositoryProvider = Provider<UserRepository>((ref) => UserRepository(ref.watch(userDbProvider)));
 
 // ------------------------------------------------------------------ settings

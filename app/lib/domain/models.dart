@@ -28,6 +28,9 @@ class BibleVersion {
 
   bool get hasAudio => audioFilesetId != null && audioFilesetId!.isNotEmpty;
 
+  /// Hebrew (the Westminster Leningrad Codex) is written right to left.
+  bool get isRightToLeft => language == 'hbo' || language == 'heb';
+
   factory BibleVersion.fromRow(Map<String, Object?> r) => BibleVersion(
     id: r['id'] as String,
     name: r['name'] as String,

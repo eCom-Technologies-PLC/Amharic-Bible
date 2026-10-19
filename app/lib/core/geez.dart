@@ -64,6 +64,20 @@ const _tens = '፲፳፴፵፶፷፸፹፺';
 const _hundred = '፻';
 const _tenThousand = '፼';
 
+// Combining marks ignored by search: Latin/Greek diacritics and Hebrew points
+// and cantillation (Hebrew punctuation is left to the punctuation rule).
+final _marksRe = RegExp('[\u0300-\u036F\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7]');
+
+/// Final letter forms -> regular forms (applied after lowercasing).
+const Map<int, int> _finalForms = {
+  0x05DA: 0x05DB,
+  0x05DD: 0x05DE,
+  0x05DF: 0x05E0,
+  0x05E3: 0x05E4,
+  0x05E5: 0x05E6,
+  0x03C2: 0x03C3,
+};
+
 final _geezNumRe = RegExp('[\u1369-\u137C]+');
 final _ethiopicPunctRe = RegExp('[\u1360-\u1368]');
 // Unicode punctuation (P*) and symbols (S*).
@@ -120,14 +134,16 @@ String intToGeez(int n) {
   return out.toString();
 }
 
-/// Normalize text for search so spelling variants compare equal.
+/// Normalize text for search so spelling variants compare equal; Hebrew and
+/// Greek marks are ignored and final letter forms match regular forms.
 String normalize(String text) {
   text = unorm.nfc(text);
   text = String.fromCharCodes(text.runes.map((r) => _charMap[r] ?? r));
+  text = unorm.nfc(unorm.nfd(text).replaceAll(_marksRe, ''));
   text = text.replaceAllMapped(_geezNumRe, (m) => ' ${geezToInt(m[0]!)} ');
   text = text.replaceAll(_ethiopicPunctRe, ' ');
   text = text.replaceAll(_punctSymbolRe, ' ');
-  text = text.toLowerCase();
+  text = String.fromCharCodes(text.toLowerCase().runes.map((r) => _finalForms[r] ?? r));
   return text.trim().split(_wsRe).where((w) => w.isNotEmpty).join(' ');
 }
 

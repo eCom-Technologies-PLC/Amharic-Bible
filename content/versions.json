@@ -1,5 +1,5 @@
 {
-  "_note": "License registry and source list. build_db.py refuses to package a version whose license.status is not 'confirmed' unless --allow-unverified is passed (dev and sample builds only).",
+  "_note": "License registry and source list. build_db.py refuses to package a version whose license.status is not 'confirmed' unless --allow-unverified is passed (dev and sample builds only). Optional fields: \"testaments\" (default [\"OT\", \"NT\"]) lists the testaments a version covers; \"book_names\": \"amh\" shows Amharic book names for a version in another language. \"bundle\": false makes a version a downloadable content pack (build_db.py --packs) instead of part of content.db.",
   "versions": [
     {
       "id": "AMH1962",
@@ -43,6 +43,52 @@
         "attribution": "World English Bible — public domain (eBible.org)."
       },
       "bundle": true,
+      "audio": null
+    },
+    {
+      "id": "WLC",
+      "name": "Hebrew Old Testament (Westminster Leningrad Codex)",
+      "local_name": "የዕብራይስጥ ብሉይ ኪዳን",
+      "abbrev": "WLC",
+      "language": "hbo",
+      "canon": "protestant66",
+      "testaments": [
+        "OT"
+      ],
+      "book_names": "amh",
+      "source": {
+        "type": "oshb_osis",
+        "base_url": "https://raw.githubusercontent.com/openscriptures/morphhb/3d15126fb1ef74867fc1434be1942e837932691f/wlc/"
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "WLC text public domain; OSHB lemma and morphology data CC BY 4.0 (https://github.com/openscriptures/morphhb/blob/master/LICENSE.md).",
+        "attribution": "Westminster Leningrad Codex (public domain), from the Open Scriptures Hebrew Bible, https://github.com/openscriptures/morphhb (CC BY 4.0)."
+      },
+      "bundle": false,
+      "audio": null
+    },
+    {
+      "id": "SBLGNT",
+      "name": "SBL Greek New Testament",
+      "local_name": "የግሪክ አዲስ ኪዳን",
+      "abbrev": "SBLGNT",
+      "language": "grc",
+      "canon": "protestant66",
+      "testaments": [
+        "NT"
+      ],
+      "book_names": "amh",
+      "source": {
+        "type": "sblgnt_xml",
+        "base_url": "https://raw.githubusercontent.com/LogosBible/SBLGNT/c4d241a9c1c479a55b989ba35a4976c1d0b8052c/data/sblgnt/xml/"
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "CC BY 4.0 (https://github.com/LogosBible/SBLGNT/blob/master/LICENSE).",
+        "attribution": "SBL Greek New Testament. Copyright 2010 Society of Biblical Literature and Logos Bible Software. CC BY 4.0, https://sblgnt.com."
+      },
+      "bundle": false,
       "audio": null
     }
   ]

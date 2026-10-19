@@ -4,18 +4,24 @@
 import 'dart:io';
 
 import 'package:amharic_bible/app.dart';
+import 'package:amharic_bible/core/strings.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
+import 'package:amharic_bible/data/pack_store.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
+import 'package:amharic_bible/features/settings/downloads_screen.dart';
 import 'package:amharic_bible/state/providers.dart';
 import 'package:amharic_bible/ui/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/testing.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'helpers.dart';
+import 'pack_fixtures.dart';
 
 const routes = [
   '/home',
@@ -54,6 +60,8 @@ Future<List<String>> render(
   required Device device,
   required Settings settings,
   Future<void> Function(WidgetTester)? interact,
+  PackStore Function()? packStore,
+  List<Override> overrides = const [],
 }) async {
   (rootBundle as CachingAssetBundle).clear();
   late Database content, user;
@@ -88,6 +96,8 @@ Future<List<String>> render(
           initialSettingsProvider.overrideWithValue(settings),
           audioRepositoryProvider.overrideWithValue(AudioRepository(baseUrl: '', storageDir: Directory.systemTemp)),
           routerProvider.overrideWithValue(buildRouter(initialLocation: route)),
+          if (packStore != null) packStoreProvider.overrideWithValue(packStore()),
+          ...overrides,
         ],
         child: const AmharicBibleApp(),
       ),
@@ -143,6 +153,120 @@ void main() {
           expect(errors, isEmpty);
         });
       }
+    }
+  });
+
+  group('Hebrew and Greek texts', () {
+    final rtl = find.byWidgetPredicate((w) => w is Directionality && w.textDirection == TextDirection.rtl);
+    const cases = [
+      ('/read?ref=PSA.3', Settings(versionId: 'WLC'), true),
+      ('/read?ref=GEN.1', Settings(versionId: 'AMH1962', parallelVersionId: 'WLC'), true),
+      ('/read?ref=GEN.1', Settings(versionId: 'WLC', parallelVersionId: 'AMH1962'), true),
+      ('/read?ref=JHN.3', Settings(versionId: 'SBLGNT', parallelVersionId: 'AMH1962'), false),
+      ('/home', Settings(versionId: 'WLC'), false),
+      ('/me/library', Settings(versionId: 'SBLGNT'), false),
+      ('/share-image?keys=1001001', Settings(versionId: 'WLC'), false),
+    ];
+    for (final device in [smallLargeText, tablet]) {
+      for (final (route, settings, rightToLeft) in cases) {
+        testWidgets('${device.name} ${settings.versionId}+${settings.parallelVersionId} $route', (tester) async {
+          final errors = await render(
+            tester,
+            route: route,
+            device: device,
+            settings: settings,
+            interact: (t) async {
+              if (rightToLeft) expect(rtl, findsWidgets);
+            },
+          );
+          expect(errors, isEmpty);
+        });
+      }
+    }
+  });
+
+  group('downloadable versions', () {
+    late Directory dir;
+    late Map<String, dynamic> manifest;
+    late Map<String, Uint8List> files;
+    PackStore online() => PackStore(baseUrl: 'https://packs.test', dir: dir, client: server(manifest, files));
+    PackStore offline() => PackStore(
+      baseUrl: 'https://packs.test',
+      dir: dir,
+      client: MockClient((_) async => throw const SocketException('offline')),
+    );
+    // One pack installed with an update waiting, one to download.
+    final lists = <String, ({List<PackEntry> entries, PackListStatus status})>{};
+    setUpAll(() async {
+      final wlc = await makePack('WLC');
+      final sbl = await makePack('SBLGNT');
+      dir = await Directory.systemTemp.createTemp('packs');
+      await PackStore(
+        baseUrl: 'https://packs.test',
+        dir: dir,
+        client: server({}, {'WLC.db.gz': wlc}),
+      ).install(PackInfo.fromJson(entryFor('WLC', wlc))).drain<void>();
+      manifest = {
+        'packs': [entryFor('SBLGNT', sbl), entryFor('WLC', wlc, contentHash: 'h2')],
+      };
+      files = {'WLC.db.gz': wlc, 'SBLGNT.db.gz': sbl};
+      // File and network reads don't complete inside testWidgets' fake clock,
+      // so the lists are loaded here and handed to the screen.
+      for (final (name, store) in [('online', online), ('offline', offline)]) {
+        final c = ProviderContainer(overrides: [packStoreProvider.overrideWithValue(store())]);
+        lists[name] = await c.read(packListProvider.future);
+        c.dispose();
+      }
+    });
+
+    for (final device in [smallLargeText, tablet]) {
+      for (final lang in ['am', 'en']) {
+        for (final (name, store) in [('online', online), ('offline', offline)]) {
+          testWidgets('${device.name} $lang downloads $name', (tester) async {
+            final errors = await render(
+              tester,
+              route: '/me/downloads',
+              device: device,
+              settings: Settings(languageCode: lang),
+              packStore: store,
+              overrides: [
+                packListProvider.overrideWith((ref) async => lists[name]!),
+                downloadsProvider.overrideWith(
+                  (ref) async => {
+                    'fileset': {'JHN': 3 << 20},
+                  },
+                ),
+              ],
+              interact: (t) async {
+                // The pack list reads files and the (fake) network for real.
+                await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+                await t.pump();
+                expect(find.byIcon(Icons.delete_outline), findsNWidgets(2)); // the installed pack and the audio
+                if (name == 'online') {
+                  expect(find.byIcon(Icons.download_outlined), findsOneWidget);
+                  expect(find.byIcon(Icons.update), findsOneWidget);
+                }
+              },
+            );
+            expect(errors, isEmpty);
+          });
+        }
+      }
+      testWidgets('${device.name} version menu offers more versions', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=JHN.3',
+          device: device,
+          settings: const Settings(),
+          packStore: online,
+          interact: (t) async {
+            await t.tap(find.byType(PopupMenuButton<String>));
+            await t.pump(const Duration(milliseconds: 500));
+            expect(find.text(S.am.moreVersions), findsOneWidget);
+          },
+        );
+        expect(errors, isEmpty);
+      });
     }
   });
 

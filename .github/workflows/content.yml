@@ -1,7 +1,10 @@
 name: Build full content
 
 # Downloads the source texts listed in content/versions.json, builds the full
-# content database and an APK that bundles it.
+# content database, the downloadable content packs (versions with
+# "bundle": false) and an APK that bundles the database. With packs_release_tag
+# set, the packs are published as assets of that GitHub release and the APK
+# downloads them from there.
 on:
   workflow_dispatch:
     inputs:
@@ -13,10 +16,16 @@ on:
         description: "Audio proxy base URL (optional)"
         type: string
         default: ""
+      packs_release_tag:
+        description: "Publish the content packs to this GitHub release tag, e.g. content-1 (optional)"
+        type: string
+        default: ""
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # to publish the content packs as release assets
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,14 +33,27 @@ jobs:
           python-version: "3.11"
       - name: Fetch sources
         run: python pipeline/fetch_sources.py
-      - name: Build content.db
+      - name: Build content.db and content packs
         run: |
-          python pipeline/build_db.py --sources content/sources --out build/content.db \
+          python pipeline/build_db.py --sources content/sources --out build/content.db --packs build/packs \
             ${{ inputs.allow_unverified && '--allow-unverified' || '' }}
       - uses: actions/upload-artifact@v4
         with:
           name: content-db
           path: build/content.db
+      - uses: actions/upload-artifact@v4
+        with:
+          name: content-packs
+          path: build/packs
+      - name: Publish content packs
+        if: inputs.packs_release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.packs_release_tag }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "Content packs $TAG" --notes "Downloadable Bible versions (build_db.py --packs)."
+          gh release upload "$TAG" build/packs/* --clobber
       - name: Bundle into the app
         run: cp build/content.db app/assets/content/content.db
       - uses: actions/setup-java@v4
@@ -46,7 +68,10 @@ jobs:
         working-directory: app
         env:
           AUDIO_PROXY_URL: ${{ inputs.audio_proxy_url }}
-        run: flutter build apk --release --dart-define=AUDIO_PROXY_URL="$AUDIO_PROXY_URL"
+          CONTENT_PACKS_URL: ${{ inputs.packs_release_tag != '' && format('{0}/{1}/releases/download/{2}', github.server_url, github.repository, inputs.packs_release_tag) || '' }}
+        run: |
+          flutter build apk --release --dart-define=AUDIO_PROXY_URL="$AUDIO_PROXY_URL" \
+            --dart-define=CONTENT_PACKS_URL="$CONTENT_PACKS_URL"
       - uses: actions/upload-artifact@v4
         with:
           name: app-release-full-content
