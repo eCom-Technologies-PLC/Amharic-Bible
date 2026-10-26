@@ -44,6 +44,26 @@
       },
       "bundle": true,
       "audio": null
+    },
+    {
+      "id": "DEU1912",
+      "name": "Luther Bible (1912)",
+      "local_name": "Lutherbibel 1912",
+      "abbrev": "LUT1912",
+      "language": "deu",
+      "canon": "protestant66",
+      "source": {
+        "type": "usfm_zip",
+        "url": "https://ebible.org/Scriptures/deu1912_usfm.zip",
+        "_verify": "Confirm the eBible.org ID for the Luther 1912 text on https://ebible.org/find/ before the first release build. Extra (apocryphal) books in the zip are skipped by build_db.py."
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "Public domain.",
+        "attribution": "Lutherbibel 1912 — public domain (eBible.org)."
+      },
+      "bundle": true,
+      "audio": null
     }
   ]
 }

@@ -67,6 +67,7 @@ class Book:
     code: str
     title: str | None = None  # \h running header
     long_title: str | None = None  # \toc1 or \mt
+    abbrev: str | None = None  # \toc3
     verses: list[Verse] = field(default_factory=list)
     headings: list[Heading] = field(default_factory=list)
     crossrefs: list[CrossRef] = field(default_factory=list)
@@ -104,6 +105,8 @@ class _Parser:
             self.book.title = txt
         elif m in ("toc1", "mt", "mt1") and self.book and txt and not self.book.long_title:
             self.book.long_title = txt
+        elif m == "toc3" and self.book and txt:
+            self.book.abbrev = txt
         self.line_marker, self.line_buf = None, []
 
     def emit(self, kind: str, text: str):

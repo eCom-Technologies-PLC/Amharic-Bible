@@ -110,6 +110,15 @@ class BuildTest(unittest.TestCase):
             self.assertEqual(db.execute("SELECT value FROM meta WHERE key='is_sample'").fetchone()[0], "1")
             codes = {r[0] for r in db.execute("SELECT code FROM book_alias WHERE alias=?", (alias_key("ዮሐ"),))}
             self.assertEqual(codes, {"JHN"})
+            # Non-English Latin-script versions take book names and abbreviations from the source.
+            row = db.execute("SELECT name, short_name, abbrev FROM book WHERE version_id='DEU1912' AND code='JHN'")
+            self.assertEqual(row.fetchone(), ("Das Evangelium des Johannes", "Johannes", "Joh"))
+            self.assertEqual(db.execute("SELECT abbrev FROM book WHERE version_id='WEB' AND code='JHN'").fetchone()[0],
+                             "Jhn")
+            q = "SELECT vkey FROM verse_fts WHERE verse_fts MATCH ? AND version_id='DEU1912'"
+            self.assertIn(1001002, {r[0] for r in db.execute(q, (normalize("wüst"),))})
+            codes = {r[0] for r in db.execute("SELECT code FROM book_alias WHERE alias=?", (alias_key("1Mo"),))}
+            self.assertEqual(codes, {"GEN"})
 
     def test_unverified_license_is_refused(self):
         with tempfile.TemporaryDirectory() as d:

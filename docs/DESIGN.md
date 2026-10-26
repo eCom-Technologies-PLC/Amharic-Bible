@@ -76,6 +76,7 @@ needs a recorded license before it is bundled or streamed.
 | Amharic Standard Version (1980 / 2000s revisions) | Ethiopian Bible Society | Copyrighted | Seek a license; ship only with permission |
 | New Amharic Standard Version and others | Bible Brain / YouVersion | Per-version terms | Optional streaming via API if licensed |
 | English (WEB, KJV) | eBible.org | Public domain | Bundled for the parallel view |
+| German (Luther 1912) | eBible.org | Public domain | Bundled text version (no German UI) |
 
 ### 2.2 Audio
 

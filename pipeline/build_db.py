@@ -6,7 +6,7 @@ Usage:
   python pipeline/build_db.py --sources pipeline/tests/fixtures/usfm \
       --out app/assets/content/content.db --sample --allow-unverified
 
---sources holds one directory per version ID (e.g. AMH1962/, WEB/) with
+--sources holds one directory per version ID (e.g. AMH1962/, WEB/, DEU1912/) with
 .SFM/.usfm files. Versions must be registered in content/versions.json.
 """
 
@@ -111,15 +111,21 @@ def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
         h = hashlib.sha256()
         for ordinal, b in enumerate(books, 1):
             info = catalog[b.code]
+            lang = reg["language"]
+            if lang == "amh":
+                abbrev = info.abbrev
+            elif lang == "eng" or not b.abbrev:
+                abbrev = info.en_abbrevs[0].title()
+            else:
+                abbrev = b.abbrev  # other languages: the source's own \toc3 abbreviation
             db.execute(
                 "INSERT INTO book VALUES (?,?,?,?,?,?,?,?,?)",
                 (vid, b.code, info.num, ordinal,
-                 info.name if reg["language"] == "amh" else (b.long_title or info.en),
-                 info.short if reg["language"] == "amh" else (b.title or info.en),
-                 info.abbrev if reg["language"] == "amh" else info.en_abbrevs[0].title(),
-                 info.testament, max(b.chapters_seen, default=0)),
+                 info.name if lang == "amh" else (b.long_title or info.en),
+                 info.short if lang == "amh" else (b.title or info.en),
+                 abbrev, info.testament, max(b.chapters_seen, default=0)),
             )
-            for a in book_aliases(info, tuple(x for x in (b.title,) if x)):
+            for a in book_aliases(info, tuple(x for x in (b.title, b.abbrev) if x)):
                 aliases.setdefault(a, set()).add(b.code)
             for v in b.verses:
                 k = vkey(info.num, v.chapter, v.verse)

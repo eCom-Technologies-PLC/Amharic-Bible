@@ -11,7 +11,7 @@ An offline-first Amharic Bible app with text, synchronized audio and Ge'ez-aware
 |---|---|
 | `app/` | Flutter app (Android + iOS) |
 | `pipeline/` | Python content pipeline: USFM → SQLite content DB |
-| `content/` | `books.json` (66-book catalog, Amharic + English names) and `versions.json` (sources + license registry) |
+| `content/` | `books.json` (66-book catalog, Amharic + English names; other languages take book names from their USFM) and `versions.json` (sources + license registry) |
 | `server/audio-proxy/` | Small proxy that keeps the Bible Brain API key off devices |
 | `.github/workflows/` | CI (tests, analysis, debug APK) and the full-content build |
 
