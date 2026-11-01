@@ -113,6 +113,11 @@ def normalize(text: str) -> str:
         " " if unicodedata.category(ch)[0] in "PS" else ch for ch in text
     )
     text = text.lower()
+    # Drop combining marks (Hebrew vowel points and cantillation, Greek
+    # accents, Latin diacritics) and fold final sigma, so a plain query
+    # matches pointed or accented text. Mirrored in app/lib/core/geez.dart.
+    text = "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn")
+    text = text.replace("ς", "σ")
     return " ".join(text.split())
 
 

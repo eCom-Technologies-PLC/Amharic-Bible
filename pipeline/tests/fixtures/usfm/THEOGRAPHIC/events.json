@@ -1,0 +1,71 @@
+[
+ {
+  "id": "recOIPcFaPCjMpQ6w",
+  "fields": {
+   "title": "Creation of all things",
+   "eventID": 1,
+   "startDate": "-4003",
+   "verses": [
+    "rec7mkRLwey2ntUG9",
+    "rec7DRaTJV5ANnvEj",
+    "recxtLDOVbJSsI8iR"
+   ]
+  }
+ },
+ {
+  "id": "recwQJTWTmTkUMHHp",
+  "fields": {
+   "title": "The Great Flood",
+   "eventID": 39,
+   "startDate": "-2347",
+   "verses": [
+    "reccmdHtgGH5gU6RR"
+   ]
+  }
+ },
+ {
+  "id": "recnAzV0utz4k20eC",
+  "fields": {
+   "title": "Leaving the Ark",
+   "eventID": 42,
+   "startDate": "-2346",
+   "verses": [
+    "reccmdHtgGH5gU6RR"
+   ]
+  }
+ },
+ {
+  "id": "rec51NMfUoy8EBm5D",
+  "fields": {
+   "title": "John's Witness",
+   "eventID": 269,
+   "startDate": "27",
+   "verses": [
+    "recaN5P3p8A1JUSYs"
+   ]
+  }
+ },
+ {
+  "id": "recqe4jV2tmZC9XuG",
+  "fields": {
+   "title": "Jesus and Nicodemus",
+   "eventID": 274,
+   "startDate": "27",
+   "verses": [
+    "recKe0QCzJeEswCmD",
+    "recx0Lu3xRHxc9hLg"
+   ]
+  }
+ },
+ {
+  "id": "recGpBzggp7LyILNR",
+  "fields": {
+   "title": "Bethesda pool healing",
+   "eventID": 291,
+   "startDate": "28",
+   "verses": [
+    "recsdh4CMMXlLgLK4"
+   ]
+  }
+ }
+]

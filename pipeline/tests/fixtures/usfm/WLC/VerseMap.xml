@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<verseMap xmlns="http://www.APTBibleTools.com/namespace">
+<!-- Excerpt of OSHB VerseMap.xml (WLC to KJV versification). -->
+	<book osisID="Ps">
+		<verse wlc="Ps.3.2" kjv="Ps.3.1" type="full"/>
+		<verse wlc="Ps.3.3" kjv="Ps.3.2" type="full"/>
+		<verse wlc="Ps.3.4" kjv="Ps.3.3" type="full"/>
+		<verse wlc="Ps.3.5" kjv="Ps.3.4" type="full"/>
+		<verse wlc="Ps.3.6" kjv="Ps.3.5" type="full"/>
+		<verse wlc="Ps.3.7" kjv="Ps.3.6" type="full"/>
+		<verse wlc="Ps.3.8" kjv="Ps.3.7" type="full"/>
+		<verse wlc="Ps.3.9" kjv="Ps.3.8" type="full"/>
+	</book>
+</verseMap>

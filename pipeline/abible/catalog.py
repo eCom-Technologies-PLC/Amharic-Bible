@@ -68,3 +68,8 @@ def alias_key(s: str) -> str:
 def book_aliases(b: BookInfo, extra: tuple[str, ...] = ()) -> set[str]:
     names = {b.name, b.short, b.abbrev, b.en, b.code, *b.en_abbrevs, *extra}
     return {alias_key(n) for n in names if n and alias_key(n)}
+
+
+def load_resources(path: Path = CONTENT / "resources.json") -> dict[str, dict]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {r["id"]: r for r in data["resources"]}

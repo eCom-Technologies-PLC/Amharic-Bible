@@ -1,0 +1,122 @@
+[
+ {
+  "id": "rec7mkRLwey2ntUG9",
+  "createdTime": "2018-05-13T17:36:24.000Z",
+  "fields": {
+   "osisRef": "Gen.1.1",
+   "verseID": "01001001"
+  }
+ },
+ {
+  "id": "rec7DRaTJV5ANnvEj",
+  "createdTime": "2018-05-13T17:36:24.000Z",
+  "fields": {
+   "osisRef": "Gen.1.2",
+   "verseID": "01001002"
+  }
+ },
+ {
+  "id": "recxtLDOVbJSsI8iR",
+  "createdTime": "2018-05-13T17:36:24.000Z",
+  "fields": {
+   "osisRef": "Gen.1.3",
+   "verseID": "01001003"
+  }
+ },
+ {
+  "id": "reccmdHtgGH5gU6RR",
+  "createdTime": "2018-05-13T17:36:24.000Z",
+  "fields": {
+   "osisRef": "Gen.8.17",
+   "verseID": "01008017"
+  }
+ },
+ {
+  "id": "reck0tIvq1aa8mF0a",
+  "createdTime": "2018-05-13T17:36:24.000Z",
+  "fields": {
+   "osisRef": "Gen.31.47",
+   "verseID": "01031047"
+  }
+ },
+ {
+  "id": "recbrbipkK3TVHsIt",
+  "createdTime": "2018-05-13T17:41:39.000Z",
+  "fields": {
+   "osisRef": "Ps.3.1",
+   "verseID": "19003001"
+  }
+ },
+ {
+  "id": "recegnKSVgk3JtXEu",
+  "createdTime": "2018-05-13T17:41:39.000Z",
+  "fields": {
+   "osisRef": "Ps.3.2",
+   "verseID": "19003002"
+  }
+ },
+ {
+  "id": "rec0DJEAUgp9CRViP",
+  "createdTime": "2018-05-13T17:41:39.000Z",
+  "fields": {
+   "osisRef": "Ps.3.3",
+   "verseID": "19003003"
+  }
+ },
+ {
+  "id": "rec1BzTqTW1yUNgA4",
+  "createdTime": "2018-05-13T17:41:47.000Z",
+  "fields": {
+   "osisRef": "Ps.23.1",
+   "verseID": "19023001"
+  }
+ },
+ {
+  "id": "recdbY3TEL6McXDmY",
+  "createdTime": "2018-05-13T17:41:47.000Z",
+  "fields": {
+   "osisRef": "Ps.23.2",
+   "verseID": "19023002"
+  }
+ },
+ {
+  "id": "recWG76RF8wxD5zJB",
+  "createdTime": "2018-05-13T17:54:17.000Z",
+  "fields": {
+   "osisRef": "John.1.1",
+   "verseID": "43001001"
+  }
+ },
+ {
+  "id": "recaN5P3p8A1JUSYs",
+  "createdTime": "2018-05-13T17:54:17.000Z",
+  "fields": {
+   "osisRef": "John.1.18",
+   "verseID": "43001018"
+  }
+ },
+ {
+  "id": "recKe0QCzJeEswCmD",
+  "createdTime": "2018-05-13T17:54:20.000Z",
+  "fields": {
+   "osisRef": "John.3.16",
+   "verseID": "43003016"
+  }
+ },
+ {
+  "id": "recx0Lu3xRHxc9hLg",
+  "createdTime": "2018-05-13T17:54:20.000Z",
+  "fields": {
+   "osisRef": "John.3.17",
+   "verseID": "43003017"
+  }
+ },
+ {
+  "id": "recsdh4CMMXlLgLK4",
+  "createdTime": "2018-05-13T17:54:23.000Z",
+  "fields": {
+   "osisRef": "John.5.4",
+   "verseID": "43005004"
+  }
+ }
+]

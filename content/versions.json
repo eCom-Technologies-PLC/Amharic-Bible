@@ -64,6 +64,57 @@
       },
       "bundle": true,
       "audio": null
+    },
+    {
+      "id": "WLC",
+      "name": "Hebrew Bible (Westminster Leningrad Codex)",
+      "local_name": "תנ״ך — WLC",
+      "abbrev": "WLC",
+      "language": "heb",
+      "canon": "protestant66",
+      "coverage": "OT",
+      "format": "oshb",
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/openscriptures/morphhb.git",
+        "files": {
+          "wlc/*.xml": ""
+        }
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "WLC text public domain; lemma and morphology CC BY 4.0 (Open Scriptures Hebrew Bible Project).",
+        "attribution": "Westminster Leningrad Codex (public domain), with lemma and morphology from the Open Scriptures Hebrew Bible Project (CC BY 4.0)."
+      },
+      "edition": "OSHB 2.0.2 (WLC 4.20)",
+      "bundle": false,
+      "audio": null
+    },
+    {
+      "id": "RP2018",
+      "name": "Greek New Testament (Robinson-Pierpont 2018)",
+      "local_name": "Ἡ Καινὴ Διαθήκη — RP2018",
+      "abbrev": "RP2018",
+      "language": "grc",
+      "canon": "protestant66",
+      "coverage": "NT",
+      "format": "rp_csv",
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/byztxt/byzantine-majority-text.git",
+        "files": {
+          "csv-unicode/strongs/with-parsing/*.csv": "parsed/",
+          "csv-unicode/ccat/with-variants/*.csv": "text/"
+        }
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "Public domain (text, Strong's numbers, parsing and apparatus).",
+        "attribution": "The New Testament in the Original Greek: Byzantine Textform 2018, Maurice A. Robinson and William G. Pierpont (public domain)."
+      },
+      "edition": "RP2018",
+      "bundle": false,
+      "audio": null
     }
   ]
 }

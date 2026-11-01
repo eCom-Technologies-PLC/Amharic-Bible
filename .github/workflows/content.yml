@@ -1,7 +1,9 @@
 name: Build full content
 
-# Downloads the source texts listed in content/versions.json, builds the full
-# content database and an APK that bundles it.
+# Downloads the sources listed in content/versions.json and content/resources.json,
+# builds the full content database, the study packs (original-language texts,
+# lexicon, cross-references, people/places, commentary) and an APK that bundles
+# content.db. Packs are not bundled; they are published for in-app download.
 on:
   workflow_dispatch:
     inputs:
@@ -32,6 +34,10 @@ jobs:
         with:
           name: content-db
           path: build/content.db
+      - uses: actions/upload-artifact@v4
+        with:
+          name: study-packs
+          path: build/packs/
       - name: Bundle into the app
         run: cp build/content.db app/assets/content/content.db
       - uses: actions/setup-java@v4

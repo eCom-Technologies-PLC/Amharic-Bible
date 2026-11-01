@@ -1,0 +1,91 @@
+{
+  "_note": "Study resources that are not Bible texts. Same license gate as versions.json: build_db.py refuses anything whose license.status is not 'confirmed' unless --allow-unverified is passed. bundle: false resources are written to a separate pack database instead of content.db.",
+  "resources": [
+    {
+      "id": "STRONGS",
+      "kind": "lexicon",
+      "name": "Strong's Hebrew and Greek dictionaries",
+      "source": {
+        "type": "files",
+        "files": {
+          "hebrew.js": "https://raw.githubusercontent.com/openscriptures/strongs/master/hebrew/strongs-hebrew-dictionary.js",
+          "greek.js": "https://raw.githubusercontent.com/openscriptures/strongs/master/greek/strongs-greek-dictionary.js"
+        }
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "James Strong (1890, public domain); JSON edition CC BY-SA, Open Scriptures.",
+        "attribution": "Strong's Exhaustive Concordance dictionaries (James Strong, 1890), JSON edition by Open Scriptures (CC BY-SA)."
+      },
+      "bundle": false
+    },
+    {
+      "id": "OBXREF",
+      "kind": "crossrefs",
+      "name": "OpenBible.info cross-references",
+      "source": {
+        "type": "files",
+        "files": {
+          "cross_references.txt": "https://raw.githubusercontent.com/scrollmapper/bible_databases/master/sources/extras/cross_references.txt"
+        },
+        "_verify": "Mirror of https://a.openbible.info/data/cross-references.zip; fetch from openbible.info for release builds."
+      },
+      "options": {
+        "min_votes": 1
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "CC BY, OpenBible.info (built on the Treasury of Scripture Knowledge).",
+        "attribution": "Cross-references from OpenBible.info (CC BY)."
+      },
+      "bundle": false
+    },
+    {
+      "id": "THEOGRAPHIC",
+      "kind": "entities",
+      "name": "Theographic Bible Metadata (people, places, events) and Easton's Bible Dictionary",
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/robertrouse/theographic-bible-metadata.git",
+        "files": {
+          "json/people.json": "",
+          "json/places.json": "",
+          "json/events.json": "",
+          "json/verses.json": "",
+          "json/easton.json": ""
+        }
+      },
+      "license": {
+        "status": "confirmed",
+        "summary": "CC BY-SA 4.0, Theographic; Easton's Bible Dictionary (1897) is public domain.",
+        "attribution": "People, places and events from Theographic Bible Metadata by Robert Rouse (CC BY-SA 4.0); Easton's Bible Dictionary (1897, public domain)."
+      },
+      "bundle": false
+    },
+    {
+      "id": "HCF",
+      "kind": "commentary",
+      "name": "Historical Christian Faith commentaries (church fathers and historical interpreters)",
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/HistoricalChristianFaith/Commentaries-Database.git",
+        "files": {
+          "**/*.toml": ""
+        }
+      },
+      "options": {
+        "max_year": 1700,
+        "exclude_traditions": [
+          "Canonical Scriptures",
+          "Reformation & Modern"
+        ]
+      },
+      "license": {
+        "status": "verify",
+        "summary": "The compilation and public-domain excerpts are dedicated to the public domain, but some entries are fair-use excerpts of copyrighted modern translations. Review the included works before a release build.",
+        "attribution": "Commentary excerpts compiled by the Historical Christian Faith Commentaries Database."
+      },
+      "bundle": false
+    }
+  ]
+}

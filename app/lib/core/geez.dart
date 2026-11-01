@@ -69,6 +69,7 @@ final _ethiopicPunctRe = RegExp('[\u1360-\u1368]');
 // Unicode punctuation (P*) and symbols (S*).
 final _punctSymbolRe = RegExp(r'[\p{P}\p{S}]', unicode: true);
 final _wsRe = RegExp(r'\s+');
+final _combiningMarkRe = RegExp(r'\p{Mn}', unicode: true);
 final _ordinalRe = RegExp(r'^(\d)\s*(?:ኛ|st|nd|rd|th)?');
 
 int geezToInt(String s) {
@@ -128,6 +129,9 @@ String normalize(String text) {
   text = text.replaceAll(_ethiopicPunctRe, ' ');
   text = text.replaceAll(_punctSymbolRe, ' ');
   text = text.toLowerCase();
+  // Drop combining marks (Hebrew points, Greek accents, Latin diacritics) and
+  // fold final sigma, as normalize() in pipeline/abible/geez.py does.
+  text = unorm.nfd(text).replaceAll(_combiningMarkRe, '').replaceAll('ς', 'σ');
   return text.trim().split(_wsRe).where((w) => w.isNotEmpty).join(' ');
 }
 
