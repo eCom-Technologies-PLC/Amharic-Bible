@@ -8,7 +8,9 @@ import '../domain/models.dart';
 import '../domain/study.dart';
 import 'providers.dart';
 
-final studyRepositoryProvider = Provider<StudyRepository>((ref) => StudyRepository(ref.watch(contentDbProvider)));
+final studyRepositoryProvider = Provider<StudyRepository>(
+  (ref) => StudyRepository(ref.watch(contentDbProvider), sources: ref.watch(contentSourcesProvider)),
+);
 
 final versionsWithWordsProvider = FutureProvider<Set<String>>(
   (ref) => ref.watch(studyRepositoryProvider).versionsWithWords(),

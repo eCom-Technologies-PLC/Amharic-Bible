@@ -2,77 +2,149 @@ import 'package:sqflite/sqflite.dart';
 
 import '../core/geez.dart';
 import '../domain/study.dart';
+import 'packs.dart';
 
-/// Read-only access to the study tables of the content DB (schema v2, see
-/// pipeline/build_db.py): original-language words, lexicon, variants,
-/// cross-references, people/places/events, dictionary and commentary.
+/// Read-only access to the study tables (schema v2, see pipeline/build_db.py):
+/// original-language words, lexicon, variants, cross-references,
+/// people/places/events, dictionary and commentary.
 ///
-/// Every table may be empty (e.g. a build without study packs); callers get
-/// empty results, never errors.
+/// The tables live in the bundled content DB (sample excerpts) and in study
+/// packs attached to it; [sources] says which database holds what. Every
+/// table may be empty; callers get empty results, never errors.
 class StudyRepository {
-  StudyRepository(this.db);
+  StudyRepository(this.db, {this.sources = ContentSources.bundled});
 
   final Database db;
+  final ContentSources sources;
   Set<String>? _versionsWithWords;
   List<(String, String)>? _foldedLemmas; // (id, lemma without points or accents)
 
-  /// Versions that carry word-level data (the original-language texts).
-  Future<Set<String>> versionsWithWords() async => _versionsWithWords ??= {
-    for (final r in await db.rawQuery('SELECT DISTINCT version_id FROM word')) r['version_id'] as String,
-  };
+  /// Schemas that may hold words or variants, with a filter that hides the
+  /// bundled DB's copy of versions a pack provides.
+  List<(String, String, List<Object?>)> _versionTables() {
+    final shadowed = sources.packVersions.toList();
+    return [
+      for (final s in sources.schemas)
+        if (s == 'main' && shadowed.isNotEmpty)
+          (s, ' AND version_id NOT IN (${List.filled(shadowed.length, '?').join(',')})', shadowed)
+        else
+          (s, '', const <Object?>[]),
+    ];
+  }
 
-  static const _wordSelect =
-      'SELECT w.version_id, w.vkey, w.pos, w.text, w.strongs, w.lemma, w.morph, l.usage, l.definition '
-      'FROM word w LEFT JOIN lexicon l ON l.id = w.strongs ';
+  Future<List<Map<String, Object?>>> _fromEach(
+    List<String> schemas,
+    String Function(String schema) sql, [
+    List<Object?> args = const [],
+  ]) async => [for (final s in schemas) ...await db.rawQuery(sql(s), args)];
+
+  /// Versions that carry word-level data (the original-language texts).
+  Future<Set<String>> versionsWithWords() async {
+    if (_versionsWithWords != null) return _versionsWithWords!;
+    final out = <String>{};
+    for (final (s, filter, args) in _versionTables()) {
+      for (final r in await db.rawQuery('SELECT DISTINCT version_id FROM $s.word WHERE 1 = 1$filter', args)) {
+        out.add(r['version_id'] as String);
+      }
+    }
+    return _versionsWithWords = out;
+  }
+
+  /// Lexicon rows for [ids], from whichever databases hold the lexicon.
+  Future<Map<String, Map<String, Object?>>> _lexiconRows(Iterable<String> ids) async {
+    final list = ids.toSet().toList();
+    final out = <String, Map<String, Object?>>{};
+    for (var i = 0; i < list.length; i += 500) {
+      final chunk = list.sublist(i, i + 500 > list.length ? list.length : i + 500);
+      final marks = List.filled(chunk.length, '?').join(',');
+      for (final s in sources.forTable('lexicon')) {
+        for (final r in await db.rawQuery('SELECT * FROM $s.lexicon WHERE id IN ($marks)', chunk)) {
+          out.putIfAbsent(r['id'] as String, () => r);
+        }
+      }
+    }
+    return out;
+  }
+
+  Future<List<Word>> _withGlosses(List<Map<String, Object?>> rows) async {
+    final lex = await _lexiconRows([for (final r in rows) ?r['strongs'] as String?]);
+    return [
+      for (final r in rows)
+        Word.fromRow({...r, 'usage': lex[r['strongs']]?['usage'], 'definition': lex[r['strongs']]?['definition']}),
+    ];
+  }
 
   /// Words of [versionId] for verse keys in [lo]..[hi], grouped by verse.
   Future<Map<int, List<Word>>> words(String versionId, int lo, int hi) async {
     final rows = await db.rawQuery(
-      '${_wordSelect}WHERE w.version_id = ? AND w.vkey BETWEEN ? AND ? ORDER BY w.vkey, w.pos',
+      'SELECT * FROM ${sources.forVersion(versionId)}.word '
+      'WHERE version_id = ? AND vkey BETWEEN ? AND ? ORDER BY vkey, pos',
       [versionId, lo, hi],
     );
     final out = <int, List<Word>>{};
-    for (final r in rows) {
-      (out[r['vkey'] as int] ??= []).add(Word.fromRow(r));
+    for (final w in await _withGlosses(rows)) {
+      (out[w.vkey] ??= []).add(w);
     }
     return out;
   }
 
   /// Words of every original-language text at one verse, by version.
   Future<Map<String, List<Word>>> wordsAt(int vkey) async {
-    final rows = await db.rawQuery('${_wordSelect}WHERE w.vkey = ? ORDER BY w.version_id, w.pos', [vkey]);
+    final rows = <Map<String, Object?>>[];
+    for (final (s, filter, args) in _versionTables()) {
+      rows.addAll(
+        await db.rawQuery('SELECT * FROM $s.word WHERE vkey = ?$filter ORDER BY version_id, pos', [vkey, ...args]),
+      );
+    }
     final out = <String, List<Word>>{};
-    for (final r in rows) {
-      (out[r['version_id'] as String] ??= []).add(Word.fromRow(r));
+    for (final w in await _withGlosses(rows)) {
+      (out[w.versionId] ??= []).add(w);
     }
     return out;
   }
 
   Future<LexEntry?> lexicon(String id) async {
-    final rows = await db.query('lexicon', where: 'id = ?', whereArgs: [id]);
-    return rows.isEmpty ? null : LexEntry.fromRow(rows.first);
+    final r = (await _lexiconRows([id]))[id];
+    return r == null ? null : LexEntry.fromRow(r);
   }
 
-  Future<int> occurrenceCount(String strongs) async =>
-      Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM word WHERE strongs = ?', [strongs])) ?? 0;
+  Future<int> occurrenceCount(String strongs) async {
+    var n = 0;
+    for (final (s, filter, args) in _versionTables()) {
+      n +=
+          Sqflite.firstIntValue(
+            await db.rawQuery('SELECT COUNT(*) FROM $s.word WHERE strongs = ?$filter', [strongs, ...args]),
+          ) ??
+          0;
+    }
+    return n;
+  }
 
-  /// Verses containing [strongs], in canonical order (a concordance).
+  /// Verses containing [strongs], in canonical order (a concordance). A
+  /// version's words and verses always sit in the same database.
   Future<List<Occurrence>> occurrences(String strongs, {int limit = 300}) async {
-    final rows = await db.rawQuery(
-      'SELECT w.version_id, w.vkey, group_concat(w.text, \' \') AS words, v.text AS verse '
-      'FROM word w JOIN verse v ON v.version_id = w.version_id AND v.vkey = w.vkey '
-      'WHERE w.strongs = ? GROUP BY w.version_id, w.vkey ORDER BY w.vkey LIMIT ?',
-      [strongs, limit],
-    );
-    return [
-      for (final r in rows)
-        Occurrence(
-          versionId: r['version_id'] as String,
-          vkey: r['vkey'] as int,
-          word: r['words'] as String,
-          verseText: r['verse'] as String,
-        ),
-    ];
+    final out = <Occurrence>[];
+    for (final (s, filter, args) in _versionTables()) {
+      final rows = await db.rawQuery(
+        "SELECT w.version_id, w.vkey, group_concat(w.text, ' ') AS words, v.text AS verse "
+        'FROM $s.word w JOIN $s.verse v ON v.version_id = w.version_id AND v.vkey = w.vkey '
+        'WHERE w.strongs = ?${filter.replaceAll('version_id', 'w.version_id')} '
+        'GROUP BY w.version_id, w.vkey ORDER BY w.vkey LIMIT ?',
+        [strongs, ...args, limit],
+      );
+      for (final r in rows) {
+        out.add(
+          Occurrence(
+            versionId: r['version_id'] as String,
+            vkey: r['vkey'] as int,
+            word: r['words'] as String,
+            verseText: r['verse'] as String,
+          ),
+        );
+      }
+    }
+    out.sort((a, b) => a.vkey.compareTo(b.vkey));
+    return out.take(limit).toList();
   }
 
   /// Lexicon entries matching a Strong's number ("G26", "h430") or, for
@@ -85,16 +157,18 @@ class StudyRepository {
       return [?e];
     }
     if (q.length < 3) return [];
+    final schemas = sources.forTable('lexicon');
     // Match on the folded lemma (no vowel points or accents) or the English text.
     final folded = normalize(q);
-    final rows = await db.query(
-      'lexicon',
-      where: 'translit LIKE ? OR usage LIKE ? OR definition LIKE ? OR lemma LIKE ?',
-      whereArgs: ['%$q%', '%$q%', '%$q%', '%$q%'],
-      limit: limit * 4,
+    final rows = await _fromEach(
+      schemas,
+      (s) =>
+          'SELECT id FROM $s.lexicon WHERE translit LIKE ? OR usage LIKE ? OR definition LIKE ? OR lemma LIKE ? '
+          'LIMIT ${limit * 4}',
+      ['%$q%', '%$q%', '%$q%', '%$q%'],
     );
     _foldedLemmas ??= [
-      for (final r in await db.query('lexicon', columns: ['id', 'lemma'], where: 'lemma <> ?', whereArgs: ['']))
+      for (final r in await _fromEach(schemas, (s) => "SELECT id, lemma FROM $s.lexicon WHERE lemma <> ''"))
         (r['id'] as String, normalize(r['lemma'] as String)),
     ];
     final byLemma = [
@@ -102,108 +176,127 @@ class StudyRepository {
         if (folded.isNotEmpty && lemma.startsWith(folded)) id,
     ];
     final ids = {...byLemma.take(limit), ...rows.map((r) => r['id'] as String)}.take(limit).toList();
-    if (ids.isEmpty) return [];
-    final entries = await db.query(
-      'lexicon',
-      where: 'id IN (${List.filled(ids.length, '?').join(',')})',
-      whereArgs: ids,
-    );
-    final order = {for (final (i, id) in ids.indexed) id: i};
-    return entries.map(LexEntry.fromRow).toList()..sort((a, b) => order[a.id]!.compareTo(order[b.id]!));
+    final found = await _lexiconRows(ids);
+    return [
+      for (final id in ids)
+        if (found[id] case final r?) LexEntry.fromRow(r),
+    ];
   }
 
-  Future<List<TextVariant>> variants(int vkey) async => [
-    for (final r in await db.query('variant', where: 'vkey = ?', whereArgs: [vkey], orderBy: 'version_id, rowid'))
-      TextVariant.fromRow(r),
-  ];
+  Future<List<TextVariant>> variants(int vkey) async {
+    final out = <TextVariant>[];
+    for (final (s, filter, args) in _versionTables()) {
+      for (final r in await db.rawQuery('SELECT * FROM $s.variant WHERE vkey = ?$filter ORDER BY version_id, rowid', [
+        vkey,
+        ...args,
+      ])) {
+        out.add(TextVariant.fromRow(r));
+      }
+    }
+    return out;
+  }
 
-  Future<List<CrossRef>> crossRefs(int vkey, {int limit = 40}) async => [
-    for (final r in await db.query(
-      'xref',
-      where: 'vkey = ?',
-      whereArgs: [vkey],
-      orderBy: 'votes DESC, to_start',
-      limit: limit,
-    ))
-      CrossRef(start: r['to_start'] as int, end: r['to_end'] as int, votes: r['votes'] as int),
-  ];
-
-  Future<List<Entity>> entitiesAt(int vkey) async => [
-    for (final r in await db.rawQuery(
-      'SELECT e.* FROM entity_verse ev JOIN entity e ON e.id = ev.entity_id WHERE ev.vkey = ? '
-      'ORDER BY CASE e.kind WHEN \'event\' THEN 0 WHEN \'person\' THEN 1 ELSE 2 END, e.verse_count DESC',
+  Future<List<CrossRef>> crossRefs(int vkey, {int limit = 40}) async {
+    final rows = await _fromEach(
+      sources.forTable('xref'),
+      (s) => 'SELECT * FROM $s.xref WHERE vkey = ? ORDER BY votes DESC, to_start LIMIT $limit',
       [vkey],
-    ))
-      Entity.fromRow(r),
-  ];
+    );
+    final out = [
+      for (final r in rows) CrossRef(start: r['to_start'] as int, end: r['to_end'] as int, votes: r['votes'] as int),
+    ];
+    out.sort((a, b) => b.votes != a.votes ? b.votes.compareTo(a.votes) : a.start.compareTo(b.start));
+    return out.take(limit).toList();
+  }
+
+  Future<List<Entity>> entitiesAt(int vkey) async {
+    final rows = await _fromEach(
+      sources.forTable('entity_verse'),
+      (s) => 'SELECT e.* FROM $s.entity_verse ev JOIN $s.entity e ON e.id = ev.entity_id WHERE ev.vkey = ?',
+      [vkey],
+    );
+    const order = {EntityKind.event: 0, EntityKind.person: 1, EntityKind.place: 2};
+    return rows.map(Entity.fromRow).toList()..sort((a, b) {
+      final k = order[a.kind]!.compareTo(order[b.kind]!);
+      return k != 0 ? k : b.verseCount.compareTo(a.verseCount);
+    });
+  }
 
   Future<Entity?> entity(String id) async {
-    final rows = await db.query('entity', where: 'id = ?', whereArgs: [id]);
+    final rows = await _fromEach(sources.forTable('entity'), (s) => 'SELECT * FROM $s.entity WHERE id = ?', [id]);
     return rows.isEmpty ? null : Entity.fromRow(rows.first);
   }
 
-  Future<List<int>> entityVerses(String id, {int limit = 500}) async => [
-    for (final r in await db.query(
-      'entity_verse',
-      columns: ['vkey'],
-      where: 'entity_id = ?',
-      whereArgs: [id],
-      orderBy: 'vkey',
-      limit: limit,
-    ))
-      r['vkey'] as int,
-  ];
+  Future<List<int>> entityVerses(String id, {int limit = 500}) async {
+    final rows = await _fromEach(
+      sources.forTable('entity_verse'),
+      (s) => 'SELECT vkey FROM $s.entity_verse WHERE entity_id = ? ORDER BY vkey LIMIT $limit',
+      [id],
+    );
+    return ({for (final r in rows) r['vkey'] as int}.toList()..sort()).take(limit).toList();
+  }
 
   Future<List<Entity>> searchEntities(String query, {int limit = 20}) async {
     final q = query.trim();
     if (q.length < 2) return [];
-    return [
-      for (final r in await db.query(
-        'entity',
-        where: 'name LIKE ?',
-        whereArgs: ['$q%'],
-        orderBy: 'verse_count DESC',
-        limit: limit,
-      ))
-        Entity.fromRow(r),
-    ];
+    final rows = await _fromEach(
+      sources.forTable('entity'),
+      (s) => 'SELECT * FROM $s.entity WHERE name LIKE ? ORDER BY verse_count DESC LIMIT $limit',
+      ['$q%'],
+    );
+    return (rows.map(Entity.fromRow).toList()..sort((a, b) => b.verseCount.compareTo(a.verseCount)))
+        .take(limit)
+        .toList();
   }
+
+  static DictionaryEntry _dict(Map<String, Object?> r) =>
+      DictionaryEntry(id: r['id'] as String, term: r['term'] as String, text: r['text'] as String);
 
   Future<List<DictionaryEntry>> searchDictionary(String query, {int limit = 10}) async {
     final q = query.trim();
     if (q.length < 2) return [];
-    return [
-      for (final r in await db.query(
-        'dictionary',
-        where: 'term LIKE ?',
-        whereArgs: ['$q%'],
-        orderBy: 'length(term), term',
-        limit: limit,
-      ))
-        DictionaryEntry(id: r['id'] as String, term: r['term'] as String, text: r['text'] as String),
-    ];
+    final rows = await _fromEach(
+      sources.forTable('dictionary'),
+      (s) => 'SELECT * FROM $s.dictionary WHERE term LIKE ? ORDER BY length(term), term LIMIT $limit',
+      ['$q%'],
+    );
+    final out = rows.map(_dict).toList()
+      ..sort(
+        (a, b) => a.term.length != b.term.length ? a.term.length.compareTo(b.term.length) : a.term.compareTo(b.term),
+      );
+    return out.take(limit).toList();
   }
 
   Future<DictionaryEntry?> dictionaryEntry(String term) async {
-    final rows = await db.query('dictionary', where: 'term = ? COLLATE NOCASE', whereArgs: [term], limit: 1);
-    if (rows.isEmpty) return null;
-    final r = rows.first;
-    return DictionaryEntry(id: r['id'] as String, term: r['term'] as String, text: r['text'] as String);
+    final rows = await _fromEach(
+      sources.forTable('dictionary'),
+      (s) => 'SELECT * FROM $s.dictionary WHERE term = ? COLLATE NOCASE LIMIT 1',
+      [term],
+    );
+    return rows.isEmpty ? null : _dict(rows.first);
   }
 
   /// Commentary on any range that includes [vkey], oldest first.
-  Future<List<Comment>> commentary(int vkey, {int limit = 50}) async => [
-    for (final r in await db.query(
-      'commentary',
-      where: 'vkey_start <= ? AND vkey_end >= ?',
-      whereArgs: [vkey, vkey],
-      orderBy: 'year, author',
-      limit: limit,
-    ))
-      Comment.fromRow(r),
-  ];
+  Future<List<Comment>> commentary(int vkey, {int limit = 50}) async {
+    final rows = await _fromEach(
+      sources.forTable('commentary'),
+      (s) => 'SELECT * FROM $s.commentary WHERE vkey_start <= ? AND vkey_end >= ? ORDER BY year, author LIMIT $limit',
+      [vkey, vkey],
+    );
+    final out = rows.map(Comment.fromRow).toList()
+      ..sort((a, b) {
+        final y = (a.year ?? 0).compareTo(b.year ?? 0);
+        return y != 0 ? y : a.author.compareTo(b.author);
+      });
+    return out.take(limit).toList();
+  }
 
-  Future<List<StudyResource>> resources() async => [
-    for (final r in await db.query('resource', orderBy: 'id')) StudyResource.fromRow(r),
-  ];
+  /// Every study resource with its license; a pack's entry wins over the bundled one.
+  Future<List<StudyResource>> resources() async {
+    final byId = <String, StudyResource>{};
+    for (final r in await _fromEach(sources.schemas, (s) => 'SELECT * FROM $s.resource')) {
+      byId.putIfAbsent(r['id'] as String, () => StudyResource.fromRow(r));
+    }
+    return byId.values.toList()..sort((a, b) => a.id.compareTo(b.id));
+  }
 }

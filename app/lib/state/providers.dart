@@ -10,6 +10,7 @@ import '../ui/tokens/tokens.dart';
 import '../core/vkey.dart';
 import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
+import '../data/packs.dart';
 import '../data/user_repository.dart';
 import '../domain/models.dart';
 import '../domain/plans.dart';
@@ -21,7 +22,31 @@ final userDbProvider = Provider<Database>((ref) => throw UnimplementedError());
 final audioRepositoryProvider = Provider<AudioRepository>((ref) => throw UnimplementedError());
 final initialSettingsProvider = Provider<Settings>((ref) => const Settings());
 
-final contentRepositoryProvider = Provider<ContentRepository>((ref) => ContentRepository(ref.watch(contentDbProvider)));
+/// Where downloaded study packs live; overridden in main() and in tests.
+final packStoreProvider = Provider<PackStore>((ref) => throw UnimplementedError());
+
+/// Packs attached at startup (main() attaches them before the app runs).
+final initialContentSourcesProvider = Provider<ContentSources>((ref) => ContentSources.bundled);
+
+/// What is attached to the content DB. Changing it rebuilds the repositories,
+/// so every screen re-reads its data after a pack is installed or removed.
+class ContentSourcesNotifier extends Notifier<ContentSources> {
+  @override
+  ContentSources build() => ref.watch(initialContentSourcesProvider);
+
+  /// Detaches every pack (before files are replaced or deleted).
+  Future<void> detachAll() async => state = await attachPacks(ref.read(contentDbProvider), const []);
+
+  /// Attaches the installed packs again.
+  Future<void> reattach() async =>
+      state = await attachPacks(ref.read(contentDbProvider), await ref.read(packStoreProvider).installed());
+}
+
+final contentSourcesProvider = NotifierProvider<ContentSourcesNotifier, ContentSources>(ContentSourcesNotifier.new);
+
+final contentRepositoryProvider = Provider<ContentRepository>(
+  (ref) => ContentRepository(ref.watch(contentDbProvider), sources: ref.watch(contentSourcesProvider)),
+);
 final userRepositoryProvider = Provider<UserRepository>((ref) => UserRepository(ref.watch(userDbProvider)));
 
 // ------------------------------------------------------------------ settings

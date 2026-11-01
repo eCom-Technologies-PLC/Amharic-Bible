@@ -31,15 +31,19 @@ Future<bool> showConfirmDialog({
   required String cancelLabel,
   bool destructive = false,
 }) async {
+  // The dialog sits on the root navigator (showDialog's default); popping the
+  // caller's navigator instead would close the screen behind it when the
+  // caller is inside the bottom-bar shell.
+  void close(bool value) => Navigator.of(context, rootNavigator: true).pop(value);
   final ok = await showAppDialog<bool>(
     context: context,
     title: title,
     content: Text(message),
     actions: [
-      AppButton.ghost(label: cancelLabel, onPressed: () => Navigator.pop(context, false)),
+      AppButton.ghost(label: cancelLabel, onPressed: () => close(false)),
       destructive
-          ? AppButton.destructive(label: confirmLabel, onPressed: () => Navigator.pop(context, true))
-          : AppButton(label: confirmLabel, onPressed: () => Navigator.pop(context, true)),
+          ? AppButton.destructive(label: confirmLabel, onPressed: () => close(true))
+          : AppButton(label: confirmLabel, onPressed: () => close(true)),
     ],
   );
   return ok ?? false;

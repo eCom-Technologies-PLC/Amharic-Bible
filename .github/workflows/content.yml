@@ -3,7 +3,7 @@ name: Build full content
 # Downloads the sources listed in content/versions.json and content/resources.json,
 # builds the full content database, the study packs (original-language texts,
 # lexicon, cross-references, people/places, commentary) and an APK that bundles
-# content.db. Packs are not bundled; they are published for in-app download.
+# content.db. Packs are not bundled: the app downloads them from STUDY_PACKS_URL.
 on:
   workflow_dispatch:
     inputs:
@@ -34,10 +34,15 @@ jobs:
         with:
           name: content-db
           path: build/content.db
+      - name: Package study packs for download
+        run: python pipeline/package_packs.py --packs build/packs
       - uses: actions/upload-artifact@v4
         with:
+          # Upload these files to the folder STUDY_PACKS_URL points at.
           name: study-packs
-          path: build/packs/
+          path: |
+            build/packs/*.db.gz
+            build/packs/manifest.json
       - name: Bundle into the app
         run: cp build/content.db app/assets/content/content.db
       - uses: actions/setup-java@v4

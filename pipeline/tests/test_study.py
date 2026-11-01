@@ -11,6 +11,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
 import build_db  # noqa: E402
+import package_packs  # noqa: E402
 from abible import original, study  # noqa: E402
 from abible.catalog import load_books  # noqa: E402
 
@@ -161,6 +162,49 @@ class BuildTest(unittest.TestCase):
             out = Path(d) / "content.db"
             self.assertEqual(build_db.build(FIXTURES, out, sample=True, allow_unverified=False, only=["HCF"]), 1)
             self.assertFalse(out.exists())
+
+
+class PackageTest(unittest.TestCase):
+    def test_manifest_and_compressed_packs(self):
+        import gzip
+        import hashlib
+        import json
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "content.db"
+            self.assertEqual(build_db.build(FIXTURES, out, sample=False, allow_unverified=False,
+                                            only=["STRONGS", "OBXREF"]), 0)
+            packs = Path(d) / "packs"
+            manifest = package_packs.package(packs, packs)
+            self.assertEqual(manifest["schema_version"], build_db.SCHEMA_VERSION)
+            self.assertEqual(json.loads((packs / "manifest.json").read_text())["packs"], manifest["packs"])
+            by = {p["id"]: p for p in manifest["packs"]}
+            self.assertEqual(set(by), {"STRONGS", "OBXREF"})
+            s = by["STRONGS"]
+            self.assertEqual((s["kind"], s["file"], s["license_status"]), ("lexicon", "STRONGS.db.gz", "confirmed"))
+            gz = (packs / "STRONGS.db.gz").read_bytes()
+            self.assertEqual(hashlib.sha256(gz).hexdigest(), s["sha256"])
+            self.assertEqual(len(gz), s["gz_bytes"])
+            self.assertEqual(gzip.decompress(gz), (packs / "STRONGS.db").read_bytes())
+            self.assertEqual(len(gzip.decompress(gz)), s["bytes"])
+
+    def test_version_pack_is_described_as_a_version(self):
+        with tempfile.TemporaryDirectory() as d:
+            src = Path(d) / "src"
+            (src / "WLC").mkdir(parents=True)
+            for f in (FIXTURES / "WLC").iterdir():
+                (src / "WLC" / f.name).write_bytes(f.read_bytes())
+            out = Path(d) / "content.db"
+            # A non-sample build of two books fails validation, so build the sample and mark it as a pack.
+            self.assertEqual(build_db.build(src, out, sample=True, allow_unverified=False), 0)
+            db = sqlite3.connect(out)
+            db.execute("INSERT INTO meta VALUES ('pack', 'WLC')")
+            db.commit()
+            db.close()
+            packs = Path(d) / "packs"
+            packs.mkdir()
+            out.rename(packs / "WLC.db")
+            entry = package_packs.package(packs, packs)["packs"][0]
+            self.assertEqual((entry["id"], entry["kind"], entry["language"]), ("WLC", "version", "heb"))
 
 
 if __name__ == "__main__":

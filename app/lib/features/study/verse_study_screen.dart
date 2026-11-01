@@ -6,6 +6,7 @@ import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
 import '../../domain/study.dart';
+import '../../state/packs.dart';
 import '../../state/providers.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
@@ -82,6 +83,20 @@ class _VerseStudyBody extends ConsumerWidget {
               verse.text,
               style: context.scriptureFeature,
               textDirection: rtl(current!.id) ? TextDirection.rtl : null,
+            ),
+          ),
+        if (study.words.isEmpty && ref.watch(packsConfiguredProvider))
+          AppCard(
+            eyebrow: s.studyPacks,
+            trailing: const Icon(Icons.download_outlined),
+            onTap: () => context.push('/me/downloads'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s.getStudyPacks, style: context.text.titleSmall),
+                const SizedBox(height: AppSpacing.xs),
+                Text(s.getStudyPacksHint, style: context.text.bodyMedium),
+              ],
             ),
           ),
         if (study.isEmpty) EmptyState(message: s.noStudyData, icon: Icons.school_outlined),

@@ -18,4 +18,8 @@ class AppConfig {
   /// the assistant.
   static const studyAssistantUrl = String.fromEnvironment('STUDY_ASSISTANT_URL');
   static const studyAssistantToken = String.fromEnvironment('STUDY_ASSISTANT_TOKEN');
+
+  /// Folder holding the study packs and their manifest.json
+  /// (pipeline/package_packs.py). Empty hides pack downloads.
+  static const studyPacksUrl = String.fromEnvironment('STUDY_PACKS_URL');
 }

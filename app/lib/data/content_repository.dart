@@ -3,15 +3,18 @@ import 'package:sqflite/sqflite.dart';
 import '../core/geez.dart';
 import '../core/vkey.dart';
 import '../domain/models.dart';
+import 'packs.dart';
 
 enum TestamentFilter { all, oldTestament, newTestament }
 
 /// Read-only access to the bundled content database built by
-/// pipeline/build_db.py.
+/// pipeline/build_db.py, and to the study packs attached to it: each query
+/// reads the database that holds the version it asks about ([sources]).
 class ContentRepository {
-  ContentRepository(this.db);
+  ContentRepository(this.db, {this.sources = ContentSources.bundled});
 
   final Database db;
+  final ContentSources sources;
   final Map<String, List<Book>> _booksCache = {};
 
   Future<Map<String, String>> meta() async {
@@ -21,15 +24,32 @@ class ContentRepository {
 
   Future<bool> isSample() async => (await meta())['is_sample'] == '1';
 
+  /// Every version, Amharic first; a pack's copy of a version wins over the bundled one.
   Future<List<BibleVersion>> versions() async {
-    final rows = await db.query('version', orderBy: "language = 'amh' DESC, id");
-    return rows.map(BibleVersion.fromRow).toList();
+    final byId = <String, BibleVersion>{};
+    for (final schema in sources.schemas) {
+      for (final r in await db.rawQuery('SELECT * FROM $schema.version')) {
+        final v = BibleVersion.fromRow(r);
+        if (sources.forVersion(v.id) == schema) byId.putIfAbsent(v.id, () => v);
+      }
+    }
+    return byId.values.toList()..sort((a, b) {
+      final amh = (b.language == 'amh' ? 1 : 0) - (a.language == 'amh' ? 1 : 0);
+      return amh != 0 ? amh : a.id.compareTo(b.id);
+    });
   }
+
+  String _t(String versionId, String table) => '${sources.forVersion(versionId)}.$table';
 
   Future<List<Book>> books(String versionId) async {
     final cached = _booksCache[versionId];
     if (cached != null) return cached;
-    final rows = await db.query('book', where: 'version_id = ?', whereArgs: [versionId], orderBy: 'ordinal');
+    final rows = await db.query(
+      _t(versionId, 'book'),
+      where: 'version_id = ?',
+      whereArgs: [versionId],
+      orderBy: 'ordinal',
+    );
     return _booksCache[versionId] = rows.map(Book.fromRow).toList();
   }
 
@@ -50,7 +70,7 @@ class ContentRepository {
   /// Chapters that actually have verses (sample content may be partial).
   Future<List<int>> chapters(String versionId, Book book) async {
     final rows = await db.rawQuery(
-      'SELECT DISTINCT (vkey / 1000) % 1000 AS c FROM verse '
+      'SELECT DISTINCT (vkey / 1000) % 1000 AS c FROM ${_t(versionId, 'verse')} '
       'WHERE version_id = ? AND vkey BETWEEN ? AND ? ORDER BY c',
       [versionId, vkey(book.num, 0, 0), vkey(book.num, 999, 999)],
     );
@@ -78,14 +98,14 @@ class ContentRepository {
     if (b == null) return null;
     final (lo, hi) = chapterRange(b.num, chapter);
     final rows = await db.query(
-      'verse',
+      _t(versionId, 'verse'),
       where: 'version_id = ? AND vkey BETWEEN ? AND ?',
       whereArgs: [versionId, lo, hi],
       orderBy: 'vkey',
     );
     if (rows.isEmpty) return null;
     final hrows = await db.query(
-      'heading',
+      _t(versionId, 'heading'),
       where: 'version_id = ? AND vkey BETWEEN ? AND ?',
       whereArgs: [versionId, lo, hi],
       orderBy: 'rowid',
@@ -120,7 +140,11 @@ class ContentRepository {
   }
 
   Future<Verse?> verse(String versionId, int key) async {
-    final rows = await db.query('verse', where: 'version_id = ? AND vkey = ?', whereArgs: [versionId, key]);
+    final rows = await db.query(
+      _t(versionId, 'verse'),
+      where: 'version_id = ? AND vkey = ?',
+      whereArgs: [versionId, key],
+    );
     if (rows.isEmpty) return null;
     final r = rows.first;
     return Verse(
@@ -134,7 +158,7 @@ class ContentRepository {
   Future<List<Verse>> verses(String versionId, List<int> keys) async {
     if (keys.isEmpty) return [];
     final rows = await db.query(
-      'verse',
+      _t(versionId, 'verse'),
       where: 'version_id = ? AND vkey IN (${List.filled(keys.length, '?').join(',')})',
       whereArgs: [versionId, ...keys],
       orderBy: 'vkey',
@@ -152,7 +176,7 @@ class ContentRepository {
 
   /// All book aliases (aliasKey -> book code), for the reference parser.
   Future<Map<String, String>> aliases() async {
-    final rows = await db.query('book_alias');
+    final rows = [for (final schema in sources.schemas) ...await db.rawQuery('SELECT * FROM $schema.book_alias')];
     final out = <String, String>{};
     final ambiguous = <String>{};
     for (final r in rows) {
@@ -188,10 +212,11 @@ class ContentRepository {
       lo = vkey(40, 0, 0);
       hi = vkey(66, 999, 999);
     }
+    final schema = sources.forVersion(versionId);
     final rows = await db.rawQuery(
-      'SELECT f.vkey AS vkey, v.text AS text FROM verse_fts f '
-      'JOIN verse v ON v.version_id = f.version_id AND v.vkey = f.vkey '
-      'WHERE verse_fts MATCH ? AND f.version_id = ? AND f.vkey BETWEEN ? AND ? '
+      'SELECT f.vkey AS vkey, v.text AS text FROM $schema.verse_fts f '
+      'JOIN $schema.verse v ON v.version_id = f.version_id AND v.vkey = f.vkey '
+      'WHERE f.verse_fts MATCH ? AND f.version_id = ? AND f.vkey BETWEEN ? AND ? '
       'ORDER BY f.vkey LIMIT ?',
       [match, versionId, lo, hi, limit],
     );

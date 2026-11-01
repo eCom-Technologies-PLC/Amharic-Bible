@@ -31,8 +31,14 @@ differs from this document, the code is current:
   `app/assets/plans/plans.json`. The Lent/Hudade plan was replaced by "Gospels in 30 days".
 - **Scholar tools, exegesis and the AI assistant (§3.10–3.12)** were started after the requirements audit:
   original-language texts with word data, a lexicon and concordance, textual variants, cross-references,
-  people/places/events, commentary, and an AI assistant. Large resources are built as separate packs; in-app
-  pack download is not built yet, so the app shows the sample excerpts until it is.
+  people/places/events, commentary, and an AI assistant. Large resources are built as separate packs that readers
+  download in the app (Me → Downloads).
+- **Content packs (§6.2, §8)** are gzip files (`<ID>.db.gz`, not zstd: Dart reads gzip natively) listed in a
+  `manifest.json` written by `pipeline/package_packs.py`. The app checks the manifest when the Downloads screen
+  opens rather than on a weekly schedule, and has no Wi-Fi-only setting yet; it asks before each download and
+  shows its size. Downloads resume with HTTP range requests and are verified (SHA-256 and size) before they are
+  attached. Queries are routed to the attached database that holds each version or resource instead of merged
+  views, which were 100× slower for joins.
 
 ## 1. Overview
 

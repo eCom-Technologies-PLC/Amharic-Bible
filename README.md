@@ -50,10 +50,32 @@ Search also ignores Hebrew vowel points, Greek accents and Latin diacritics, so 
 | `THEOGRAPHIC` | People, places and events linked to verses; Easton's Bible Dictionary | CC BY-SA 4.0; Easton's public domain |
 | `HCF` | Church-father and historical commentary (authors up to 1700) | **`verify`**: mixes public-domain excerpts with fair-use excerpts of modern translations; review before release |
 
-A full build writes these as separate packs (`build/packs/<ID>.db`, `"bundle": false`), about 220 MB in total
-(commentary alone is 140 MB), so the app download stays small. The **Build full content** workflow uploads them
-as the `study-packs` artifact. Downloading packs in the app is the next step; until then the study screens use
-the short excerpts in the sample database. Books outside the 66-book canon are skipped.
+A full build writes these as separate packs (`build/packs/<ID>.db`, `"bundle": false`), so the app download stays
+small; readers download the ones they want under Me → Downloads. Books outside the 66-book canon are skipped.
+
+| Pack | Download | Installed |
+|---|---|---|
+| WLC (Hebrew OT) | 10.5 MB | 39 MB |
+| RP2018 (Greek NT) | 4.3 MB | 17 MB |
+| STRONGS | 1.0 MB | 2.7 MB |
+| OBXREF | 4.0 MB | 12 MB |
+| THEOGRAPHIC | 2.1 MB | 6.8 MB |
+| HCF (commentary) | 36 MB | 138 MB |
+
+Publishing packs:
+
+1. `python pipeline/package_packs.py --packs build/packs` writes `<ID>.db.gz` and `manifest.json` (sizes,
+   SHA-256, license). The **Build full content** workflow runs it and uploads them as the `study-packs` artifact.
+2. Upload those files to one folder on a static host that supports HTTP range requests (for example a GitHub
+   release or a Cloudflare R2 bucket), so interrupted downloads resume.
+3. Build the app with `--dart-define=STUDY_PACKS_URL=<that folder's URL>`. Without it the Study packs section
+   is hidden and the study screens show only the sample excerpts.
+
+How the app uses them: a download resumes from where it stopped, is checked against the manifest's SHA-256 and
+size, and is then attached to the content database with `ATTACH DATABASE`. Each query reads the database that
+holds its version or resource, and a pack replaces the bundled sample excerpt of the same content. A pack built
+for another schema version is ignored. When the server publishes a pack with a new checksum, the Downloads screen
+offers an update.
 
 ## App
 
@@ -64,6 +86,7 @@ cd app
 flutter pub get
 flutter analyze && flutter test
 flutter run --dart-define=AUDIO_PROXY_URL=https://your-proxy.example   # audio is optional
+# Study packs (optional): --dart-define=STUDY_PACKS_URL=https://your-host.example/packs/v2
 # AI study assistant (optional): --dart-define=STUDY_ASSISTANT_URL=... --dart-define=STUDY_ASSISTANT_TOKEN=...
 ```
 

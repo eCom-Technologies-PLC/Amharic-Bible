@@ -203,6 +203,27 @@ class S {
   String get aiDeclined => _('aiDeclined');
   String get aiBusy => _('aiBusy');
 
+  String get audio => _('audio');
+  String get studyPacks => _('studyPacks');
+  String get studyPacksNote => _('studyPacksNote');
+  String get packsUnavailable => _('packsUnavailable');
+  String get packInstalled => _('packInstalled');
+  String get packUpdateAvailable => _('packUpdateAvailable');
+  String get packInstalling => _('packInstalling');
+  String get packErrorOffline => _('packErrorOffline');
+  String get packErrorCorrupt => _('packErrorCorrupt');
+  String get packErrorServer => _('packErrorServer');
+  String get download => _('download');
+  String get update => _('update');
+  String get removePackConfirm => _('removePackConfirm');
+  String get getStudyPacks => _('getStudyPacks');
+  String get getStudyPacksHint => _('getStudyPacksHint');
+  String packSize(String size) => isAmharic ? '$size ማውረድ' : '$size download';
+  String packDownloading(int percent) => isAmharic ? 'በማውረድ ላይ… $percent%' : 'Downloading… $percent%';
+  String downloadPackConfirm(String download, String installed) => isAmharic
+      ? '$download ይወርዳል፤ በስልክዎ ላይ $installed ቦታ ይይዛል።'
+      : 'This downloads $download and uses $installed on your phone.';
+
   /// A grammatical term from lib/domain/morphology.dart ("noun", "aorist", …).
   String grammar(String key) => _m['g.$key'] ?? _en['g.$key'] ?? key;
 
@@ -368,6 +389,22 @@ const _am = {
   'aiCited': 'ምንጮች',
   'aiDeclined': 'ረዳቱ ይህን ጥያቄ አልመለሰም። በሌላ መንገድ ይጠይቁ።',
   'aiBusy': 'ረዳቱ አሁን ሥራ በዝቶበታል። ትንሽ ቆይተው ይሞክሩ።',
+  'audio': 'ድምፅ',
+  'studyPacks': 'የጥናት ጥቅሎች',
+  'studyPacksNote':
+      'የዕብራይስጥና የግሪክ ጽሑፎች፣ መዝገበ ቃላት፣ ተዛማጅ ጥቅሶች፣ ሰዎችና ቦታዎች እንዲሁም ማብራሪያ። አንዴ ካወረዱ ያለ ኢንተርኔት ይሠራሉ። ከተቻለ በWi-Fi ያውርዱ።',
+  'packsUnavailable': 'የጥቅሎቹን ዝርዝር ማግኘት አልተቻለም። ኢንተርኔትዎን ያረጋግጡ።',
+  'packInstalled': 'ወርዷል',
+  'packUpdateAvailable': 'አዲስ እትም አለ',
+  'packInstalling': 'በመጫን ላይ…',
+  'packErrorOffline': 'ማውረዱ ተቋርጧል። ካቆመበት ለመቀጠል እንደገና ይሞክሩ።',
+  'packErrorCorrupt': 'የወረደው ፋይል ተበላሽቷል። እንደገና ይሞክሩ።',
+  'packErrorServer': 'ይህን ጥቅል አሁን ማውረድ አልተቻለም። ቆይተው ይሞክሩ።',
+  'download': 'አውርድ',
+  'update': 'አዘምን',
+  'removePackConfirm': 'ይህ ጥቅል ከዚህ ስልክ ይሰረዛል። በኋላ እንደገና ማውረድ ይችላሉ።',
+  'getStudyPacks': 'የዕብራይስጥ፣ የግሪክና የጥናት ጥቅሎችን ያውርዱ',
+  'getStudyPacksHint': 'ለዚህ ጥቅስ ሙሉ የቃል፣ የተዛማጅ ጥቅስና የማብራሪያ መረጃ ለማግኘት።',
   'study': 'ጥናት',
   'verseStudy': 'የጥቅስ ጥናት',
   'originalText': 'በመጀመሪያው ቋንቋ',
@@ -654,6 +691,21 @@ const _en = {
   'aiCited': 'Sources',
   'aiDeclined': 'The assistant declined this request. Try asking another way.',
   'aiBusy': 'The assistant is busy. Try again in a moment.',
+  'audio': 'Audio',
+  'studyPacks': 'Study packs',
+  'studyPacksNote': 'Hebrew and Greek texts, lexicon, cross-references, people and places, and commentary. Once downloaded they work offline. Use Wi-Fi if you can.',
+  'packsUnavailable': 'Could not get the list of packs. Check your internet connection.',
+  'packInstalled': 'Downloaded',
+  'packUpdateAvailable': 'Update available',
+  'packInstalling': 'Installing…',
+  'packErrorOffline': 'Download stopped. Try again to continue where it left off.',
+  'packErrorCorrupt': 'The downloaded file was damaged. Try again.',
+  'packErrorServer': 'This pack could not be downloaded right now. Try again later.',
+  'download': 'Download',
+  'update': 'Update',
+  'removePackConfirm': 'This pack will be deleted from this phone. You can download it again later.',
+  'getStudyPacks': 'Download Hebrew, Greek and study packs',
+  'getStudyPacksHint': 'For the full word, cross-reference and commentary material for this verse.',
   'study': 'Study',
   'verseStudy': 'Verse study',
   'originalText': 'Original text',
