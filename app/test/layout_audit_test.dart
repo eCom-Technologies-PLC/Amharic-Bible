@@ -45,6 +45,7 @@ const routes = [
   '/entity/place%3Agaleed_432',
   '/ask?v=43003016',
   '/timeline',
+  '/me/groups',
 ];
 
 class Device {

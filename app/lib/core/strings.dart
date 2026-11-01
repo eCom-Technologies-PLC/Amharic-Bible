@@ -259,6 +259,62 @@ class S {
   String grammarMatchCount(int shown, int total) =>
       isAmharic ? 'በ$total ጥቅሶች ይገኛል (የመጀመሪያዎቹ $shown)' : 'In $total verses (first $shown shown)';
 
+  String get studyGroups => _('studyGroups');
+  String get groupsSignIn => _('groupsSignIn');
+  String get noGroups => _('noGroups');
+  String get createGroup => _('createGroup');
+  String get joinGroup => _('joinGroup');
+  String get groupName => _('groupName');
+  String get groupNameHint => _('groupNameHint');
+  String get inviteCode => _('inviteCode');
+  String get inviteCodeHint => _('inviteCodeHint');
+  String get newInviteCode => _('newInviteCode');
+  String get yourName => _('yourName');
+  String get yourNameHint => _('yourNameHint');
+  String get fillBothFields => _('fillBothFields');
+  String get groupCodeNotFound => _('groupCodeNotFound');
+  String get groupFull => _('groupFull');
+  String get teacher => _('teacher');
+  String get member => _('member');
+  String get members => _('members');
+  String get discussion => _('discussion');
+  String get assignments => _('assignments');
+  String get assignment => _('assignment');
+  String get readingPlan => _('readingPlan');
+  String get writeMessage => _('writeMessage');
+  String get send => _('send');
+  String get noMessages => _('noMessages');
+  String get noAssignments => _('noAssignments');
+  String get newAssignment => _('newAssignment');
+  String get assignmentText => _('assignmentText');
+  String get assignmentHint => _('assignmentHint');
+  String get assignmentNeedsText => _('assignmentNeedsText');
+  String get passageOptional => _('passageOptional');
+  String get passageNotRecognized => _('passageNotRecognized');
+  String get dueDate => _('dueDate');
+  String get noDueDate => _('noDueDate');
+  String get postAssignment => _('postAssignment');
+  String get markDone => _('markDone');
+  String get doneLabel => _('doneLabel');
+  String get noGroupPlan => _('noGroupPlan');
+  String get chooseGroupPlan => _('chooseGroupPlan');
+  String get choosePlan => _('choosePlan');
+  String get changePlan => _('changePlan');
+  String get groupProgress => _('groupProgress');
+  String get leaveGroup => _('leaveGroup');
+  String get leaveGroupConfirm => _('leaveGroupConfirm');
+  String get manageMember => _('manageMember');
+  String get makeTeacher => _('makeTeacher');
+  String get makeMember => _('makeMember');
+  String get removeFromGroup => _('removeFromGroup');
+  String dueOn(String date) => isAmharic ? 'እስከ $date' : 'Due $date';
+  String inDays(int n) => isAmharic ? 'በ$n ቀን ውስጥ' : (n == 1 ? 'Tomorrow' : 'In $n days');
+  String doneCount(int done, int total) => isAmharic ? '$done ከ$total ጨርሰዋል' : '$done of $total done';
+  String daysRead(int n, int total) => isAmharic ? '$n ከ$total ቀናት ተነበዋል' : '$n of $total days read';
+  String inviteMessage(String group, String code) => isAmharic
+      ? 'በመጽሐፍ ቅዱስ መተግበሪያው «$group» የጥናት ቡድንን ይቀላቀሉ። ኮድ፦ $code'
+      : 'Join the study group "$group" in the Amharic Bible app. Code: $code';
+
   /// A grammatical term from lib/domain/morphology.dart ("noun", "aorist", …).
   String grammar(String key) => _m['g.$key'] ?? _en['g.$key'] ?? key;
 
@@ -465,6 +521,54 @@ const _am = {
   'scriptureFrom': 'የመጽሐፍ ቅዱስ ጥቅሶች ከ',
   'grammarMatches': 'በሰዋስው የተገኙ',
   'timeline': 'የመጽሐፍ ቅዱስ የዘመን ሰሌዳ',
+  'studyGroups': 'የጥናት ቡድኖች',
+  'groupsSignIn': 'የጥናት ቡድኖችን ለመጠቀም ይግቡ።',
+  'noGroups': 'እስካሁን በቡድን ውስጥ የሉም። ቡድን ይፍጠሩ ወይም በኮድ ይቀላቀሉ።',
+  'createGroup': 'ቡድን ፍጠር',
+  'joinGroup': 'በኮድ ተቀላቀል',
+  'groupName': 'የቡድኑ ስም',
+  'groupNameHint': 'ለምሳሌ፦ የወጣቶች መጽሐፍ ቅዱስ ጥናት',
+  'inviteCode': 'የመጋበዣ ኮድ',
+  'inviteCodeHint': 'ሌሎች ይህን ኮድ በመጠቀም ቡድኑን ይቀላቀላሉ።',
+  'newInviteCode': 'አዲስ ኮድ (አሮጌው መሥራት ያቆማል)',
+  'yourName': 'በቡድኑ ውስጥ የሚታየው ስምዎ',
+  'yourNameHint': 'ኢሜይልዎ አይታይም።',
+  'fillBothFields': 'ሁለቱንም ይሙሉ።',
+  'groupCodeNotFound': 'በዚህ ኮድ ቡድን አልተገኘም።',
+  'groupFull': 'ይህ ቡድን ሞልቷል።',
+  'teacher': 'መምህር',
+  'member': 'አባል',
+  'members': 'አባላት',
+  'discussion': 'ውይይት',
+  'assignments': 'የቤት ሥራዎች',
+  'assignment': 'የቤት ሥራ',
+  'readingPlan': 'የንባብ ዕቅድ',
+  'writeMessage': 'መልእክት ይጻፉ…',
+  'send': 'ላክ',
+  'noMessages': 'እስካሁን መልእክት የለም።',
+  'noAssignments': 'እስካሁን የቤት ሥራ የለም።',
+  'newAssignment': 'አዲስ የቤት ሥራ',
+  'assignmentText': 'የቤት ሥራው',
+  'assignmentHint': 'ለምሳሌ፦ ምዕራፉን አንብበው አንድ ጸሎት ይጻፉ',
+  'assignmentNeedsText': 'የቤት ሥራውን ይጻፉ።',
+  'passageOptional': 'ክፍል (አማራጭ)',
+  'passageNotRecognized': 'ይህን ጥቅስ ማወቅ አልተቻለም።',
+  'dueDate': 'የሚደርስበት ቀን',
+  'noDueDate': 'ቀን የለውም',
+  'postAssignment': 'የቤት ሥራውን ላክ',
+  'markDone': 'ጨርሻለሁ',
+  'doneLabel': 'ተጠናቋል',
+  'noGroupPlan': 'መምህሩ እስካሁን የንባብ ዕቅድ አልመረጠም።',
+  'chooseGroupPlan': 'ቡድኑ አብሮ የሚያነበው ዕቅድ ይምረጡ።',
+  'choosePlan': 'ዕቅድ ምረጥ',
+  'changePlan': 'ዕቅዱን ቀይር (ሂደቱ እንደገና ይጀምራል)',
+  'groupProgress': 'የቡድኑ ሂደት',
+  'leaveGroup': 'ቡድኑን ልቀቅ',
+  'leaveGroupConfirm': 'ይህን ቡድን ይለቃሉ? እንደገና ለመቀላቀል ኮዱ ያስፈልግዎታል።',
+  'manageMember': 'አባሉን አስተዳድር',
+  'makeTeacher': 'መምህር አድርግ',
+  'makeMember': 'አባል አድርግ',
+  'removeFromGroup': 'ከቡድኑ አስወግድ',
   'study': 'ጥናት',
   'verseStudy': 'የጥቅስ ጥናት',
   'originalText': 'በመጀመሪያው ቋንቋ',
@@ -791,6 +895,54 @@ const _en = {
   'scriptureFrom': 'Scripture quotations from',
   'grammarMatches': 'Grammar matches',
   'timeline': 'Bible timeline',
+  'studyGroups': 'Study groups',
+  'groupsSignIn': 'Sign in to use study groups.',
+  'noGroups': 'You are not in a group yet. Create one, or join with a code.',
+  'createGroup': 'Create group',
+  'joinGroup': 'Join with a code',
+  'groupName': 'Group name',
+  'groupNameHint': 'For example: Youth Bible study',
+  'inviteCode': 'Invite code',
+  'inviteCodeHint': 'Others join the group with this code.',
+  'newInviteCode': 'New code (the old one stops working)',
+  'yourName': 'Your name in this group',
+  'yourNameHint': 'Your email is never shown.',
+  'fillBothFields': 'Fill in both fields.',
+  'groupCodeNotFound': 'No group has this code.',
+  'groupFull': 'This group is full.',
+  'teacher': 'Teacher',
+  'member': 'Member',
+  'members': 'Members',
+  'discussion': 'Discussion',
+  'assignments': 'Assignments',
+  'assignment': 'Assignment',
+  'readingPlan': 'Reading plan',
+  'writeMessage': 'Write a message…',
+  'send': 'Send',
+  'noMessages': 'No messages yet.',
+  'noAssignments': 'No assignments yet.',
+  'newAssignment': 'New assignment',
+  'assignmentText': 'The assignment',
+  'assignmentHint': 'For example: read the chapter and write one prayer',
+  'assignmentNeedsText': 'Write the assignment.',
+  'passageOptional': 'Passage (optional)',
+  'passageNotRecognized': 'This passage was not recognized.',
+  'dueDate': 'Due date',
+  'noDueDate': 'No due date',
+  'postAssignment': 'Post assignment',
+  'markDone': 'Mark done',
+  'doneLabel': 'Done',
+  'noGroupPlan': 'The teacher has not chosen a reading plan yet.',
+  'chooseGroupPlan': 'Choose a plan for the group to read together.',
+  'choosePlan': 'Choose a plan',
+  'changePlan': 'Change plan (progress starts over)',
+  'groupProgress': 'Group progress',
+  'leaveGroup': 'Leave group',
+  'leaveGroupConfirm': 'Leave this group? You will need the code to join again.',
+  'manageMember': 'Manage member',
+  'makeTeacher': 'Make teacher',
+  'makeMember': 'Make member',
+  'removeFromGroup': 'Remove from group',
   'study': 'Study',
   'verseStudy': 'Verse study',
   'originalText': 'Original text',

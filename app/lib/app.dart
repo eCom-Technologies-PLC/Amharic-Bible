@@ -7,6 +7,8 @@ import 'core/strings.dart';
 import 'ui/ui.dart';
 import 'domain/models.dart';
 import 'features/audio/player_widgets.dart';
+import 'features/groups/group_screen.dart';
+import 'features/groups/groups_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/library/note_editor_screen.dart';
@@ -64,6 +66,7 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
                       LibraryScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0),
                 ),
                 GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
+                GoRoute(path: 'groups', builder: (_, _) => const GroupsScreen()),
                 GoRoute(path: 'account', builder: (_, _) => const AccountScreen()),
                 GoRoute(
                   path: 'plans',
@@ -104,6 +107,11 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
         final q = state.uri.queryParameters;
         return AskScreen(vkeys: askVerses(int.tryParse(q['v'] ?? '') ?? 0, int.tryParse(q['end'] ?? '')));
       },
+    ),
+    GoRoute(
+      path: '/groups/:id',
+      parentNavigatorKey: _rootKey,
+      builder: (_, state) => GroupScreen(groupId: state.pathParameters['id']!),
     ),
     GoRoute(path: '/timeline', parentNavigatorKey: _rootKey, builder: (_, _) => const TimelineScreen()),
     GoRoute(

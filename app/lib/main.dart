@@ -12,6 +12,7 @@ import 'app.dart';
 import 'core/config.dart';
 import 'data/audio_repository.dart';
 import 'data/databases.dart';
+import 'data/groups.dart';
 import 'data/network.dart';
 import 'data/packs.dart';
 import 'data/reminders.dart';
@@ -19,6 +20,7 @@ import 'data/speech.dart';
 import 'data/sync/account_service.dart';
 import 'data/user_repository.dart';
 import 'state/account.dart';
+import 'state/groups.dart';
 import 'state/providers.dart';
 import 'state/read_aloud.dart';
 
@@ -57,6 +59,9 @@ Future<void> main() async {
         networkInfoProvider.overrideWithValue(ConnectivityNetwork()),
         speechEngineProvider.overrideWithValue(DeviceSpeech()),
         accountServiceProvider.overrideWithValue(account),
+        groupServiceProvider.overrideWithValue(
+          AppConfig.accountsConfigured ? SupabaseGroupService(Supabase.instance.client) : null,
+        ),
         audioRepositoryProvider.overrideWithValue(
           AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support.path, 'audio'))),
         ),

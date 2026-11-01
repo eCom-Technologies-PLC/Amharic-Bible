@@ -103,6 +103,9 @@ Features:
 - **Grammar search:** `morph:V-AAI` (Greek aorist active indicative), `@HVqw` (Hebrew Qal wayyiqtol), optionally
   with a Strong's number (`G25 morph:V-AAI`).
 - **Timeline:** dated biblical events in order (Me → Bible timeline).
+- **Study groups (needs accounts):** create a group or join with an 8-character code; discuss, follow a shared
+  reading plan with everyone's progress, and teachers give assignments (passage, task, due date) that members
+  mark done. Members see each other's chosen display names, never emails.
 - **Habits:** an optional daily reading reminder and an opt-in reading streak (Settings → Reminders and habits).
 - **Read aloud:** versions without recorded audio are read with the phone's text-to-speech voice.
 - **Downloads:** Wi-Fi only by default; interrupted audio and study-pack downloads resume.
@@ -145,7 +148,8 @@ Sync uses Supabase (Postgres + Auth). Without it the app works fully offline and
 
 1. Create a Supabase project and apply `server/supabase/migrations/*.sql` in order (`supabase db push`, or
    paste each file into the SQL editor). An existing project needs the newer migrations too: the reading
-   position sync needs `20261101000000_position_records.sql`. The first migration creates the `user_records` table with row-level security, the
+   position sync needs `20261101000000_position_records.sql`, study groups need
+   `20261102000000_study_groups.sql`. The first migration creates the `user_records` table with row-level security, the
    `push_records()` function (last writer wins) and `delete_my_account()`.
 2. Under Authentication → Email templates, make the **Magic Link** template show the code: `{{ .Token }}`.
    The app signs in with a 6-digit code, so no deep links are needed.
