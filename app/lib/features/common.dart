@@ -46,6 +46,10 @@ String formatKeys(List<Book> books, List<int> keys, {required bool amharic}) {
   ].join('; ');
 }
 
+/// "07:00" for 420 minutes after midnight.
+String formatTimeOfDay(int minutes) =>
+    '${(minutes ~/ 60).toString().padLeft(2, '0')}:${(minutes % 60).toString().padLeft(2, '0')}';
+
 String formatNumber(int n, Settings s) => s.geezNumerals ? intToGeez(n) : '$n';
 
 String formatDate(DateTime d, Settings s, S strings) {

@@ -13,6 +13,7 @@ import 'core/config.dart';
 import 'data/audio_repository.dart';
 import 'data/databases.dart';
 import 'data/packs.dart';
+import 'data/reminders.dart';
 import 'data/sync/account_service.dart';
 import 'data/user_repository.dart';
 import 'state/account.dart';
@@ -39,6 +40,7 @@ Future<void> main() async {
   final support = await getApplicationSupportDirectory();
   final packs = PackStore(Directory(p.join(support.path, 'packs')));
   final sources = await attachPacks(contentDb, await packs.installed());
+  final reminders = await LocalNotificationReminders.init();
 
   runApp(
     ProviderScope(
@@ -48,6 +50,7 @@ Future<void> main() async {
         initialSettingsProvider.overrideWithValue(settings),
         packStoreProvider.overrideWithValue(packs),
         initialContentSourcesProvider.overrideWithValue(sources),
+        reminderSchedulerProvider.overrideWithValue(reminders),
         accountServiceProvider.overrideWithValue(account),
         audioRepositoryProvider.overrideWithValue(
           AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support.path, 'audio'))),

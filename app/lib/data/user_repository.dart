@@ -356,6 +356,14 @@ class UserRepository {
     await db.insert('reading_history', {'vkey': vkey, 'version_id': versionId, 'read_at': _now});
   }
 
+  /// Local dates with any reading, for the reading streak.
+  Future<List<DateTime>> readingDays() async => [
+    for (final r in await db.rawQuery(
+      "SELECT DISTINCT date(read_at / 1000, 'unixepoch', 'localtime') AS d FROM reading_history ORDER BY d",
+    ))
+      DateTime.parse(r['d'] as String),
+  ];
+
   /// The chapters read most recently, newest first: one entry per chapter,
   /// with the verse last opened in it.
   Future<List<RecentReading>> recentReading({int limit = 10}) async {

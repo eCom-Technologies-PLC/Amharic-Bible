@@ -80,7 +80,6 @@ class S {
   String get audioNotConfigured => _('audioNotConfigured');
   String get sleepTimer => _('sleepTimer');
   String get speed => _('speed');
-  String get off => _('off');
   String get endOfChapter => _('endOfChapter');
   String get downloadBook => _('downloadBook');
   String get downloading => _('downloading');
@@ -227,6 +226,21 @@ class S {
   String get allVersions => _('allVersions');
   String get compare => _('compare');
   String get recentlyRead => _('recentlyRead');
+
+  String get reminders => _('reminders');
+  String get dailyReminder => _('dailyReminder');
+  String get off => _('off');
+  String get reminderBody => _('reminderBody');
+  String get notificationsBlocked => _('notificationsBlocked');
+  String get readingStreak => _('readingStreak');
+  String get readingStreakHint => _('readingStreakHint');
+  String get streakStart => _('streakStart');
+  String get streakKeepGoing => _('streakKeepGoing');
+  String get wifiOnly => _('wifiOnly');
+  String get wifiOnlyHint => _('wifiOnlyHint');
+  String get needWifi => _('needWifi');
+  String streakDays(int n) => isAmharic ? '$n ቀን በተከታታይ' : (n == 1 ? '1 day in a row' : '$n days in a row');
+  String streakBest(int n) => isAmharic ? 'ረጅሙ፦ $n ቀናት' : 'Longest: $n days';
 
   /// A grammatical term from lib/domain/morphology.dart ("noun", "aorist", …).
   String grammar(String key) => _m['g.$key'] ?? _en['g.$key'] ?? key;
@@ -412,6 +426,17 @@ const _am = {
   'allVersions': 'ሁሉም ትርጉሞች',
   'compare': 'አወዳድር',
   'recentlyRead': 'በቅርቡ የተነበቡ',
+  'reminders': 'ማስታወሻዎችና ልማድ',
+  'dailyReminder': 'የዕለት ንባብ ማስታወሻ',
+  'reminderBody': 'የዛሬው የመጽሐፍ ቅዱስ ንባብ ጊዜ ደርሷል።',
+  'notificationsBlocked': 'ማሳወቂያዎች ተከልክለዋል። በስልክዎ ቅንብሮች ውስጥ ይፍቀዱ።',
+  'readingStreak': 'የንባብ ተከታታይ ቀናት',
+  'readingStreakHint': 'በተከታታይ ያነበቡባቸውን ቀናት በመነሻ ገጽ አሳይ',
+  'streakStart': 'ዛሬ አንብበው ይጀምሩ።',
+  'streakKeepGoing': 'ዛሬ ካነበቡ ይቀጥላል።',
+  'wifiOnly': 'በWi-Fi ብቻ አውርድ',
+  'wifiOnlyHint': 'የጥናት ጥቅሎችንና ድምፅን በሞባይል ዳታ አያወርድም',
+  'needWifi': 'ከWi-Fi ጋር ይገናኙ፣ ወይም በቅንብሮች ውስጥ «በWi-Fi ብቻ አውርድ»ን ያጥፉ።',
   'study': 'ጥናት',
   'verseStudy': 'የጥቅስ ጥናት',
   'originalText': 'በመጀመሪያው ቋንቋ',
@@ -613,7 +638,6 @@ const _en = {
   'audioNotConfigured': 'Audio is not set up yet',
   'sleepTimer': 'Sleep timer',
   'speed': 'Speed',
-  'off': 'Off',
   'endOfChapter': 'End of chapter',
   'downloadBook': 'Download book',
   'downloading': 'Downloading…',
@@ -716,6 +740,18 @@ const _en = {
   'allVersions': 'All versions',
   'compare': 'Compare',
   'recentlyRead': 'Recently read',
+  'reminders': 'Reminders and habits',
+  'dailyReminder': 'Daily reading reminder',
+  'off': 'Off',
+  'reminderBody': 'Time for today\'s Bible reading.',
+  'notificationsBlocked': 'Notifications are blocked. Allow them in your phone\'s settings.',
+  'readingStreak': 'Reading streak',
+  'readingStreakHint': 'Show how many days in a row you have read, on Home',
+  'streakStart': 'Read today to start a streak.',
+  'streakKeepGoing': 'Read today to keep it going.',
+  'wifiOnly': 'Download on Wi-Fi only',
+  'wifiOnlyHint': 'Study packs and audio won\'t download on mobile data',
+  'needWifi': 'Connect to Wi-Fi, or turn off "Download on Wi-Fi only" in Settings.',
   'study': 'Study',
   'verseStudy': 'Verse study',
   'originalText': 'Original text',

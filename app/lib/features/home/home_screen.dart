@@ -99,6 +99,7 @@ class HomeScreen extends ConsumerWidget {
             _ => const SizedBox.shrink(),
           },
           const TodaysReadingCards(),
+          if (settings.streaks) const _StreakCard(),
           AppCard(
             onTap: () => context.go(last != null ? '/read?ref=${last.encode()}' : '/read'),
             child: Row(
@@ -204,6 +205,30 @@ class _RecentlyRead extends ConsumerWidget {
             onTap: () => context.go('/read?ref=${BibleRef(b.code, vkeyChapter(r.vkey), vkeyVerse(r.vkey)).encode()}'),
           ),
       ],
+    );
+  }
+}
+
+/// The opt-in reading streak: encouraging, never scolding.
+class _StreakCard extends ConsumerWidget {
+  const _StreakCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final streak = ref.watch(streakProvider).value;
+    if (streak == null) return const SizedBox.shrink();
+    return AppCard(
+      eyebrow: s.readingStreak,
+      trailing: Icon(Icons.local_fire_department_outlined, color: context.colors.primary),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(streak.current > 0 ? s.streakDays(streak.current) : s.streakStart, style: context.text.titleMedium),
+          if (streak.current > 0 && !streak.readToday) Text(s.streakKeepGoing, style: context.text.bodyMedium),
+          if (streak.best > 1) Text(s.streakBest(streak.best), style: context.text.bodySmall),
+        ],
+      ),
     );
   }
 }

@@ -11,16 +11,21 @@ import '../core/vkey.dart';
 import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
 import '../data/packs.dart';
+import '../data/reminders.dart';
 import '../data/user_repository.dart';
 import '../domain/models.dart';
 import '../domain/plans.dart';
 import '../domain/reference_parser.dart';
+import '../domain/streaks.dart';
 
 // Overridden in main() (and in tests) once the databases are open.
 final contentDbProvider = Provider<Database>((ref) => throw UnimplementedError());
 final userDbProvider = Provider<Database>((ref) => throw UnimplementedError());
 final audioRepositoryProvider = Provider<AudioRepository>((ref) => throw UnimplementedError());
 final initialSettingsProvider = Provider<Settings>((ref) => const Settings());
+
+/// Daily reminder notifications; main() overrides this with the real plugin.
+final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) => NoReminders());
 
 /// Where downloaded study packs live; overridden in main() and in tests.
 final packStoreProvider = Provider<PackStore>((ref) => throw UnimplementedError());
@@ -62,6 +67,9 @@ class Settings {
     this.redLetters = true,
     this.geezNumerals = false,
     this.interlinear = false,
+    this.reminderMinutes,
+    this.streaks = false,
+    this.wifiOnly = true,
     this.ethiopianCalendar = true,
     this.languageCode = 'am',
     this.versionId,
@@ -82,6 +90,15 @@ class Settings {
   /// Show original-language words with glosses under each verse (when the
   /// version, or the side-by-side version, has word data).
   final bool interlinear;
+
+  /// Daily reading reminder time (minutes after midnight), or null for none.
+  final int? reminderMinutes;
+
+  /// Show the (opt-in) reading streak on Home.
+  final bool streaks;
+
+  /// Download study packs and audio only on Wi-Fi.
+  final bool wifiOnly;
   final bool ethiopianCalendar;
   final String languageCode;
   final String? versionId;
@@ -105,6 +122,9 @@ class Settings {
     bool? redLetters,
     bool? geezNumerals,
     bool? interlinear,
+    int? Function()? reminderMinutes,
+    bool? streaks,
+    bool? wifiOnly,
     bool? ethiopianCalendar,
     String? languageCode,
     String? versionId,
@@ -121,6 +141,9 @@ class Settings {
     redLetters: redLetters ?? this.redLetters,
     geezNumerals: geezNumerals ?? this.geezNumerals,
     interlinear: interlinear ?? this.interlinear,
+    reminderMinutes: reminderMinutes != null ? reminderMinutes() : this.reminderMinutes,
+    streaks: streaks ?? this.streaks,
+    wifiOnly: wifiOnly ?? this.wifiOnly,
     ethiopianCalendar: ethiopianCalendar ?? this.ethiopianCalendar,
     languageCode: languageCode ?? this.languageCode,
     versionId: versionId ?? this.versionId,
@@ -139,6 +162,9 @@ class Settings {
     'red_letters': '$redLetters',
     'geez_numerals': '$geezNumerals',
     'interlinear': '$interlinear',
+    'reminder': reminderMinutes?.toString(),
+    'streaks': '$streaks',
+    'wifi_only': '$wifiOnly',
     'ethiopian_calendar': '$ethiopianCalendar',
     'language': languageCode,
     'version': versionId,
@@ -160,6 +186,9 @@ class Settings {
       redLetters: b('red_letters', d.redLetters),
       geezNumerals: b('geez_numerals', d.geezNumerals),
       interlinear: b('interlinear', d.interlinear),
+      reminderMinutes: int.tryParse(m['reminder'] ?? ''),
+      streaks: b('streaks', d.streaks),
+      wifiOnly: b('wifi_only', d.wifiOnly),
       ethiopianCalendar: b('ethiopian_calendar', d.ethiopianCalendar),
       languageCode: m['language'] ?? d.languageCode,
       versionId: m['version'],
@@ -308,6 +337,13 @@ final activePlansProvider = FutureProvider<List<PlanProgress>>((ref) async {
 final recentReadingProvider = FutureProvider<List<RecentReading>>((ref) {
   ref.watch(settingsProvider.select((s) => s.lastRef));
   return ref.watch(userRepositoryProvider).recentReading(limit: 6);
+});
+
+/// The reading streak, from the days with reading history.
+final streakProvider = FutureProvider<Streak>((ref) async {
+  ref.watch(settingsProvider.select((s) => s.lastRef));
+  final days = await ref.watch(userRepositoryProvider).readingDays();
+  return streakFrom(days, ref.watch(clockProvider)());
 });
 
 /// Refresh every screen showing user data (after a sync pulled changes).

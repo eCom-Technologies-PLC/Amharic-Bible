@@ -6,6 +6,7 @@ import '../../core/geez.dart';
 import '../../core/strings.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
+import '../common.dart';
 import '../reader/text_settings_sheet.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -120,6 +121,52 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text(EthiopianDate.fromGregorian(DateTime.now()).format()),
             value: settings.ethiopianCalendar,
             onChanged: (v) => notifier.update((x) => x.copyWith(ethiopianCalendar: v)),
+          ),
+          SectionHeader(s.reminders),
+          AppListTile(
+            leadingIcon: Icons.notifications_outlined,
+            title: s.dailyReminder,
+            subtitle: settings.reminderMinutes == null ? s.off : formatTimeOfDay(settings.reminderMinutes!),
+            chevron: true,
+            onTap: () async {
+              final v = await showOptionPicker<int>(
+                context: context,
+                title: s.dailyReminder,
+                selected: settings.reminderMinutes ?? -1,
+                options: [
+                  PickerOption(-1, s.off),
+                  for (var h = 5; h <= 22; h++) PickerOption(h * 60, formatTimeOfDay(h * 60)),
+                ],
+              );
+              if (v == null || !context.mounted) return;
+              final scheduler = ref.read(reminderSchedulerProvider);
+              if (v < 0) {
+                await scheduler.cancel();
+                await notifier.update((x) => x.copyWith(reminderMinutes: () => null));
+                return;
+              }
+              final ok = await scheduler.scheduleDaily(v, title: s.appName, body: s.reminderBody);
+              if (ok) {
+                await notifier.update((x) => x.copyWith(reminderMinutes: () => v));
+              } else if (context.mounted) {
+                showAppSnack(context, s.notificationsBlocked);
+              }
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.local_fire_department_outlined),
+            title: Text(s.readingStreak),
+            subtitle: Text(s.readingStreakHint),
+            value: settings.streaks,
+            onChanged: (v) => notifier.update((x) => x.copyWith(streaks: v)),
+          ),
+          SectionHeader(s.downloads),
+          SwitchListTile(
+            secondary: const Icon(Icons.wifi),
+            title: Text(s.wifiOnly),
+            subtitle: Text(s.wifiOnlyHint),
+            value: settings.wifiOnly,
+            onChanged: (v) => notifier.update((x) => x.copyWith(wifiOnly: v)),
           ),
         ],
       ),
