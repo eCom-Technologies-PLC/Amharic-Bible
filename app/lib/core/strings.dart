@@ -224,6 +224,10 @@ class S {
       ? '$download ይወርዳል፤ በስልክዎ ላይ $installed ቦታ ይይዛል።'
       : 'This downloads $download and uses $installed on your phone.';
 
+  String get allVersions => _('allVersions');
+  String get compare => _('compare');
+  String get recentlyRead => _('recentlyRead');
+
   /// A grammatical term from lib/domain/morphology.dart ("noun", "aorist", …).
   String grammar(String key) => _m['g.$key'] ?? _en['g.$key'] ?? key;
 
@@ -405,6 +409,9 @@ const _am = {
   'removePackConfirm': 'ይህ ጥቅል ከዚህ ስልክ ይሰረዛል። በኋላ እንደገና ማውረድ ይችላሉ።',
   'getStudyPacks': 'የዕብራይስጥ፣ የግሪክና የጥናት ጥቅሎችን ያውርዱ',
   'getStudyPacksHint': 'ለዚህ ጥቅስ ሙሉ የቃል፣ የተዛማጅ ጥቅስና የማብራሪያ መረጃ ለማግኘት።',
+  'allVersions': 'ሁሉም ትርጉሞች',
+  'compare': 'አወዳድር',
+  'recentlyRead': 'በቅርቡ የተነበቡ',
   'study': 'ጥናት',
   'verseStudy': 'የጥቅስ ጥናት',
   'originalText': 'በመጀመሪያው ቋንቋ',
@@ -706,6 +713,9 @@ const _en = {
   'removePackConfirm': 'This pack will be deleted from this phone. You can download it again later.',
   'getStudyPacks': 'Download Hebrew, Greek and study packs',
   'getStudyPacksHint': 'For the full word, cross-reference and commentary material for this verse.',
+  'allVersions': 'All versions',
+  'compare': 'Compare',
+  'recentlyRead': 'Recently read',
   'study': 'Study',
   'verseStudy': 'Verse study',
   'originalText': 'Original text',

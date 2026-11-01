@@ -10,10 +10,11 @@ import '../../state/providers.dart';
 import '../audio/audio_controller.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import '../study/study_widgets.dart' show isRtlLanguage;
 import 'reader_screen.dart' show audioErrorText;
 
-/// Actions for the selected verses: highlight, bookmark, note, study, copy,
-/// share, listen.
+/// Actions for the selected verses: highlight, bookmark, note, study,
+/// compare, copy, share, listen.
 class SelectionBar extends ConsumerWidget {
   const SelectionBar({
     super.key,
@@ -139,6 +140,15 @@ class SelectionBar extends ConsumerWidget {
                     },
                   ),
                   LabeledIconButton(
+                    icon: Icons.compare_arrows,
+                    label: s.compare,
+                    onPressed: () => showCompareSheet(
+                      context,
+                      selected,
+                      formatReference(book, chapter, selected.map((k) => k % 1000), amharic: s.isAmharic),
+                    ),
+                  ),
+                  LabeledIconButton(
                     icon: Icons.copy,
                     label: s.copy,
                     onPressed: () async {
@@ -183,3 +193,40 @@ class SelectionBar extends ConsumerWidget {
     );
   }
 }
+
+/// The selected verses in every installed version.
+final _compareProvider = FutureProvider.family<List<(BibleVersion, String)>, String>((ref, keys) async {
+  final content = ref.watch(contentRepositoryProvider);
+  final vkeys = keys.split(',').map(int.parse).toList();
+  return [
+    for (final v in await ref.watch(versionsProvider.future))
+      if ((await content.verses(v.id, vkeys)).map((x) => x.text).join(' ') case final text when text.isNotEmpty)
+        (v, text),
+  ];
+});
+
+Future<void> showCompareSheet(BuildContext context, List<int> vkeys, String reference) => showAppBottomSheet<void>(
+  context: context,
+  title: reference,
+  builder: (sheet) => Consumer(
+    builder: (context, ref, _) => switch (ref.watch(_compareProvider(vkeys.join(',')))) {
+      AsyncData(value: final rows) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (v, text) in rows)
+            LabeledGroup(
+              label: '${v.abbrev} · ${v.localName}',
+              child: Text(
+                text,
+                style: context.scriptureSnippet,
+                textDirection: isRtlLanguage(v.language) ? TextDirection.rtl : null,
+              ),
+            ),
+        ],
+      ),
+      AsyncError() => ErrorState(onRetry: () => ref.invalidate(_compareProvider)),
+      _ => const LoadingState(),
+    },
+  ),
+);

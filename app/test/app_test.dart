@@ -4,6 +4,7 @@ import 'package:amharic_bible/app.dart';
 import 'package:amharic_bible/domain/preferences.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
+import 'package:amharic_bible/domain/models.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/reader/selection_bar.dart';
 import 'package:amharic_bible/features/share/share_image_screen.dart';
@@ -312,5 +313,68 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('People, places and events'), findsOneWidget);
     expect(find.text('Laban'), findsWidgets);
+  });
+
+  testWidgets('Home lists recently read chapters other than the one to continue', (tester) async {
+    await tester.runAsync(() async {
+      final repo = UserRepository(userDb);
+      await repo.recordReading('WEB', 19023001);
+      await repo.recordReading('WEB', 43003016);
+    });
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB', lastRef: BibleRef('JHN', 3, 16)),
+    );
+    await tester.scrollUntilVisible(find.text('Recently read'), 200);
+    expect(find.text('Psalms 23'), findsOneWidget);
+    expect(find.text('John 3'), findsOneWidget); // only in the Continue card
+    await tester.tap(find.text('Psalms 23'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ParagraphView), findsWidgets);
+  });
+
+  testWidgets('Compare shows the selected verse in every version', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/read?ref=JHN.3',
+    );
+    final para = find.byType(ParagraphView).first;
+    await tester.tapAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Compare'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('WEB · '), findsOneWidget);
+    expect(find.textContaining('RP2018 · '), findsOneWidget);
+    expect(find.textContaining('Οὕτως γὰρ ἠγάπησεν'), findsOneWidget);
+  });
+
+  testWidgets('a deep link opens the reader at the passage', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+    );
+    await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+      'flutter/navigation',
+      const JSONMethodCodec().encodeMethodCall(
+        const MethodCall('pushRouteInformation', {'location': 'amharicbible://open/read?ref=PSA.23.1', 'state': null}),
+      ),
+      (_) {},
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Psalms 23'), findsOneWidget);
+  });
+
+  testWidgets('search can cover every version', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/search',
+    );
+    await tester.tap(find.text('All versions'));
+    await tester.enterText(find.byType(TextField), 'λογοσ');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('John 1:1 · RP2018'), findsOneWidget);
   });
 }

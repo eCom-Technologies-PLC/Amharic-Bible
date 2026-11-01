@@ -132,10 +132,11 @@ class ChapterContent {
 }
 
 class SearchHit {
-  const SearchHit({required this.vkey, required this.text, required this.book});
+  const SearchHit({required this.vkey, required this.text, required this.book, required this.versionId});
   final int vkey;
   final String text;
   final Book book;
+  final String versionId;
 }
 
 class Highlight {

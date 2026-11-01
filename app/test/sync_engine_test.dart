@@ -111,6 +111,21 @@ void main() {
     expect(again.pulled, 0);
   });
 
+  test('the reading position follows the user, newest wins', () async {
+    await phone.repo.setSetting('last_ref', 'JHN.3.16');
+    await phone.repo.setSetting('theme', 'dark'); // not synced
+    await phone.engine.sync();
+    await tablet.engine.sync();
+    expect((await tablet.repo.settings())['last_ref'], 'JHN.3.16');
+    expect((await tablet.repo.settings())['theme'], isNull);
+
+    tablet.now = tablet.now.add(const Duration(hours: 1));
+    await tablet.repo.setSetting('last_ref', 'PSA.23.1');
+    await tablet.engine.sync();
+    await phone.engine.sync();
+    expect((await phone.repo.settings())['last_ref'], 'PSA.23.1');
+  });
+
   test('records from unknown entities are ignored', () async {
     await server.push([const SyncRecord(entity: 'future_thing', id: 'x', payload: {}, updatedAt: 1)]);
     final r = await tablet.engine.sync();

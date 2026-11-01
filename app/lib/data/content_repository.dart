@@ -197,9 +197,8 @@ class ContentRepository {
     String? bookCode,
     int limit = 200,
   }) async {
-    final terms = searchTerms(query);
-    if (terms.isEmpty) return [];
-    final match = terms.map((t) => '"${t.replaceAll('"', '')}"*').join(' ');
+    final match = ftsQuery(query);
+    if (match == null) return [];
     var lo = 0, hi = 999999999;
     if (bookCode != null) {
       final b = await book(versionId, bookCode);
@@ -224,9 +223,35 @@ class ContentRepository {
     return [
       for (final r in rows)
         if (byNum[vkeyBook(r['vkey'] as int)] case final b?)
-          SearchHit(vkey: r['vkey'] as int, text: r['text'] as String, book: b),
+          SearchHit(vkey: r['vkey'] as int, text: r['text'] as String, book: b, versionId: versionId),
     ];
   }
+
+  /// [search] in every version, in version order; each hit names its version.
+  Future<List<SearchHit>> searchAll(
+    String query, {
+    TestamentFilter testament = TestamentFilter.all,
+    int limitPerVersion = 100,
+  }) async => [
+    for (final v in await versions()) ...await search(v.id, query, testament: testament, limit: limitPerVersion),
+  ];
+}
+
+final _quoted = RegExp('["“”«»„]([^"“”«»„]+)["“”«»„]');
+
+/// The FTS5 query for what the user typed: words in quotes must appear
+/// together in that order (exact phrase); other words match as prefixes.
+/// Null when nothing searchable is left.
+String? ftsQuery(String query) {
+  final parts = <String>[];
+  for (final m in _quoted.allMatches(query)) {
+    final words = searchTerms(m[1]!);
+    if (words.isNotEmpty) parts.add('"${words.join(' ')}"');
+  }
+  for (final t in searchTerms(query.replaceAll(_quoted, ' '))) {
+    parts.add('"$t"*');
+  }
+  return parts.isEmpty ? null : parts.join(' ');
 }
 
 /// Normalized search terms for a query.

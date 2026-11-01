@@ -90,6 +90,12 @@ test('direct writes and anonymous calls are refused', async () => {
   await assert.rejects(as(null, (tx) => push(tx, [])), /permission denied|not signed in/);
 });
 
+test('the reading position syncs as a position record', async () => {
+  await as(ALICE, (tx) => push(tx, [{ entity: 'position', id: 'last_ref', payload: { value: 'JHN.3.16' }, updated_at: 5 }]));
+  const rows = await as(ALICE, (tx) => pull(tx));
+  assert.deepEqual(rows.find((r) => r.entity === 'position').payload, { value: 'JHN.3.16' });
+});
+
 test('input validation', async () => {
   await assert.rejects(as(ALICE, (tx) => push(tx, [{ entity: 'secret', id: 'x', updated_at: 1 }])), /check constraint/);
   await assert.rejects(as(ALICE, (tx) => push(tx, { not: 'an array' })), /array/);

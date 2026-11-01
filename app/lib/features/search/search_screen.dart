@@ -30,6 +30,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Timer? _debounce;
   String _query = '';
   TestamentFilter _filter = TestamentFilter.all;
+  bool _allVersions = false;
   List<SearchHit>? _hits;
   ParsedReference? _reference;
   StudyMatches _study = const StudyMatches();
@@ -63,7 +64,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
     final version = await ref.read(currentVersionProvider.future);
     final parser = await ref.read(referenceParserProvider.future);
-    final hits = await ref.read(contentRepositoryProvider).search(version.id, q, testament: _filter);
+    final content = ref.read(contentRepositoryProvider);
+    final hits = _allVersions
+        ? await content.searchAll(q, testament: _filter)
+        : await content.search(version.id, q, testament: _filter);
     final study = ref.read(studyRepositoryProvider);
     final matches = StudyMatches(
       words: await study.searchLexicon(q, limit: 5),
@@ -116,6 +120,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               FilterOption(TestamentFilter.newTestament, s.newTestament),
             ],
           ),
+          FilterBar<bool>(
+            selected: _allVersions,
+            onSelected: (all) {
+              setState(() => _allVersions = all);
+              _run(_query);
+            },
+            options: [
+              FilterOption(false, ref.watch(currentVersionProvider).value?.abbrev ?? s.read),
+              FilterOption(true, s.allVersions),
+            ],
+          ),
           const Divider(),
           Expanded(child: _results(context, s, settings, bookList)),
         ],
@@ -150,6 +165,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return EmptyState(message: s.noResults, icon: Icons.search_off);
     }
     final snippet = context.scriptureSnippet;
+    final abbrevs = {for (final v in ref.watch(versionsProvider).value ?? const <BibleVersion>[]) v.id: v.abbrev};
     final match = snippet.copyWith(fontWeight: FontWeight.w700, color: context.colors.primary);
 
     return ListView.separated(
@@ -187,8 +203,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           return SectionHeader(s.results(hits.length), first: _study.isEmpty);
         }
         final h = hits[i - 3];
+        final hitRef = formatReference(h.book, vkeyChapter(h.vkey), [vkeyVerse(h.vkey)], amharic: s.isAmharic);
         return AppListTile(
-          title: formatReference(h.book, vkeyChapter(h.vkey), [vkeyVerse(h.vkey)], amharic: s.isAmharic),
+          title: _allVersions ? '$hitRef · ${abbrevs[h.versionId] ?? h.versionId}' : hitRef,
           subtitleWidget: Text.rich(highlightMatches(h.text, terms, match), style: snippet),
           onTap: () => _open(BibleRef(h.book.code, vkeyChapter(h.vkey), vkeyVerse(h.vkey))),
         );

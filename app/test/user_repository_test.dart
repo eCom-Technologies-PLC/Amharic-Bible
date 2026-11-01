@@ -79,4 +79,17 @@ void main() {
     await r.startPlan('p');
     expect(await r.activePlans(), contains('p'));
   });
+
+  test('recent reading keeps one entry per chapter, newest first', () async {
+    var now = DateTime(2026, 11, 1, 8);
+    final r = UserRepository(await openTestUserDb(), clock: () => now);
+    await r.recordReading('AMH1962', 43003001);
+    now = now.add(const Duration(minutes: 1));
+    await r.recordReading('AMH1962', 19023001);
+    now = now.add(const Duration(minutes: 1));
+    await r.recordReading('AMH1962', 43003016);
+    final recent = await r.recentReading();
+    expect(recent.map((x) => x.vkey), [43003016, 19023001]);
+    expect(recent.first.readAt, now);
+  });
 }

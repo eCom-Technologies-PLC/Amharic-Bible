@@ -95,7 +95,11 @@ Features:
 - **Reading:** paragraphs, poetry, headings, footnotes, words of Jesus in red, light/sepia/dark/black themes,
   serif or sans Ethiopic fonts, Ge'ez numerals.
 - **Side by side:** any two versions (e.g. Amharic + English), in columns on tablets and interleaved on phones.
-- **Personal study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16").
+- **Personal study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16"),
+  exact phrases in quotes ("so loved", «ዓለምን ወደደ»), and a switch to search every version at once.
+- **Compare:** the selected verses in every installed version, from the selection bar.
+- **Recently read:** the last chapters you opened, on Home.
+- **Deep links:** `amharicbible://open/read?ref=JHN.3.16` opens the reader at John 3:16 (Android and iOS).
 - **Original languages:** Hebrew and Greek texts (Hebrew right to left), an interlinear mode with each word's
   gloss and code under the verse, and a word sheet that explains the grammar in plain Amharic or English.
 - **Word and verse study:** Strong's entries with every occurrence (a concordance); per verse, the original
@@ -107,8 +111,8 @@ Features:
 - **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
   60 days, with daily progress and a "today's reading" card on Home.
 - **Share:** verses as text, or as an image card (8 backgrounds, square or story size, 1080 px PNG).
-- **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes and plans across
-  devices. Export your data as JSON, or delete your account, from inside the app.
+- **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes, plans and your
+  reading position across devices. Export your data as JSON, or delete your account, from inside the app.
 - Verse of the day, an Amharic or English UI, and the Ethiopian calendar.
 
 The app uses the 66-book canon only. Still to come: notification reminders for plans.
@@ -131,8 +135,9 @@ deploying.
 
 Sync uses Supabase (Postgres + Auth). Without it the app works fully offline and hides sign-in.
 
-1. Create a Supabase project and apply `server/supabase/migrations/*.sql` (`supabase db push`, or paste the
-   file into the SQL editor). The migration creates the `user_records` table with row-level security, the
+1. Create a Supabase project and apply `server/supabase/migrations/*.sql` in order (`supabase db push`, or
+   paste each file into the SQL editor). An existing project needs the newer migrations too: the reading
+   position sync needs `20261101000000_position_records.sql`. The first migration creates the `user_records` table with row-level security, the
    `push_records()` function (last writer wins) and `delete_my_account()`.
 2. Under Authentication → Email templates, make the **Magic Link** template show the code: `{{ .Token }}`.
    The app signs in with a 6-digit code, so no deep links are needed.

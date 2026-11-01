@@ -188,6 +188,14 @@ class SettingsNotifier extends Notifier<Settings> {
     }
   }
 
+  /// Re-reads the synced settings after a sync pulled them from another
+  /// device, without writing them back.
+  Future<void> reloadSynced() async {
+    final m = await ref.read(userRepositoryProvider).settings();
+    final r = BibleRef.decode(m['last_ref']);
+    if (r != null && r != state.lastRef) state = state.copyWith(lastRef: r);
+  }
+
   Future<void> addRecentSearch(String q) =>
       update((s) => s.copyWith(recentSearches: [q, ...s.recentSearches.where((x) => x != q)].take(10).toList()));
 }
@@ -296,8 +304,15 @@ final activePlansProvider = FutureProvider<List<PlanProgress>>((ref) async {
   return [for (final id in ids) ?await ref.watch(planProgressProvider(id).future)];
 });
 
+/// Recently read chapters, refreshed whenever the reading position moves.
+final recentReadingProvider = FutureProvider<List<RecentReading>>((ref) {
+  ref.watch(settingsProvider.select((s) => s.lastRef));
+  return ref.watch(userRepositoryProvider).recentReading(limit: 6);
+});
+
 /// Refresh every screen showing user data (after a sync pulled changes).
 void refreshUserData(Ref ref) {
+  ref.read(settingsProvider.notifier).reloadSynced();
   ref.invalidate(planProgressProvider);
   ref.invalidate(activePlansProvider);
   ref.invalidate(chapterMarksProvider);

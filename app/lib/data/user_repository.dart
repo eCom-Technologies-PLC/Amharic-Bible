@@ -80,16 +80,22 @@ class UserRepository {
     return {for (final r in rows) r['key'] as String: r['value'] as String};
   }
 
+  /// Settings that follow the user across devices (synced as "position" records).
+  static const syncedSettings = {'last_ref'};
+
   Future<void> setSetting(String key, String? value) async {
-    if (value == null) {
-      await db.delete('setting', where: 'key = ?', whereArgs: [key]);
-    } else {
-      await db.insert('setting', {
-        'key': key,
-        'value': value,
-        'updated_at': _now,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-    }
+    await db.transaction((tx) async {
+      if (value == null) {
+        await tx.delete('setting', where: 'key = ?', whereArgs: [key]);
+      } else {
+        await tx.insert('setting', {
+          'key': key,
+          'value': value,
+          'updated_at': _now,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      if (value != null && syncedSettings.contains(key)) await _outbox(tx, 'position', key, 'upsert');
+    });
   }
 
   // -------------------------------------------------------------- highlights
@@ -350,6 +356,27 @@ class UserRepository {
     await db.insert('reading_history', {'vkey': vkey, 'version_id': versionId, 'read_at': _now});
   }
 
+  /// The chapters read most recently, newest first: one entry per chapter,
+  /// with the verse last opened in it.
+  Future<List<RecentReading>> recentReading({int limit = 10}) async {
+    // SQLite takes the bare vkey from the row holding MAX(read_at).
+    final rows = await db.rawQuery(
+      'SELECT vkey, MAX(read_at) AS read_at FROM reading_history GROUP BY vkey / 1000 '
+      'ORDER BY read_at DESC LIMIT ?',
+      [limit],
+    );
+    return [
+      for (final r in rows)
+        RecentReading(vkey: r['vkey'] as int, readAt: DateTime.fromMillisecondsSinceEpoch(r['read_at'] as int)),
+    ];
+  }
+
   Future<int> pendingSyncCount() async =>
       Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM sync_outbox')) ?? 0;
+}
+
+class RecentReading {
+  const RecentReading({required this.vkey, required this.readAt});
+  final int vkey;
+  final DateTime readAt;
 }

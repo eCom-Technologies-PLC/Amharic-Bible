@@ -7,6 +7,7 @@ import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../../state/study.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 import '../plans/plan_widgets.dart';
@@ -121,6 +122,7 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const _RecentlyRead(),
           Gutter(
             vertical: AppSpacing.lg,
             child: Text(
@@ -168,6 +170,40 @@ class _VerseOfTheDayCard extends StatelessWidget {
           Text(reference, style: context.text.titleSmall),
         ],
       ),
+    );
+  }
+}
+
+/// Chapters read recently (from the reading history), apart from the one the
+/// Continue card already offers.
+class _RecentlyRead extends ConsumerWidget {
+  const _RecentlyRead();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final settings = ref.watch(settingsProvider);
+    final last = settings.lastRef;
+    final books = {for (final b in ref.watch(refBooksProvider).value ?? const <Book>[]) b.num: b};
+    final recent = [
+      for (final r in ref.watch(recentReadingProvider).value ?? const [])
+        if (books[vkeyBook(r.vkey)] case final b?)
+          if (last == null || b.code != last.bookCode || vkeyChapter(r.vkey) != last.chapter) (r, b),
+    ].take(5).toList();
+    if (recent.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader(s.recentlyRead),
+        for (final (r, b) in recent)
+          AppListTile(
+            leadingIcon: Icons.history,
+            title: formatReference(b, vkeyChapter(r.vkey), const [], amharic: s.isAmharic),
+            subtitle: formatDate(r.readAt, settings, s),
+            chevron: true,
+            onTap: () => context.go('/read?ref=${BibleRef(b.code, vkeyChapter(r.vkey), vkeyVerse(r.vkey)).encode()}'),
+          ),
+      ],
     );
   }
 }

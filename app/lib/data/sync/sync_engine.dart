@@ -73,6 +73,8 @@ const _entities = {
   'note': _Entity('note', ['vkey_start', 'vkey_end', 'body', 'tags', 'created_at']),
   'plan': _Entity('plan', ['started_at'], keyColumns: ['plan_id']),
   'plan_progress': _Entity('plan_progress', ['completed_at'], keyColumns: ['plan_id', 'day'], softDelete: false),
+  // Reading position (setting "last_ref"), so "Continue reading" follows the user across devices.
+  'position': _Entity('setting', ['value'], keyColumns: ['key'], softDelete: false),
 };
 
 class SyncResult {
@@ -235,7 +237,7 @@ class SyncEngine {
       case 'plan':
         row['started_at'] ??= row['updated_at'];
         row.remove('created_at');
-      case 'plan_progress':
+      case 'plan_progress' || 'position':
         row.remove('created_at');
     }
   }

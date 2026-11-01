@@ -61,4 +61,22 @@ void main() {
     final jhn = (await repo.book('AMH1962', 'JHN'))!;
     expect(await repo.neighbourChapter('AMH1962', jhn, 3, 1), isNull);
   });
+
+  test('quoted words must appear together as a phrase', () async {
+    expect(ftsQuery('God loved'), '"god"* "loved"*');
+    expect(ftsQuery('"so loved" world'), '"so loved" "world"*');
+    expect(ftsQuery('«ዓለምን ወደደ»'), '"አለምን ወደደ"');
+    expect(ftsQuery('""'), isNull);
+    expect((await repo.search('WEB', '"so loved"')).map((h) => h.vkey), [43003016]);
+    expect(await repo.search('WEB', '"loved so"'), isEmpty); // wrong order
+    expect((await repo.search('WEB', 'loved so')).map((h) => h.vkey), [43003016]); // any order without quotes
+  });
+
+  test('search across every version names each hit\'s version', () async {
+    final hits = await repo.searchAll('God');
+    expect(hits.map((h) => h.versionId).toSet(), containsAll(['WEB']));
+    expect(hits.every((h) => h.versionId.isNotEmpty), isTrue);
+    final greek = await repo.searchAll('λογοσ');
+    expect(greek.single.versionId, 'RP2018');
+  });
 }
