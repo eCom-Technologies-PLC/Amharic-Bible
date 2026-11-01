@@ -242,6 +242,10 @@ class S {
   String streakDays(int n) => isAmharic ? '$n ቀን በተከታታይ' : (n == 1 ? '1 day in a row' : '$n days in a row');
   String streakBest(int n) => isAmharic ? 'ረጅሙ፦ $n ቀናት' : 'Longest: $n days';
 
+  String get readAloud => _('readAloud');
+  String get stopReading => _('stopReading');
+  String get noVoice => _('noVoice');
+
   /// A grammatical term from lib/domain/morphology.dart ("noun", "aorist", …).
   String grammar(String key) => _m['g.$key'] ?? _en['g.$key'] ?? key;
 
@@ -437,6 +441,9 @@ const _am = {
   'wifiOnly': 'በWi-Fi ብቻ አውርድ',
   'wifiOnlyHint': 'የጥናት ጥቅሎችንና ድምፅን በሞባይል ዳታ አያወርድም',
   'needWifi': 'ከWi-Fi ጋር ይገናኙ፣ ወይም በቅንብሮች ውስጥ «በWi-Fi ብቻ አውርድ»ን ያጥፉ።',
+  'readAloud': 'በስልኩ ድምፅ አንብብ',
+  'stopReading': 'ማንበብ አቁም',
+  'noVoice': 'ስልክዎ ለዚህ ቋንቋ ድምፅ የለውም። በስልኩ ቅንብሮች ውስጥ የጽሑፍ-ወደ-ንግግር ድምፅ ይጫኑ።',
   'study': 'ጥናት',
   'verseStudy': 'የጥቅስ ጥናት',
   'originalText': 'በመጀመሪያው ቋንቋ',
@@ -752,6 +759,9 @@ const _en = {
   'wifiOnly': 'Download on Wi-Fi only',
   'wifiOnlyHint': 'Study packs and audio won\'t download on mobile data',
   'needWifi': 'Connect to Wi-Fi, or turn off "Download on Wi-Fi only" in Settings.',
+  'readAloud': 'Read aloud',
+  'stopReading': 'Stop reading',
+  'noVoice': 'Your phone has no voice for this language. Install a text-to-speech voice in your phone\'s settings.',
   'study': 'Study',
   'verseStudy': 'Verse study',
   'originalText': 'Original text',

@@ -11,7 +11,7 @@ import '../audio/audio_controller.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 import '../study/study_widgets.dart' show isRtlLanguage;
-import 'reader_screen.dart' show audioErrorText;
+import 'reader_screen.dart' show audioErrorText, hasRecordedAudio, startReadAloud;
 
 /// Actions for the selected verses: highlight, bookmark, note, study,
 /// compare, copy, share, listen.
@@ -177,6 +177,11 @@ class SelectionBar extends ConsumerWidget {
                     icon: Icons.headphones_outlined,
                     label: s.listen,
                     onPressed: () async {
+                      if (!hasRecordedAudio(ref, version)) {
+                        await startReadAloud(context, ref, version, book, chapter, fromVerse: selected.first % 1000);
+                        onDone();
+                        return;
+                      }
                       final controller = ref.read(audioControllerProvider.notifier);
                       await controller.playChapter(version, book, chapter, fromVerse: selected.first % 1000);
                       final err = ref.read(audioControllerProvider).error;

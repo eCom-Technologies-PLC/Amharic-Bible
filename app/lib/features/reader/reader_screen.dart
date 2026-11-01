@@ -9,6 +9,7 @@ import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../../state/read_aloud.dart';
 import '../../state/study.dart';
 import '../study/study_widgets.dart';
 import '../audio/audio_controller.dart';
@@ -156,9 +157,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Widget _buildChapter(BuildContext context, BibleVersion version, ChapterContent c, BibleRef r) {
     final settings = ref.watch(settingsProvider);
     final marks = ref.watch(chapterMarksProvider((book: c.book.num, chapter: c.chapter))).value ?? const ChapterMarks();
-    final playing = ref.watch(
-      audioControllerProvider.select((a) => a.isChapter(version.id, c.book.code, c.chapter) ? a.currentVerse : null),
-    );
+    final playing =
+        ref.watch(
+          audioControllerProvider.select(
+            (a) => a.isChapter(version.id, c.book.code, c.chapter) ? a.currentVerse : null,
+          ),
+        ) ??
+        ref.watch(readAloudProvider.select((r) => r.isChapter(version.id, c.book.code, c.chapter) ? r.verse : null));
     final parallelId = settings.parallelVersionId;
     final secondary = parallelId != null && parallelId != version.id
         ? ref.watch(chapterProvider((versionId: parallelId, book: c.book.code, chapter: c.chapter))).value
@@ -660,6 +665,7 @@ class _PlayButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!hasRecordedAudio(ref, version)) return _ReadAloudButton(version: version, book: book, chapter: chapter);
     final audio = ref.watch(audioControllerProvider);
     final here = audio.isChapter(version.id, book.code, chapter);
     final controller = ref.read(audioControllerProvider.notifier);
@@ -678,6 +684,45 @@ class _PlayButton extends ConsumerWidget {
         final err = ref.read(audioControllerProvider).error;
         if (err != null) showAppSnack(context, audioErrorText(S.of(context), err));
       },
+    );
+  }
+}
+
+/// Whether [version] can play recorded audio in this build; otherwise the
+/// phone's text-to-speech reads it.
+bool hasRecordedAudio(WidgetRef ref, BibleVersion version) =>
+    version.hasAudio && ref.read(audioRepositoryProvider).configured;
+
+/// Starts reading aloud with the phone's voice, or says there is no voice
+/// for the language.
+Future<void> startReadAloud(
+  BuildContext context,
+  WidgetRef ref,
+  BibleVersion version,
+  Book book,
+  int chapter, {
+  int fromVerse = 1,
+}) async {
+  final result = await ref.read(readAloudProvider.notifier).readChapter(version, book, chapter, fromVerse: fromVerse);
+  if (result == ReadAloudResult.noVoice && context.mounted) showAppSnack(context, S.of(context).noVoice);
+}
+
+class _ReadAloudButton extends ConsumerWidget {
+  const _ReadAloudButton({required this.version, required this.book, required this.chapter});
+
+  final BibleVersion version;
+  final Book book;
+  final int chapter;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final reading = ref.watch(readAloudProvider.select((r) => r.isChapter(version.id, book.code, chapter)));
+    return IconButton(
+      tooltip: reading ? s.stopReading : s.readAloud,
+      icon: Icon(reading ? Icons.stop_circle_outlined : Icons.record_voice_over_outlined),
+      onPressed: () =>
+          reading ? ref.read(readAloudProvider.notifier).stop() : startReadAloud(context, ref, version, book, chapter),
     );
   }
 }

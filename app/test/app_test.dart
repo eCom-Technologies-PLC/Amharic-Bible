@@ -122,11 +122,12 @@ void main() {
     expect(find.textContaining('In the beginning', findRichText: true), findsOneWidget);
   });
 
-  testWidgets('play without audio configured explains why', (tester) async {
+  testWidgets('without recorded audio, Listen reads aloud or explains there is no voice', (tester) async {
     await pumpApp(tester, initial: '/read?ref=JHN.3');
-    await tester.tap(find.byIcon(Icons.play_circle));
+    expect(find.byIcon(Icons.play_circle), findsNothing);
+    await tester.tap(find.byIcon(Icons.record_voice_over_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('ድምፅ ገና አልተዘጋጀም'), findsWidgets);
+    expect(find.textContaining('ስልክዎ ለዚህ ቋንቋ ድምፅ የለውም'), findsWidgets); // the test engine has no voices
   });
 
   testWidgets('side-by-side shows both versions, interleaved on a phone', (tester) async {

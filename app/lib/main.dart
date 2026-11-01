@@ -15,10 +15,12 @@ import 'data/databases.dart';
 import 'data/network.dart';
 import 'data/packs.dart';
 import 'data/reminders.dart';
+import 'data/speech.dart';
 import 'data/sync/account_service.dart';
 import 'data/user_repository.dart';
 import 'state/account.dart';
 import 'state/providers.dart';
+import 'state/read_aloud.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +55,7 @@ Future<void> main() async {
         initialContentSourcesProvider.overrideWithValue(sources),
         reminderSchedulerProvider.overrideWithValue(reminders),
         networkInfoProvider.overrideWithValue(ConnectivityNetwork()),
+        speechEngineProvider.overrideWithValue(DeviceSpeech()),
         accountServiceProvider.overrideWithValue(account),
         audioRepositoryProvider.overrideWithValue(
           AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support.path, 'audio'))),
