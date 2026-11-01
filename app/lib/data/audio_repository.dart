@@ -117,6 +117,8 @@ class AudioRepository {
   Future<bool> isDownloaded(String fileset, String book, int chapter) => _audioFile(fileset, book, chapter).exists();
 
   /// Downloads every chapter of a book; yields the number of chapters done.
+  /// Finished chapters are skipped and an interrupted one resumes, so retrying
+  /// after a dropped connection continues where it stopped.
   Stream<int> downloadBook(String fileset, String book, List<int> chapters) async* {
     var done = 0;
     for (final c in chapters) {
@@ -126,11 +128,26 @@ class AudioRepository {
         final url = json['url'] as String?;
         if (url == null) throw const AudioUnavailable('no recording for this chapter');
         await file.parent.create(recursive: true);
-        final req = await _client.send(http.Request('GET', Uri.parse(url)));
-        if (req.statusCode != 200) throw AudioUnavailable('download failed ${req.statusCode}');
+        // Resume a chapter interrupted earlier: ask only for the missing bytes.
         final tmp = File('${file.path}.part');
-        final sink = tmp.openWrite();
-        await req.stream.pipe(sink);
+        var have = await tmp.exists() ? await tmp.length() : 0;
+        final request = http.Request('GET', Uri.parse(url));
+        if (have > 0) request.headers['range'] = 'bytes=$have-';
+        final res = await _client.send(request);
+        if (res.statusCode == 200) {
+          have = 0; // the server ignored the range: start the chapter over
+        } else if (res.statusCode != 206 && res.statusCode != 416) {
+          throw AudioUnavailable('download failed ${res.statusCode}');
+        }
+        if (res.statusCode != 416) {
+          // 416: nothing left to fetch (the part file is already complete).
+          final sink = tmp.openWrite(mode: have == 0 ? FileMode.write : FileMode.append);
+          try {
+            await sink.addStream(res.stream);
+          } finally {
+            await sink.close();
+          }
+        }
         await tmp.rename(file.path);
         await _timingFile(fileset, book, c).writeAsString(jsonEncode(json['timestamps'] ?? []));
       }

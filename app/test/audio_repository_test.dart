@@ -88,4 +88,36 @@ void main() {
     await repo.deleteDownloads('F', 'RUT');
     expect(await repo.isDownloaded('F', 'RUT', 1), isFalse);
   });
+
+  test('an interrupted chapter download resumes with a range request', () async {
+    final audio = List<int>.generate(1000, (i) => i % 251);
+    final ranges = <String?>[];
+    var calls = 0;
+    final client = MockClient.streaming((req, _) async {
+      if (req.url.host == 'proxy.example') {
+        return http.StreamedResponse(
+          Stream.value(utf8.encode(jsonEncode({'url': 'https://cdn.example/jhn3.mp3', 'timestamps': []}))),
+          200,
+        );
+      }
+      ranges.add(req.headers['range']);
+      if (++calls == 1) {
+        Stream<List<int>> dropped() async* {
+          yield audio.sublist(0, 400);
+          throw const SocketException('reset');
+        }
+
+        return http.StreamedResponse(dropped(), 200);
+      }
+      final from = int.parse(RegExp(r'bytes=(\d+)-').firstMatch(req.headers['range']!)![1]!);
+      return http.StreamedResponse(Stream.value(audio.sublist(from)), 206);
+    });
+    final dir = await Directory.systemTemp.createTemp();
+    final repo = AudioRepository(baseUrl: 'https://proxy.example', storageDir: dir, client: client);
+    await expectLater(repo.downloadBook('AMHFS', 'JHN', [3]).drain<void>(), throwsA(anything));
+    expect(await repo.downloadBook('AMHFS', 'JHN', [3]).toList(), [1]);
+    expect(ranges, [null, 'bytes=400-']);
+    expect(await repo.isDownloaded('AMHFS', 'JHN', 3), isTrue);
+    expect((await repo.downloads())['AMHFS']!['JHN'], 1000);
+  });
 }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
+import '../../data/network.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../reader/reader_screen.dart' show audioErrorText;
@@ -250,6 +251,10 @@ class PlayerScreen extends ConsumerWidget {
   Future<void> _downloadBook(BuildContext context, WidgetRef ref, AudioState a) async {
     final s = S.of(context);
     final repo = ref.read(audioRepositoryProvider);
+    if (await mustWaitForWifi(ref.read(networkInfoProvider), wifiOnly: ref.read(settingsProvider).wifiOnly)) {
+      if (context.mounted) showAppSnack(context, s.needWifi);
+      return;
+    }
     final chapters = await ref.read(contentRepositoryProvider).chapters(a.version!.id, a.book!);
     if (!context.mounted) return;
     final progress = ValueNotifier<int>(0);

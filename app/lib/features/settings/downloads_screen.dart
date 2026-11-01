@@ -82,6 +82,7 @@ class _PackTile extends ConsumerWidget {
   final InstalledPack? installed;
 
   String _error(S s, String? reason) => switch (reason) {
+    'wifi' => s.needWifi,
     'offline' => s.packErrorOffline,
     'corrupt' => s.packErrorCorrupt,
     _ => s.packErrorServer,

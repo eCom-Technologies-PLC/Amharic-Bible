@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:amharic_bible/app.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/content_repository.dart';
+import 'package:amharic_bible/data/network.dart';
 import 'package:amharic_bible/data/packs.dart';
 import 'package:amharic_bible/data/study_repository.dart';
 import 'package:amharic_bible/state/packs.dart';
@@ -313,6 +314,32 @@ void main() {
       expect(await store.partialBytes('TST'), 0);
     });
 
+    test('Wi-Fi only: no download starts on mobile data', () async {
+      var requests = 0;
+      final c = ProviderContainer(
+        overrides: [
+          contentDbProvider.overrideWithValue(db),
+          packStoreProvider.overrideWithValue(store),
+          networkInfoProvider.overrideWithValue(_MobileData()),
+          packDownloaderProvider.overrideWithValue(
+            PackDownloader(
+              baseUrl: 'https://x',
+              store: store,
+              client: MockClient((_) async {
+                requests++;
+                return http.Response('', 500);
+              }),
+            ),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      await c.read(packDownloadsProvider.notifier).download(info);
+      expect(c.read(packDownloadsProvider)['TST']!.error, 'wifi');
+      expect(requests, 0);
+      expect(await mustWaitForWifi(_MobileData(), wifiOnly: false), isFalse);
+    });
+
     test('cancelling keeps the partial file', () async {
       final d = PackDownloader(
         baseUrl: 'https://x',
@@ -437,4 +464,9 @@ void main() {
     expect(container.read(contentSourcesProvider).packs, isEmpty);
     expect(find.textContaining('download'), findsWidgets);
   });
+}
+
+class _MobileData implements NetworkInfo {
+  @override
+  Future<bool> onMobileData() async => true;
 }

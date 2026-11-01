@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config.dart';
+import '../data/network.dart';
 import '../data/packs.dart';
 import 'providers.dart';
 
@@ -50,6 +51,11 @@ class PackDownloads extends Notifier<Map<String, PackTask>> {
 
   Future<void> download(PackInfo info) async {
     if (state[info.id]?.active ?? false) return;
+    final wifiOnly = ref.read(settingsProvider).wifiOnly;
+    if (await mustWaitForWifi(ref.read(networkInfoProvider), wifiOnly: wifiOnly)) {
+      _set(info.id, const PackTask(PackTaskState.failed, error: 'wifi'));
+      return;
+    }
     _cancelled.remove(info.id);
     _set(info.id, const PackTask(PackTaskState.downloading));
     final sources = ref.read(contentSourcesProvider.notifier);

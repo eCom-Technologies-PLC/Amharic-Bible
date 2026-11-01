@@ -10,6 +10,7 @@ import '../ui/tokens/tokens.dart';
 import '../core/vkey.dart';
 import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
+import '../data/network.dart';
 import '../data/packs.dart';
 import '../data/reminders.dart';
 import '../data/user_repository.dart';
@@ -23,6 +24,9 @@ final contentDbProvider = Provider<Database>((ref) => throw UnimplementedError()
 final userDbProvider = Provider<Database>((ref) => throw UnimplementedError());
 final audioRepositoryProvider = Provider<AudioRepository>((ref) => throw UnimplementedError());
 final initialSettingsProvider = Provider<Settings>((ref) => const Settings());
+
+/// Connection type for "Download on Wi-Fi only"; main() overrides this.
+final networkInfoProvider = Provider<NetworkInfo>((ref) => const UnknownNetwork());
 
 /// Daily reminder notifications; main() overrides this with the real plugin.
 final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) => NoReminders());

@@ -12,6 +12,7 @@ import 'app.dart';
 import 'core/config.dart';
 import 'data/audio_repository.dart';
 import 'data/databases.dart';
+import 'data/network.dart';
 import 'data/packs.dart';
 import 'data/reminders.dart';
 import 'data/sync/account_service.dart';
@@ -51,6 +52,7 @@ Future<void> main() async {
         packStoreProvider.overrideWithValue(packs),
         initialContentSourcesProvider.overrideWithValue(sources),
         reminderSchedulerProvider.overrideWithValue(reminders),
+        networkInfoProvider.overrideWithValue(ConnectivityNetwork()),
         accountServiceProvider.overrideWithValue(account),
         audioRepositoryProvider.overrideWithValue(
           AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support.path, 'audio'))),
