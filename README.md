@@ -11,8 +11,9 @@ An offline-first Amharic Bible app with text, synchronized audio and Ge'ez-aware
 |---|---|
 | `app/` | Flutter app (Android + iOS) |
 | `pipeline/` | Python content pipeline: USFM → SQLite content DB |
-| `content/` | `books.json` (66-book catalog, Amharic + English names; other languages take book names from their USFM) and `versions.json` (sources + license registry) |
+| `content/` | `books.json` (66-book catalog, Amharic + English names; other languages take book names from their USFM), `versions.json` (Bible texts) and `resources.json` (study resources), both with sources and license status |
 | `server/audio-proxy/` | Small proxy that keeps the Bible Brain API key off devices |
+| `server/study-assistant/` | AI study assistant (Claude) that answers only from sources the app sends |
 | `.github/workflows/` | CI (tests, analysis, debug APK) and the full-content build |
 
 ## Content pipeline
@@ -25,17 +26,34 @@ python -m unittest discover -s pipeline/tests
 python pipeline/build_db.py --sources pipeline/tests/fixtures/usfm \
   --out app/assets/content/content.db --sample --allow-unverified
 
-# Full text: download sources listed in content/versions.json, then build
+# Full text: download sources listed in content/versions.json and content/resources.json, then build
 python pipeline/fetch_sources.py
 python pipeline/build_db.py --sources content/sources --out build/content.db
 ```
 
-`build_db.py` refuses to package a version whose `license.status` in `content/versions.json` is not `confirmed`.
+`build_db.py` refuses to package a version or resource whose `license.status` is not `confirmed`.
 **AMH1962 is still `verify`.** Confirm its terms (and the eBible.org source ID) before a release. Then run the
 **Build full content** workflow, which builds `content.db` and a release APK that bundles it.
 
 The Ge'ez search normalization exists in Python (`pipeline/abible/geez.py`) and Dart (`app/lib/core/geez.dart`).
 Both are tested against `pipeline/tests/normalize_vectors.json`, so the app's queries always match the index.
+Search also ignores Hebrew vowel points, Greek accents and Latin diacritics, so "λογος" finds "λόγος".
+
+### Study material
+
+| ID | What | License |
+|---|---|---|
+| `WLC` | Hebrew Old Testament (Westminster Leningrad Codex) with Open Scriptures lemmas and morphology, Hebrew and Aramaic, mapped to KJV verse numbers; qere readings kept as variants | Text public domain; morphology CC BY 4.0 |
+| `RP2018` | Greek New Testament (Robinson-Pierpont 2018) with Strong's numbers, parsing, and where NA27/28, ECM and Byzantine manuscripts differ | Public domain |
+| `STRONGS` | Strong's Hebrew and Greek dictionaries | CC BY-SA (Open Scriptures) |
+| `OBXREF` | Cross-references | CC BY (OpenBible.info) |
+| `THEOGRAPHIC` | People, places and events linked to verses; Easton's Bible Dictionary | CC BY-SA 4.0; Easton's public domain |
+| `HCF` | Church-father and historical commentary (authors up to 1700) | **`verify`**: mixes public-domain excerpts with fair-use excerpts of modern translations; review before release |
+
+A full build writes these as separate packs (`build/packs/<ID>.db`, `"bundle": false`), about 220 MB in total
+(commentary alone is 140 MB), so the app download stays small. The **Build full content** workflow uploads them
+as the `study-packs` artifact. Downloading packs in the app is the next step; until then the study screens use
+the short excerpts in the sample database. Books outside the 66-book canon are skipped.
 
 ## App
 
@@ -46,6 +64,7 @@ cd app
 flutter pub get
 flutter analyze && flutter test
 flutter run --dart-define=AUDIO_PROXY_URL=https://your-proxy.example   # audio is optional
+# AI study assistant (optional): --dart-define=STUDY_ASSISTANT_URL=... --dart-define=STUDY_ASSISTANT_TOKEN=...
 ```
 
 Features:
@@ -53,7 +72,14 @@ Features:
 - **Reading:** paragraphs, poetry, headings, footnotes, words of Jesus in red, light/sepia/dark/black themes,
   serif or sans Ethiopic fonts, Ge'ez numerals.
 - **Side by side:** any two versions (e.g. Amharic + English), in columns on tablets and interleaved on phones.
-- **Study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16").
+- **Personal study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16").
+- **Original languages:** Hebrew and Greek texts (Hebrew right to left), an interlinear mode with each word's
+  gloss and code under the verse, and a word sheet that explains the grammar in plain Amharic or English.
+- **Word and verse study:** Strong's entries with every occurrence (a concordance); per verse, the original
+  words, textual variants, cross-references, people/places/events and attributed commentary marked "Not Scripture".
+  Search also finds words by Strong's number, lemma or meaning, and people, places and dictionary entries.
+- **AI study assistant (optional):** explain, summarize, study questions, sermon help or a free question, at a
+  simple or scholar level, in Amharic or English, with an optional tradition. See below.
 - **Audio:** follow-along verse highlighting, background playback, speed, sleep timer and book downloads.
 - **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
   60 days, with daily progress and a "today's reading" card on Home.
@@ -95,7 +121,28 @@ seconds after each change. It pulls first, then pushes. The newest edit wins per
 devices keeps the losing text as a separate note, so no writing is lost. The SQL is tested against real
 Postgres (PGlite): `cd server/supabase/test && npm ci && npm test`.
 
+## AI study assistant
+
+`server/study-assistant` is a Cloudflare Worker that calls Claude (`claude-opus-5-5`, with server-side fallback
+on safety declines). The app sends the passage in every installed version plus the lexicon, variant,
+cross-reference, people/place and commentary entries for it, numbered S1, S2, …; the assistant answers only from
+those, as labelled segments (explanation, quote, Scripture pointer, debated interpretation) that cite source ids.
+
+The server enforces what the prompt asks for: source ids and verse keys the app didn't send are removed; a
+quote that isn't in its cited source is shown as an unverified explanation; Scripture segments carry verse keys
+only, and the app shows the verse text from its own database. Answers are always labelled as AI-written.
+
+1. `cd server/study-assistant && npm ci && npm test`
+2. `wrangler secret put ANTHROPIC_API_KEY` and `wrangler secret put APP_TOKEN`, then `wrangler deploy`.
+3. Build the app with `--dart-define=STUDY_ASSISTANT_URL=<worker URL>` and
+   `--dart-define=STUDY_ASSISTANT_TOKEN=<APP_TOKEN>`. Without them the Ask AI button is hidden.
+
+The shared token only stops casual misuse (it ships inside the app); add rate limiting (for example Cloudflare
+rate-limiting rules) before a public release, because every request is billed to the API key.
+
 ## Licenses
 
 Fonts: Noto Serif/Sans Ethiopic, SIL Open Font License (`app/assets/fonts/OFL.txt`). Bible texts: see
-`content/versions.json`. Each version's attribution is shown in the app under About → Sources.
+`content/versions.json`. Study resources: see `content/resources.json`. Each attribution is shown in the app
+under About → Sources and Study sources. The Strong's and Theographic data are ShareAlike: changes to that data
+must be shared under the same license.

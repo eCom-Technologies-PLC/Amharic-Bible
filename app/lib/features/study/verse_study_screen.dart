@@ -30,6 +30,18 @@ class VerseStudyScreen extends ConsumerWidget {
     final books = ref.watch(refBooksProvider).value ?? const <Book>[];
     return AppScaffold(
       title: books.isEmpty ? s.verseStudy : formatKeys(books, [vkey], amharic: s.isAmharic),
+      bottomBar: ref.watch(assistantRepositoryProvider).configured
+          ? BottomActionBar(
+              children: [
+                AppButton.secondary(
+                  label: s.askAi,
+                  icon: Icons.auto_awesome_outlined,
+                  expand: true,
+                  onPressed: () => context.push('/ask?v=$vkey'),
+                ),
+              ],
+            )
+          : null,
       body: AsyncView(
         value: ref.watch(verseStudyProvider(vkey)),
         onRetry: () => ref.invalidate(verseStudyProvider(vkey)),

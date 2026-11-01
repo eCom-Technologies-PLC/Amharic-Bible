@@ -1,13 +1,15 @@
 # CLAUDE.md
 
 Amharic Bible: an offline-first Flutter app (`app/`), a Python content pipeline (`pipeline/`), an audio proxy
-(`server/audio-proxy/`) and a Supabase sync schema (`server/supabase/`). See `README.md` and `docs/DESIGN.md`.
+(`server/audio-proxy/`), an AI study assistant (`server/study-assistant/`) and a Supabase sync schema
+(`server/supabase/`). See `README.md` and `docs/DESIGN.md`.
 
 ## Commands
 
 - App: `cd app && flutter analyze && flutter test` (format: `dart format lib test`, page width 120)
 - Pipeline: `python -m unittest discover -s pipeline/tests`
 - Audio proxy: `node --test server/audio-proxy/proxy.test.mjs`
+- Study assistant: `cd server/study-assistant && npm ci && npm test`
 - Sync SQL: `cd server/supabase/test && npm ci && npm test`
 
 ## UI & Layout Standards (Flutter)

@@ -174,6 +174,35 @@ class S {
   String get studySources => _('studySources');
   String get notScripture => _('notScripture');
 
+  String get askAi => _('askAi');
+  String get aiAssistant => _('aiAssistant');
+  String get aiDisclaimer => _('aiDisclaimer');
+  String get aiNotConfigured => _('aiNotConfigured');
+  String get aiExplain => _('aiExplain');
+  String get aiSummarize => _('aiSummarize');
+  String get aiQuestions => _('aiQuestions');
+  String get aiSermon => _('aiSermon');
+  String get aiAskQuestion => _('aiAskQuestion');
+  String get aiQuestionHint => _('aiQuestionHint');
+  String get aiLevelSimple => _('aiLevelSimple');
+  String get aiLevelScholar => _('aiLevelScholar');
+  String get aiPerspective => _('aiPerspective');
+  String get perspectiveGeneral => _('perspectiveGeneral');
+  String get perspectiveOrthodox => _('perspectiveOrthodox');
+  String get perspectiveProtestant => _('perspectiveProtestant');
+  String get perspectiveCatholic => _('perspectiveCatholic');
+  String get perspectiveAcademic => _('perspectiveAcademic');
+  String get aiSend => _('aiSend');
+  String get aiExplanationLabel => _('aiExplanationLabel');
+  String get aiQuoteLabel => _('aiQuoteLabel');
+  String get aiInterpretationLabel => _('aiInterpretationLabel');
+  String get aiUnverified => _('aiUnverified');
+  String get aiUncertain => _('aiUncertain');
+  String get aiFollowUp => _('aiFollowUp');
+  String get aiCited => _('aiCited');
+  String get aiDeclined => _('aiDeclined');
+  String get aiBusy => _('aiBusy');
+
   /// A grammatical term from lib/domain/morphology.dart ("noun", "aorist", …).
   String grammar(String key) => _m['g.$key'] ?? _en['g.$key'] ?? key;
 
@@ -311,6 +340,34 @@ const _am = {
   'total': 'ጠቅላላ',
   'stopPlanConfirm': 'ይህን ዕቅድ ማቆም ይፈልጋሉ? ዕቅዱ ከዕቅዶችዎ ይወገዳል።',
   'restartPlanConfirm': 'እስካሁን ምልክት ያደረጉባቸው ቀናት ይጠፋሉ፤ ዕቅዱ ከዛሬ ይጀምራል።',
+  'askAi': 'AIን ይጠይቁ',
+  'aiAssistant': 'የመጽሐፍ ቅዱስ ጥናት ረዳት (AI)',
+  'aiDisclaimer': 'መልሶቹ በAI የተዘጋጁ ናቸው፤ ስሕተት ሊኖራቸው ይችላል። መጽሐፍ ቅዱስ የሚታየው ከዚህ መተግበሪያ ጽሑፍ ብቻ ነው። ማብራሪያዎቹን ከቃሉ ጋር ያመሳክሩ።',
+  'aiNotConfigured': 'የAI ረዳቱ በዚህ እትም አልተዘጋጀም።',
+  'aiExplain': 'አብራራ',
+  'aiSummarize': 'አጠቃልል',
+  'aiQuestions': 'የጥናት ጥያቄዎች',
+  'aiSermon': 'ለስብከት ዝግጅት',
+  'aiAskQuestion': 'ጥያቄ',
+  'aiQuestionHint': 'ስለዚህ ክፍል ምን ማወቅ ይፈልጋሉ?',
+  'aiLevelSimple': 'ቀላል',
+  'aiLevelScholar': 'ጥልቅ (ለምሁራን)',
+  'aiPerspective': 'አመለካከት',
+  'perspectiveGeneral': 'ሁሉንም ወገኖች',
+  'perspectiveOrthodox': 'ኦርቶዶክስ ተዋሕዶ',
+  'perspectiveProtestant': 'ፕሮቴስታንት',
+  'perspectiveCatholic': 'ካቶሊክ',
+  'perspectiveAcademic': 'አካዳሚያዊ',
+  'aiSend': 'ጠይቅ',
+  'aiExplanationLabel': 'የAI ማብራሪያ',
+  'aiQuoteLabel': 'ጥቅስ ከምንጭ',
+  'aiInterpretationLabel': 'አከራካሪ ትርጓሜ',
+  'aiUnverified': 'ከምንጩ ጋር አልተረጋገጠም',
+  'aiUncertain': 'እርግጠኛ ያልሆነው',
+  'aiFollowUp': 'ተጨማሪ ጥያቄዎች',
+  'aiCited': 'ምንጮች',
+  'aiDeclined': 'ረዳቱ ይህን ጥያቄ አልመለሰም። በሌላ መንገድ ይጠይቁ።',
+  'aiBusy': 'ረዳቱ አሁን ሥራ በዝቶበታል። ትንሽ ቆይተው ይሞክሩ።',
   'study': 'ጥናት',
   'verseStudy': 'የጥቅስ ጥናት',
   'originalText': 'በመጀመሪያው ቋንቋ',
@@ -569,6 +626,34 @@ const _en = {
   'total': 'Total',
   'stopPlanConfirm': 'Stop this plan? It will be removed from your plans.',
   'restartPlanConfirm': 'Your checked days will be cleared and the plan will start again today.',
+  'askAi': 'Ask AI',
+  'aiAssistant': 'Bible study assistant (AI)',
+  'aiDisclaimer': 'Answers are written by AI and can be wrong. Scripture is shown only from this app\'s own text. Check every explanation against the Bible.',
+  'aiNotConfigured': 'The AI assistant is not set up in this build.',
+  'aiExplain': 'Explain',
+  'aiSummarize': 'Summarize',
+  'aiQuestions': 'Study questions',
+  'aiSermon': 'Sermon help',
+  'aiAskQuestion': 'Question',
+  'aiQuestionHint': 'What would you like to know about this passage?',
+  'aiLevelSimple': 'Simple',
+  'aiLevelScholar': 'Scholar',
+  'aiPerspective': 'Perspective',
+  'perspectiveGeneral': 'All traditions',
+  'perspectiveOrthodox': 'Orthodox',
+  'perspectiveProtestant': 'Protestant',
+  'perspectiveCatholic': 'Catholic',
+  'perspectiveAcademic': 'Academic',
+  'aiSend': 'Ask',
+  'aiExplanationLabel': 'AI explanation',
+  'aiQuoteLabel': 'Quoted from a source',
+  'aiInterpretationLabel': 'Debated interpretation',
+  'aiUnverified': 'Not found in its source',
+  'aiUncertain': 'What is uncertain',
+  'aiFollowUp': 'Follow-up questions',
+  'aiCited': 'Sources',
+  'aiDeclined': 'The assistant declined this request. Try asking another way.',
+  'aiBusy': 'The assistant is busy. Try again in a moment.',
   'study': 'Study',
   'verseStudy': 'Verse study',
   'originalText': 'Original text',

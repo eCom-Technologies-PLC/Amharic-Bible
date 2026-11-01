@@ -16,6 +16,7 @@ import 'features/reader/book_picker_screen.dart';
 import 'features/reader/reader_screen.dart';
 import 'features/search/search_screen.dart';
 import 'features/share/share_image_screen.dart';
+import 'features/study/ask_screen.dart';
 import 'features/study/entity_screen.dart';
 import 'features/study/verse_study_screen.dart';
 import 'features/study/word_study_screen.dart';
@@ -94,6 +95,14 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
       path: '/study',
       parentNavigatorKey: _rootKey,
       builder: (_, state) => VerseStudyScreen(vkey: int.tryParse(state.uri.queryParameters['v'] ?? '') ?? 0),
+    ),
+    GoRoute(
+      path: '/ask',
+      parentNavigatorKey: _rootKey,
+      builder: (_, state) {
+        final q = state.uri.queryParameters;
+        return AskScreen(vkeys: askVerses(int.tryParse(q['v'] ?? '') ?? 0, int.tryParse(q['end'] ?? '')));
+      },
     ),
     GoRoute(
       path: '/word/:id',

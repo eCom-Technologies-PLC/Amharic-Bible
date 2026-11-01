@@ -1,0 +1,11 @@
+{
+  "name": "amharic-bible-study-assistant",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test assistant.test.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.3.0"
+  }
+}

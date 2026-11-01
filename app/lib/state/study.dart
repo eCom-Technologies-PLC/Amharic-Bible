@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/vkey.dart';
+import '../core/config.dart';
+import '../data/assistant_repository.dart';
 import '../data/study_repository.dart';
 import '../domain/models.dart';
 import '../domain/study.dart';
@@ -96,3 +98,13 @@ final versesByKeyProvider = FutureProvider.family<Map<int, Verse>, ({String vers
   final keys = k.keys.split(',').map(int.tryParse).whereType<int>().toList();
   return {for (final v in await ref.watch(contentRepositoryProvider).verses(k.versionId, keys)) v.vkey: v};
 });
+
+/// The AI study assistant; overridden in tests.
+final assistantRepositoryProvider = Provider<AssistantRepository>(
+  (ref) => AssistantRepository(
+    baseUrl: AppConfig.studyAssistantUrl,
+    token: AppConfig.studyAssistantToken,
+    content: ref.watch(contentRepositoryProvider),
+    study: ref.watch(studyRepositoryProvider),
+  ),
+);

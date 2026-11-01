@@ -43,6 +43,7 @@ const routes = [
   '/word/G3056',
   '/entity/event%3A274',
   '/entity/place%3Agaleed_432',
+  '/ask?v=43003016',
 ];
 
 class Device {

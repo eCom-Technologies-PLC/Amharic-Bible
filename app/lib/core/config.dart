@@ -12,4 +12,10 @@ class AppConfig {
   static const supabasePublishableKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 
   static bool get accountsConfigured => supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
+
+  /// Base URL of the AI study assistant (server/study-assistant), which holds
+  /// the Claude API key, and the shared app token it expects. Empty disables
+  /// the assistant.
+  static const studyAssistantUrl = String.fromEnvironment('STUDY_ASSISTANT_URL');
+  static const studyAssistantToken = String.fromEnvironment('STUDY_ASSISTANT_TOKEN');
 }
