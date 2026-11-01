@@ -9,6 +9,8 @@ import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
 import '../../state/providers.dart';
+import '../../state/study.dart';
+import '../study/study_widgets.dart';
 import '../audio/audio_controller.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
@@ -164,7 +166,30 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final secondaryVersion = secondary != null
         ? (ref.watch(versionsProvider).value ?? const <BibleVersion>[]).where((v) => v.id == parallelId).firstOrNull
         : null;
-    final layout = secondary != null ? parallelLayout(c, secondary) : layoutChapter(c);
+    // Interlinear: words from the version itself or, failing that, from the
+    // side-by-side version (e.g. Amharic text with the Hebrew words under it).
+    final withWords = ref.watch(versionsWithWordsProvider).value ?? const <String>{};
+    final wordsSource = !settings.interlinear
+        ? null
+        : withWords.contains(version.id)
+        ? version.id
+        : (parallelId != null && withWords.contains(parallelId) ? parallelId : null);
+    final words = wordsSource == null
+        ? null
+        : ref.watch(chapterWordsProvider((versionId: wordsSource, book: c.book.num, chapter: c.chapter))).value;
+    final interlinear = words != null && words.isNotEmpty;
+    final wordsRtl = isRtlLanguage(
+      (ref.watch(versionsProvider).value ?? const <BibleVersion>[])
+              .where((v) => v.id == wordsSource)
+              .firstOrNull
+              ?.language ??
+          '',
+    );
+    final layout = interlinear
+        ? interlinearLayout(c, words, showText: wordsSource != version.id)
+        : secondary != null
+        ? parallelLayout(c, secondary)
+        : layoutChapter(c);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _savePosition(version.id, r, c.book.num);
@@ -198,6 +223,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       showNumbers: settings.verseNumbers,
       redLetters: settings.redLetters,
       geezNumerals: settings.geezNumerals,
+      rtl: isRtlLanguage(version.language),
     );
     final decor = VerseDecor(
       highlights: marks.highlights,
@@ -211,7 +237,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
     final initial = r.verse != null ? layout.blockOfVerse[vkey(c.book.num, c.chapter, r.verse!)] : null;
     final s = S.of(context);
-    final twoVersions = secondaryVersion != null;
+    final twoVersions = secondaryVersion != null && !interlinear;
 
     return GestureDetector(
       onHorizontalDragEnd: (d) {
@@ -225,7 +251,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           return false;
         },
         child: ScrollablePositionedList.builder(
-          key: ValueKey('${version.id}/${secondary?.versionId}/${c.book.code}/${c.chapter}'),
+          key: ValueKey('${version.id}/${secondary?.versionId}/$interlinear/${c.book.code}/${c.chapter}'),
           itemScrollController: _scroll,
           itemPositionsListener: _positions,
           initialScrollIndex: initial ?? 0,
@@ -258,6 +284,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 PairBlock() => _PairView(
                   block: block,
                   options: options,
+                  secondaryRtl: isRtlLanguage(secondaryVersion?.language ?? ''),
+                  decor: decor,
+                  onTapVerse: _toggleVerse,
+                  onTapFootnote: _showFootnote,
+                ),
+                InterlinearBlock() => _InterlinearView(
+                  block: block,
+                  options: options,
+                  wordsRtl: wordsRtl,
                   decor: decor,
                   onTapVerse: _toggleVerse,
                   onTapFootnote: _showFootnote,
@@ -329,6 +364,7 @@ class _PairView extends StatelessWidget {
   const _PairView({
     required this.block,
     required this.options,
+    required this.secondaryRtl,
     required this.decor,
     required this.onTapVerse,
     required this.onTapFootnote,
@@ -336,6 +372,7 @@ class _PairView extends StatelessWidget {
 
   final PairBlock block;
   final ReaderOptions options;
+  final bool secondaryRtl;
   final VerseDecor decor;
   final ValueChanged<int> onTapVerse;
   final ValueChanged<String> onTapFootnote;
@@ -357,7 +394,7 @@ class _PairView extends StatelessWidget {
             ? const SizedBox.shrink()
             : ParagraphView(
                 block: second,
-                options: options.asSecondary(showNumbers: wide && options.showNumbers),
+                options: options.asSecondary(showNumbers: wide && options.showNumbers, rtl: secondaryRtl),
                 decor: decor,
                 onTapVerse: onTapVerse,
                 onTapFootnote: onTapFootnote,
@@ -397,6 +434,74 @@ class _PairView extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// A verse with its original-language words under it. When the version is
+/// itself the original text, only the verse number and the words show.
+class _InterlinearView extends StatelessWidget {
+  const _InterlinearView({
+    required this.block,
+    required this.options,
+    required this.wordsRtl,
+    required this.decor,
+    required this.onTapVerse,
+    required this.onTapFootnote,
+  });
+
+  final InterlinearBlock block;
+  final ReaderOptions options;
+  final bool wordsRtl;
+  final VerseDecor decor;
+  final ValueChanged<int> onTapVerse;
+  final ValueChanged<String> onTapFootnote;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = block.text;
+    final selected = decor.selected.contains(block.vkey);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (text != null)
+          ParagraphView(
+            block: text,
+            options: options,
+            decor: decor,
+            onTapVerse: onTapVerse,
+            onTapFootnote: onTapFootnote,
+          )
+        else
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.screen, top: AppSpacing.sm),
+              child: InkWell(
+                onTap: () => onTapVerse(block.vkey),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: AppDimens.touchTarget, minWidth: AppDimens.touchTarget),
+                  child: Center(
+                    widthFactor: 1,
+                    child: Text(
+                      '${vkeyVerse(block.vkey)}',
+                      style: context.reading.verseNumber.copyWith(
+                        decoration: selected ? TextDecoration.underline : null,
+                        decorationColor: context.colors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (block.words.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, AppSpacing.sm),
+            child: InterlinearWords(words: block.words, rtl: wordsRtl),
+          ),
+      ],
     );
   }
 }

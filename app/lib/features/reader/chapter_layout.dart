@@ -1,4 +1,5 @@
 import '../../domain/models.dart';
+import '../../domain/study.dart';
 
 /// A run of text inside a paragraph, belonging to one verse.
 class Seg {
@@ -140,6 +141,33 @@ ChapterLayout parallelLayout(ChapterContent primary, ChapterContent secondary) {
           ? PairBlock(k, verseBlock(a), b != null ? verseBlock(b) : null)
           : PairBlock(k, const ParaBlock([]), verseBlock(b!)),
     );
+  }
+  return ChapterLayout(blocks, blockOfVerse);
+}
+
+/// A verse with its original-language words underneath (interlinear mode).
+class InterlinearBlock extends Block {
+  const InterlinearBlock(this.vkey, this.text, this.words);
+
+  final int vkey;
+
+  /// The verse in the reader's version; null when that version is itself the
+  /// original-language text (the words already show it).
+  final ParaBlock? text;
+  final List<Word> words;
+}
+
+/// Verse-by-verse layout with each verse's words from an original-language
+/// text ([words], by verse key) under it.
+ChapterLayout interlinearLayout(ChapterContent primary, Map<int, List<Word>> words, {required bool showText}) {
+  final blocks = <Block>[];
+  final blockOfVerse = <int, int>{};
+  for (final v in primary.verses) {
+    for (final h in primary.headings[v.vkey] ?? const <Heading>[]) {
+      blocks.add(HeadingBlock(h));
+    }
+    blockOfVerse[v.vkey] = blocks.length;
+    blocks.add(InterlinearBlock(v.vkey, showText ? verseBlock(v) : null, words[v.vkey] ?? const []));
   }
   return ChapterLayout(blocks, blockOfVerse);
 }

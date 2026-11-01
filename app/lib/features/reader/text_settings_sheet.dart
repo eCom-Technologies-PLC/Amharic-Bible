@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/strings.dart';
 import '../../state/providers.dart';
+import '../../state/study.dart';
 import '../../ui/ui.dart';
 
 Future<void> showTextSettingsSheet(BuildContext context) =>
@@ -16,7 +17,8 @@ String themeLabel(S s, ReaderTheme t) => switch (t) {
   ReaderTheme.black => s.themeBlack,
 };
 
-/// Reading appearance: text size, line spacing, font and theme.
+/// Reading appearance: text size, line spacing, font, theme and (when an
+/// original-language text is installed) interlinear words.
 class TextSettingsSheet extends ConsumerWidget {
   const TextSettingsSheet({super.key});
 
@@ -86,6 +88,15 @@ class TextSettingsSheet extends ConsumerWidget {
             onSelectionChanged: (v) => notifier.update((x) => x.copyWith(serif: v.first)),
           ),
         ),
+        if (ref.watch(versionsWithWordsProvider).value?.isNotEmpty ?? false)
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.translate),
+            title: Text(s.interlinear),
+            subtitle: Text(s.interlinearHint),
+            value: settings.interlinear,
+            onChanged: (v) => notifier.update((x) => x.copyWith(interlinear: v)),
+          ),
         LabeledGroup(
           label: s.theme,
           child: Wrap(

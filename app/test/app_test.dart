@@ -7,6 +7,9 @@ import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/reader/selection_bar.dart';
 import 'package:amharic_bible/features/share/share_image_screen.dart';
+import 'package:amharic_bible/features/study/study_widgets.dart';
+import 'package:amharic_bible/features/study/verse_study_screen.dart';
+import 'package:amharic_bible/features/study/word_study_screen.dart';
 import 'package:amharic_bible/data/sync/account_service.dart';
 import 'package:amharic_bible/state/account.dart';
 import 'package:amharic_bible/state/providers.dart';
@@ -236,5 +239,78 @@ void main() {
     );
     expect(find.text('Accounts are not set up yet'), findsOneWidget);
     expect(find.text('Export my data'), findsOneWidget);
+  });
+
+  testWidgets('verse study shows original words, variants, cross-references, people and commentary', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/study?v=43003016',
+    );
+    expect(find.text('John 3:16'), findsWidgets);
+    expect(find.text('Original text'), findsOneWidget);
+    expect(find.byType(InterlinearWords), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Textual variants'), 200);
+    expect(find.text('Nestle-Aland'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Commentary'), 200);
+    expect(find.text('Jesus and Nicodemus'), findsOneWidget);
+    expect(find.textContaining('Augustine of Hippo'), findsOneWidget);
+    expect(find.text('Not Scripture'), findsOneWidget);
+  });
+
+  testWidgets('tapping a word shows its grammar and opens the word study', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/study?v=43001001',
+    );
+    await tester.tap(find.text('λόγος').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Grammar'), findsOneWidget);
+    expect(find.textContaining('noun · nominative · singular · masculine'), findsOneWidget);
+    await tester.tap(find.text('Word study · G3056'));
+    await tester.pumpAndSettle();
+    expect(find.byType(WordStudyScreen), findsOneWidget);
+    expect(find.text('Occurs 3 times'), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('Open Scriptures'), 200); // attribution
+  });
+
+  testWidgets('selection bar opens the verse study', (tester) async {
+    await pumpApp(tester, initial: '/read?ref=JHN.3');
+    final para = find.byType(ParagraphView).first;
+    await tester.tapAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ጥናት'));
+    await tester.pumpAndSettle();
+    expect(find.byType(VerseStudyScreen), findsOneWidget);
+  });
+
+  testWidgets('interlinear mode shows Hebrew words under the Amharic text', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(interlinear: true, parallelVersionId: 'WLC'),
+      initial: '/read?ref=GEN.1',
+    );
+    expect(find.byType(InterlinearWords), findsWidgets);
+    expect(find.text('בְּרֵאשִׁ֖ית'), findsOneWidget);
+    expect(find.text('beginning'), findsOneWidget);
+  });
+
+  testWidgets('search finds words by Strong\'s number and people by name', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/search',
+    );
+    await tester.enterText(find.byType(TextField), 'H7225');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Words'), findsOneWidget);
+    expect(find.textContaining('רֵאשִׁית'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Laban');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('People, places and events'), findsOneWidget);
+    expect(find.text('Laban'), findsWidgets);
   });
 }

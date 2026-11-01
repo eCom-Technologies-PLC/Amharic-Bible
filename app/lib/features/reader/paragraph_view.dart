@@ -30,6 +30,7 @@ class ReaderOptions {
     required this.redLetters,
     required this.geezNumerals,
     this.secondary = false,
+    this.rtl = false,
   });
 
   final bool showNumbers;
@@ -39,8 +40,16 @@ class ReaderOptions {
   /// The second version in side-by-side reading (softer text style).
   final bool secondary;
 
-  ReaderOptions asSecondary({required bool showNumbers}) =>
-      ReaderOptions(showNumbers: showNumbers, redLetters: redLetters, geezNumerals: geezNumerals, secondary: true);
+  /// The text reads right to left (Hebrew).
+  final bool rtl;
+
+  ReaderOptions asSecondary({required bool showNumbers, bool rtl = false}) => ReaderOptions(
+    showNumbers: showNumbers,
+    redLetters: redLetters,
+    geezNumerals: geezNumerals,
+    secondary: true,
+    rtl: rtl,
+  );
 }
 
 /// One paragraph or poetry line, rendered as a single RichText so text flows
@@ -145,14 +154,15 @@ class _ParagraphViewState extends State<ParagraphView> {
 
     final block = widget.block;
     final indent = block.poetry ? AppSpacing.md + AppSpacing.xl * (block.indent - 1) : 0.0;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.screen + indent,
-        right: AppSpacing.screen,
+    final paragraph = Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: AppSpacing.screen + indent,
+        end: AppSpacing.screen,
         top: block.poetry ? 0 : AppSpacing.sm,
       ),
       child: Text.rich(TextSpan(children: spans)),
     );
+    return o.rtl ? Directionality(textDirection: TextDirection.rtl, child: paragraph) : paragraph;
   }
 
   InlineSpan _icon(BuildContext context, IconData icon) => WidgetSpan(

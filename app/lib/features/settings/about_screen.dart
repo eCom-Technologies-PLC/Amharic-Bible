@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/strings.dart';
 import '../../state/providers.dart';
+import '../../state/study.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 
@@ -48,6 +49,23 @@ class AboutScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+            if (ref.watch(studyResourcesProvider).value case final resources? when resources.isNotEmpty) ...[
+              SectionHeader(s.studySources),
+              for (final r in resources)
+                AppListTile(
+                  title: r.name,
+                  subtitleWidget: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(r.attribution),
+                      if (r.licenseStatus != 'confirmed') ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        StatusBadge(s.licenseUnverified, tone: BadgeTone.warning, icon: Icons.gavel_outlined),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
             SectionHeader(s.font),
             const AppListTile(title: 'Noto Serif Ethiopic, Noto Sans Ethiopic', subtitle: 'SIL Open Font License 1.1'),
             AppListTile(

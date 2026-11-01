@@ -10,9 +10,13 @@ import '../../core/vkey.dart';
 import '../../data/content_repository.dart';
 import '../../domain/models.dart';
 import '../../domain/reference_parser.dart';
+import '../../domain/study.dart';
 import '../../state/providers.dart';
+import '../../state/study.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import '../study/study_widgets.dart';
+import '../study/verse_study_screen.dart' show EntityTile;
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -28,6 +32,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   TestamentFilter _filter = TestamentFilter.all;
   List<SearchHit>? _hits;
   ParsedReference? _reference;
+  StudyMatches _study = const StudyMatches();
   bool _loading = false;
 
   @override
@@ -52,16 +57,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       setState(() {
         _hits = null;
         _reference = null;
+        _study = const StudyMatches();
       });
       return;
     }
     final version = await ref.read(currentVersionProvider.future);
     final parser = await ref.read(referenceParserProvider.future);
     final hits = await ref.read(contentRepositoryProvider).search(version.id, q, testament: _filter);
+    final study = ref.read(studyRepositoryProvider);
+    final matches = StudyMatches(
+      words: await study.searchLexicon(q, limit: 5),
+      entities: await study.searchEntities(q, limit: 5),
+      dictionary: await study.searchDictionary(q, limit: 3),
+    );
     if (!mounted || q != _query) return;
     setState(() {
       _reference = parser.parse(q);
       _hits = hits;
+      _study = matches;
       _loading = false;
     });
     if (remember) await ref.read(settingsProvider.notifier).addRecentSearch(q);
@@ -133,15 +146,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final terms = normalize(_query).split(' ').where((t) => t.isNotEmpty).toList();
     final reference = _reference;
     final refBook = reference != null ? books.where((b) => b.code == reference.bookCode).firstOrNull : null;
-    if (hits.isEmpty && refBook == null) return EmptyState(message: s.noResults, icon: Icons.search_off);
+    if (hits.isEmpty && refBook == null && _study.isEmpty) {
+      return EmptyState(message: s.noResults, icon: Icons.search_off);
+    }
     final snippet = context.scriptureSnippet;
     final match = snippet.copyWith(fontWeight: FontWeight.w700, color: context.colors.primary);
 
     return ListView.separated(
       padding: AppListView.defaultPadding,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      itemCount: hits.length + 2,
-      separatorBuilder: (_, i) => i < 2 ? const SizedBox.shrink() : const Divider(indent: AppSpacing.screen),
+      itemCount: hits.length + 3,
+      separatorBuilder: (_, i) => i < 3 ? const SizedBox.shrink() : const Divider(indent: AppSpacing.screen),
       itemBuilder: (context, i) {
         if (i == 0) {
           if (reference == null || refBook == null) return const SizedBox.shrink();
@@ -166,11 +181,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           );
         }
-        if (i == 1) {
+        if (i == 1) return _StudyResults(matches: _study);
+        if (i == 2) {
           if (hits.isEmpty) return const SizedBox.shrink();
-          return SectionHeader(s.results(hits.length), first: true);
+          return SectionHeader(s.results(hits.length), first: _study.isEmpty);
         }
-        final h = hits[i - 2];
+        final h = hits[i - 3];
         return AppListTile(
           title: formatReference(h.book, vkeyChapter(h.vkey), [vkeyVerse(h.vkey)], amharic: s.isAmharic),
           subtitleWidget: Text.rich(highlightMatches(h.text, terms, match), style: snippet),
@@ -195,4 +211,75 @@ TextSpan highlightMatches(String text, List<String> terms, TextStyle matchStyle)
     parts.add(TextSpan(text: word, style: hit ? matchStyle : null));
   }
   return TextSpan(children: parts);
+}
+
+/// Study material matching a search: lexicon words (by Strong's number,
+/// lemma or English meaning), people/places/events and dictionary entries.
+class StudyMatches {
+  const StudyMatches({this.words = const [], this.entities = const [], this.dictionary = const []});
+
+  final List<LexEntry> words;
+  final List<Entity> entities;
+  final List<DictionaryEntry> dictionary;
+
+  bool get isEmpty => words.isEmpty && entities.isEmpty && dictionary.isEmpty;
+}
+
+class _StudyResults extends ConsumerWidget {
+  const _StudyResults({required this.matches});
+
+  final StudyMatches matches;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (matches.isEmpty) return const SizedBox.shrink();
+    final s = S.of(context);
+    final attribution = {
+      for (final r in ref.watch(studyResourcesProvider).value ?? const <StudyResource>[]) r.kind: r.attribution,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (matches.words.isNotEmpty) ...[
+          SectionHeader(s.words, first: true),
+          for (final w in matches.words)
+            AppListTile(
+              leading: StatusBadge(w.id),
+              title: [w.lemma, w.translit].where((x) => x.isNotEmpty).join(' · '),
+              subtitle: shortGloss(w.usage, w.definition),
+              chevron: true,
+              onTap: () => openWordStudy(context, w.id),
+            ),
+        ],
+        if (matches.entities.isNotEmpty) ...[
+          SectionHeader(s.peoplePlacesEvents, first: matches.words.isEmpty),
+          for (final e in matches.entities) EntityTile(entity: e),
+        ],
+        if (matches.dictionary.isNotEmpty) ...[
+          SectionHeader(s.bibleDictionary, first: matches.words.isEmpty && matches.entities.isEmpty),
+          for (final d in matches.dictionary)
+            AppListTile(
+              leadingIcon: Icons.menu_book_outlined,
+              title: d.term,
+              subtitleWidget: Text(d.text, maxLines: 2, overflow: TextOverflow.ellipsis),
+              onTap: () => showAppBottomSheet<void>(
+                context: context,
+                title: d.term,
+                builder: (sheet) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(d.text, style: sheet.text.bodyLarge),
+                    if (attribution['entities'] case final a?) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      Text(a, style: sheet.text.bodySmall),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
 }

@@ -36,6 +36,7 @@ class Settings {
     this.verseNumbers = true,
     this.redLetters = true,
     this.geezNumerals = false,
+    this.interlinear = false,
     this.ethiopianCalendar = true,
     this.languageCode = 'am',
     this.versionId,
@@ -52,6 +53,10 @@ class Settings {
   final bool verseNumbers;
   final bool redLetters;
   final bool geezNumerals;
+
+  /// Show original-language words with glosses under each verse (when the
+  /// version, or the side-by-side version, has word data).
+  final bool interlinear;
   final bool ethiopianCalendar;
   final String languageCode;
   final String? versionId;
@@ -74,6 +79,7 @@ class Settings {
     bool? verseNumbers,
     bool? redLetters,
     bool? geezNumerals,
+    bool? interlinear,
     bool? ethiopianCalendar,
     String? languageCode,
     String? versionId,
@@ -89,6 +95,7 @@ class Settings {
     verseNumbers: verseNumbers ?? this.verseNumbers,
     redLetters: redLetters ?? this.redLetters,
     geezNumerals: geezNumerals ?? this.geezNumerals,
+    interlinear: interlinear ?? this.interlinear,
     ethiopianCalendar: ethiopianCalendar ?? this.ethiopianCalendar,
     languageCode: languageCode ?? this.languageCode,
     versionId: versionId ?? this.versionId,
@@ -106,6 +113,7 @@ class Settings {
     'verse_numbers': '$verseNumbers',
     'red_letters': '$redLetters',
     'geez_numerals': '$geezNumerals',
+    'interlinear': '$interlinear',
     'ethiopian_calendar': '$ethiopianCalendar',
     'language': languageCode,
     'version': versionId,
@@ -126,6 +134,7 @@ class Settings {
       verseNumbers: b('verse_numbers', d.verseNumbers),
       redLetters: b('red_letters', d.redLetters),
       geezNumerals: b('geez_numerals', d.geezNumerals),
+      interlinear: b('interlinear', d.interlinear),
       ethiopianCalendar: b('ethiopian_calendar', d.ethiopianCalendar),
       languageCode: m['language'] ?? d.languageCode,
       versionId: m['version'],

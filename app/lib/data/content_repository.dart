@@ -95,18 +95,25 @@ class ContentRepository {
       final k = h['vkey'] as int;
       (headings[k] ??= []).add(Heading(k, h['level'] as int, h['text'] as String));
     }
+    // A verse 0 is a Psalm superscription kept as text (the Hebrew Bible
+    // numbers it as a verse); show it as the chapter's descriptive title.
+    if (rows.isNotEmpty && vkeyVerse(rows.first['vkey'] as int) == 0) {
+      final first = vkey(b.num, chapter, 1);
+      (headings[first] ??= []).insert(0, Heading(first, 9, rows.first['text'] as String));
+    }
     return ChapterContent(
       versionId: versionId,
       book: b,
       chapter: chapter,
       verses: [
         for (final r in rows)
-          Verse(
-            vkey: r['vkey'] as int,
-            text: r['text'] as String,
-            markup: Tok.parseList(r['markup'] as String),
-            label: r['label'] as String?,
-          ),
+          if (vkeyVerse(r['vkey'] as int) > 0)
+            Verse(
+              vkey: r['vkey'] as int,
+              text: r['text'] as String,
+              markup: Tok.parseList(r['markup'] as String),
+              label: r['label'] as String?,
+            ),
       ],
       headings: headings,
     );

@@ -102,6 +102,9 @@ abstract final class AppDimens {
 
   /// Accent bar marking the second version in interleaved side-by-side mode.
   static const double accentBar = 3;
+
+  /// Widest an interlinear gloss may grow before it wraps.
+  static const double glossMaxWidth = 120;
 }
 
 extension CompactLayout on BuildContext {

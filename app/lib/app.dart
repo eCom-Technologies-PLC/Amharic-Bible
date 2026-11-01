@@ -16,6 +16,9 @@ import 'features/reader/book_picker_screen.dart';
 import 'features/reader/reader_screen.dart';
 import 'features/search/search_screen.dart';
 import 'features/share/share_image_screen.dart';
+import 'features/study/entity_screen.dart';
+import 'features/study/verse_study_screen.dart';
+import 'features/study/word_study_screen.dart';
 import 'features/settings/about_screen.dart';
 import 'features/settings/account_screen.dart';
 import 'features/settings/downloads_screen.dart';
@@ -86,6 +89,21 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
       builder: (_, state) => ShareImageScreen(
         vkeys: (state.uri.queryParameters['keys'] ?? '').split(',').map(int.tryParse).whereType<int>().toList(),
       ),
+    ),
+    GoRoute(
+      path: '/study',
+      parentNavigatorKey: _rootKey,
+      builder: (_, state) => VerseStudyScreen(vkey: int.tryParse(state.uri.queryParameters['v'] ?? '') ?? 0),
+    ),
+    GoRoute(
+      path: '/word/:id',
+      parentNavigatorKey: _rootKey,
+      builder: (_, state) => WordStudyScreen(strongs: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/entity/:id',
+      parentNavigatorKey: _rootKey,
+      builder: (_, state) => EntityScreen(id: state.pathParameters['id']!),
     ),
     GoRoute(
       path: '/note',

@@ -12,8 +12,8 @@ import '../../ui/ui.dart';
 import '../common.dart';
 import 'reader_screen.dart' show audioErrorText;
 
-/// Actions for the selected verses: highlight, bookmark, note, copy, share,
-/// listen.
+/// Actions for the selected verses: highlight, bookmark, note, study, copy,
+/// share, listen.
 class SelectionBar extends ConsumerWidget {
   const SelectionBar({
     super.key,
@@ -127,6 +127,14 @@ class SelectionBar extends ConsumerWidget {
                           queryParameters: {'start': '${selected.first}', 'end': '${selected.last}', 'id': ?id},
                         ).toString(),
                       );
+                      onDone();
+                    },
+                  ),
+                  LabeledIconButton(
+                    icon: Icons.school_outlined,
+                    label: s.study,
+                    onPressed: () {
+                      context.push('/study?v=${selected.first}');
                       onDone();
                     },
                   ),

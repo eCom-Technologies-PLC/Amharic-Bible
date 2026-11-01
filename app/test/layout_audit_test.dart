@@ -7,6 +7,7 @@ import 'package:amharic_bible/app.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
+import 'package:amharic_bible/features/study/study_widgets.dart';
 import 'package:amharic_bible/state/providers.dart';
 import 'package:amharic_bible/ui/ui.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,13 @@ const routes = [
   '/player',
   '/note?start=43003016',
   '/share-image?keys=43003016,43003017',
+  '/study?v=43003016',
+  '/study?v=43001018',
+  '/study?v=1031047',
+  '/word/H7225',
+  '/word/G3056',
+  '/entity/event%3A274',
+  '/entity/place%3Agaleed_432',
 ];
 
 class Device {
@@ -169,6 +177,62 @@ void main() {
           device: smallLargeText,
           settings: Settings(languageCode: lang),
           interact: (t) => t.tap(find.byIcon(Icons.text_fields)),
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang interlinear Hebrew under the reader version', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=GEN.1',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, interlinear: true, parallelVersionId: 'WLC'),
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang Hebrew text, right to left, with a Psalm title', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=PSA.3',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, versionId: 'WLC', parallelVersionId: 'AMH1962'),
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang Greek interlinear', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=JHN.1',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, versionId: 'RP2018', interlinear: true),
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang word sheet', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/study?v=1001001',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang),
+          interact: (t) =>
+              t.tap(find.descendant(of: find.byType(InterlinearWords), matching: find.byType(InkWell)).first),
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang search with study results', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/search',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang),
+          interact: (t) async {
+            await t.enterText(find.byType(TextField), 'God');
+            await t.testTextInput.receiveAction(TextInputAction.search);
+          },
         );
         expect(errors, isEmpty);
       });
