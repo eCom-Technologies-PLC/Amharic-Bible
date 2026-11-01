@@ -206,10 +206,50 @@ export function enforce(answer, r) {
 
 /**
  * @param {Request} req
- * @param {{ANTHROPIC_API_KEY?: string, APP_TOKEN?: string}} env
+ * @param {{ANTHROPIC_API_KEY?: string, APP_TOKEN?: string, ALLOWED_ORIGINS?: string}} env
  * @param {{client?: {beta: {messages: {create: Function}}}}} deps
  */
 export async function handle(req, env, deps = {}) {
+  const origin = allowedOrigin(req, env);
+  if (req.method === 'OPTIONS') return preflight(origin);
+  return withCors(await route(req, env, deps), origin);
+}
+
+/**
+ * CORS for the web app: browsers may call this only from the origins listed
+ * in ALLOWED_ORIGINS (comma-separated, e.g. "https://bible.example.org"). Mobile
+ * apps send no Origin header and are unaffected.
+ */
+function allowedOrigin(req, env) {
+  const origin = req.headers.get('origin');
+  if (!origin) return null;
+  const allowed = (env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  return allowed.includes(origin) ? origin : null;
+}
+
+function withCors(res, origin) {
+  if (!origin) return res;
+  const headers = new Headers(res.headers);
+  headers.set('access-control-allow-origin', origin);
+  headers.set('vary', 'Origin');
+  return new Response(res.body, { status: res.status, headers });
+}
+
+function preflight(origin) {
+  if (!origin) return new Response(null, { status: 403 });
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'access-control-allow-origin': origin,
+      'access-control-allow-methods': 'POST, OPTIONS',
+      'access-control-allow-headers': 'authorization, content-type',
+      'access-control-max-age': '86400',
+      vary: 'Origin',
+    },
+  });
+}
+
+async function route(req, env, deps) {
   const url = new URL(req.url);
   if (url.pathname === '/health') return json({ ok: true });
   if (url.pathname !== '/ask') return json({ error: 'not found' }, 404);

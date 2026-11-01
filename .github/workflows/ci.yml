@@ -98,3 +98,21 @@ jobs:
         with:
           name: app-debug-sample-content
           path: app/build/app/outputs/flutter-apk/app-debug.apk
+
+  web:
+    needs: app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter build web --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-sample-content
+          path: app/build/web

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' show PlatformDispatcher;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -28,11 +29,15 @@ import 'state/read_aloud.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.ecomtech.amharic_bible.audio',
-    androidNotificationChannelName: 'መጽሐፍ ቅዱስ ድምፅ',
-    androidNotificationOngoing: true,
-  );
+  // On the web the browser handles background playback and media controls.
+  if (!kIsWeb) {
+    await JustAudioBackground.init(
+      androidNotificationChannelId: 'com.ecomtech.amharic_bible.audio',
+      androidNotificationChannelName: 'መጽሐፍ ቅዱስ ድምፅ',
+      androidNotificationOngoing: true,
+    );
+  }
+  useWebDatabases();
   await initializeDateFormatting();
 
   AccountService? account;
@@ -44,10 +49,11 @@ Future<void> main() async {
   final contentDb = await openContentDb();
   final userDb = await openUserDb();
   final settings = Settings.fromMap(await UserRepository(userDb).settings());
-  final support = await getApplicationSupportDirectory();
-  final packs = PackStore(Directory(p.join(support.path, 'packs')));
+  // The web has no file system: study packs and audio downloads are mobile only.
+  final support = kIsWeb ? '' : (await getApplicationSupportDirectory()).path;
+  final packs = PackStore(Directory(p.join(support, 'packs')));
   final sources = await attachPacks(contentDb, await packs.installed());
-  final reminders = await LocalNotificationReminders.init();
+  final ReminderScheduler reminders = kIsWeb ? NoReminders() : await LocalNotificationReminders.init();
   final errors = ErrorReporter(
     enabled: settings.errorReports,
     send: AppConfig.accountsConfigured ? supabaseErrorSender(Supabase.instance.client) : null,
@@ -79,7 +85,7 @@ Future<void> main() async {
           AppConfig.accountsConfigured ? SupabaseGroupService(Supabase.instance.client) : null,
         ),
         audioRepositoryProvider.overrideWithValue(
-          AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support.path, 'audio'))),
+          AudioRepository(baseUrl: AppConfig.audioProxyUrl, storageDir: Directory(p.join(support, 'audio'))),
         ),
       ],
       child: const AmharicBibleApp(),

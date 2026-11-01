@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -56,8 +58,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   Future<void> _export() async {
     final json = await exportUserData(ref.read(userDbProvider));
+    const name = 'amharic-bible-data.json';
+    if (kIsWeb) {
+      // No temp directory on the web: the browser shares or downloads the bytes.
+      final file = XFile.fromData(utf8.encode(json), name: name, mimeType: 'application/json');
+      await SharePlus.instance.share(ShareParams(files: [file], fileNameOverrides: const [name]));
+      return;
+    }
     final dir = await getTemporaryDirectory();
-    final file = File(p.join(dir.path, 'amharic-bible-data.json'));
+    final file = File(p.join(dir.path, name));
     await file.writeAsString(json);
     await SharePlus.instance.share(ShareParams(files: [XFile(file.path, mimeType: 'application/json')]));
   }

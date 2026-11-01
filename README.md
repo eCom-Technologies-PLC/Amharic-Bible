@@ -9,7 +9,7 @@ An offline-first Amharic Bible app with text, synchronized audio and Ge'ez-aware
 
 | Path | What |
 |---|---|
-| `app/` | Flutter app (Android + iOS) |
+| `app/` | Flutter app (Android, iOS and web) |
 | `pipeline/` | Python content pipeline: USFM → SQLite content DB |
 | `content/` | `books.json` (66-book catalog, Amharic + English names; other languages take book names from their USFM), `versions.json` (Bible texts) and `resources.json` (study resources), both with sources and license status |
 | `server/audio-proxy/` | Small proxy that keeps the Bible Brain API key off devices |
@@ -130,6 +130,37 @@ Features:
 - Verse of the day, an Amharic or English UI, and the Ethiopian calendar.
 
 The app uses the 66-book canon only. Still to come: notification reminders for plans.
+
+### Web app
+
+The same Flutter code also builds a web app.
+
+```sh
+cd app
+flutter run -d chrome                     # development
+flutter build web --release               # static site in app/build/web
+# The same --dart-define options as the mobile build (audio, accounts, assistant)
+```
+
+`app/build/web` is a static site: host it on any static host (Cloudflare Pages, GitHub Pages, Netlify, Firebase
+Hosting). URLs use `#/` routes (for example `/#/read`), so the host needs no rewrite rules. If the site is not at
+the domain root, build with `--base-href /path/`. CI builds it on every push as the `web-sample-content` artifact.
+
+How it differs from the mobile app:
+
+- **Storage:** SQLite runs in the browser as WebAssembly (`sqflite_common_ffi_web`; `web/sqlite3.wasm` and
+  `web/sqflite_sw.js`) and keeps the content and user databases in IndexedDB. Clearing site data erases
+  unsynced highlights and notes, so suggest that web readers sign in to sync.
+  After upgrading `sqflite_common_ffi_web`, run `dart run sqflite_common_ffi_web:setup` in `app/` to refresh
+  those two files.
+- **Not on the web:** offline audio downloads and study-pack downloads (audio streams instead), and the daily
+  reminder (browsers cannot schedule notifications while the page is closed). The menu items are hidden.
+- **Sharing:** verse images and the data export use the browser's share sheet, or download the file.
+- **Wide windows** (840 px and wider) show a navigation rail instead of the bottom bar.
+- **Servers:** browsers call the audio proxy and study assistant directly, so set `ALLOWED_ORIGINS` in each
+  `wrangler.toml` to the web app's origin (CORS). Add the site's URL to Supabase Auth's allowed redirect URLs.
+  The study assistant's app token is visible in the web app's JavaScript (as it can be extracted from an APK);
+  rate-limit the assistant if that matters.
 
 ## Audio
 

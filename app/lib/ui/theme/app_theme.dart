@@ -89,11 +89,9 @@ ThemeData buildAppTheme({
         lineHeight: readingLineHeight,
       ),
     ],
-    pageTransitionsTheme: const PageTransitionsTheme(
-      builders: {
-        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-        TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
-      },
+    pageTransitionsTheme: PageTransitionsTheme(
+      // Every platform, so the web (which reports the host OS) uses the same transition.
+      builders: {for (final platform in TargetPlatform.values) platform: const FadeForwardsPageTransitionsBuilder()},
     ),
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.surface,
@@ -206,6 +204,14 @@ ThemeData buildAppTheme({
       indicatorColor: scheme.secondaryContainer,
       labelTextStyle: WidgetStatePropertyAll(text.labelMedium),
       iconTheme: const WidgetStatePropertyAll(IconThemeData(size: AppIconSize.md)),
+      elevation: AppElevation.flat,
+    ),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: scheme.surfaceContainer,
+      indicatorColor: scheme.secondaryContainer,
+      selectedLabelTextStyle: text.labelMedium,
+      unselectedLabelTextStyle: text.labelMedium,
+      labelType: NavigationRailLabelType.all,
       elevation: AppElevation.flat,
     ),
     tabBarTheme: TabBarThemeData(labelStyle: text.titleSmall, unselectedLabelStyle: text.titleSmall),

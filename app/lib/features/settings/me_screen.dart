@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,7 +25,8 @@ class MeScreen extends StatelessWidget {
           tile(Icons.groups_outlined, s.studyGroups, '/me/groups'),
           const Divider(),
           tile(Icons.account_circle_outlined, s.account, '/me/account'),
-          tile(Icons.download_outlined, s.downloads, '/me/downloads'),
+          // The web streams everything: no offline downloads.
+          if (!kIsWeb) tile(Icons.download_outlined, s.downloads, '/me/downloads'),
           tile(Icons.settings_outlined, s.settings, '/me/settings'),
           tile(Icons.info_outline, '${s.about} · ${s.sources}', '/me/about'),
           Gutter(

@@ -91,6 +91,10 @@ abstract final class AppDimens {
   /// Width from which side-by-side reading uses two columns.
   static const double twoColumnMinWidth = 600;
 
+  /// Width from which the app shell shows a navigation rail instead of the
+  /// bottom bar (desktop browsers, landscape tablets).
+  static const double navigationRailMinWidth = 840;
+
   /// Thin progress line (mini player).
   static const double progressThin = 2;
 

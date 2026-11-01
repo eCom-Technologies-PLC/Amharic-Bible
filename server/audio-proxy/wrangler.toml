@@ -5,6 +5,9 @@ compatibility_date = "2026-09-01"
 [vars]
 # Comma-separated Bible Brain fileset IDs the app may request.
 ALLOWED_FILESETS = ""
+# Comma-separated origins the web app is served from (CORS), e.g. "https://bible.example.org".
+# Leave empty if there is no web app; the mobile apps do not need it.
+ALLOWED_ORIGINS = ""
 
 # Set the key as a secret, never in this file:
 #   wrangler secret put BIBLE_BRAIN_KEY

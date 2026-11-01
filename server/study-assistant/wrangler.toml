@@ -3,6 +3,11 @@ main = "worker.mjs"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+# Comma-separated origins the web app is served from (CORS), e.g. "https://bible.example.org".
+# Leave empty if there is no web app; the mobile apps do not need it.
+ALLOWED_ORIGINS = ""
+
 # Set secrets, never in this file:
 #   wrangler secret put ANTHROPIC_API_KEY
 #   wrangler secret put APP_TOKEN      # shared token the app sends as "Authorization: Bearer ..."

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config.dart';
@@ -6,7 +7,7 @@ import '../data/packs.dart';
 import 'providers.dart';
 
 /// Whether this build has a pack server (STUDY_PACKS_URL); overridden in tests.
-final packsConfiguredProvider = Provider<bool>((ref) => AppConfig.studyPacksUrl.isNotEmpty);
+final packsConfiguredProvider = Provider<bool>((ref) => !kIsWeb && AppConfig.studyPacksUrl.isNotEmpty);
 
 final packDownloaderProvider = Provider<PackDownloader>(
   (ref) => PackDownloader(baseUrl: AppConfig.studyPacksUrl, store: ref.watch(packStoreProvider)),

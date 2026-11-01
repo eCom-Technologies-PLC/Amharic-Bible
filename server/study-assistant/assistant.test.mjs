@@ -116,3 +116,17 @@ test('handle rejects bad tokens, methods and bodies, and reports refusals', asyn
   const refused = fakeClient({}, { stop_reason: 'refusal', content: [] });
   assert.equal((await handle(post(body), {}, { client: refused })).status, 422);
 });
+
+test('CORS: preflight allows the authorization header for listed origins only', async () => {
+  const env = { APP_TOKEN: 't', ALLOWED_ORIGINS: 'https://bible.example' };
+  const opts = (origin) => new Request('https://x/ask', { method: 'OPTIONS', headers: { origin } });
+  const ok = await handle(opts('https://bible.example'), env);
+  assert.equal(ok.status, 204);
+  assert.equal(ok.headers.get('access-control-allow-origin'), 'https://bible.example');
+  assert.match(ok.headers.get('access-control-allow-headers'), /authorization/);
+  assert.equal((await handle(opts('https://evil.example'), env)).status, 403);
+
+  const res = await handle(post({}, { origin: 'https://bible.example' }), env);
+  assert.equal(res.status, 401);
+  assert.equal(res.headers.get('access-control-allow-origin'), 'https://bible.example');
+});

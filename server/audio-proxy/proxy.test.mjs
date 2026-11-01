@@ -65,3 +65,22 @@ test('rejects bad input, unknown filesets and missing recordings', async () => {
   assert.equal((await handle(req('/nope'), env, deps)).status, 404);
   assert.equal(fetch.calls.length, 1); // only the allowed, valid request reached upstream
 });
+
+test('CORS: allows only listed web origins', async () => {
+  const corsEnv = { ...env, ALLOWED_ORIGINS: 'https://bible.example' };
+  const opts = (origin) =>
+    new Request('https://proxy.example/chapter', { method: 'OPTIONS', headers: { origin } });
+  const ok = await handle(opts('https://bible.example'), corsEnv);
+  assert.equal(ok.status, 204);
+  assert.equal(ok.headers.get('access-control-allow-origin'), 'https://bible.example');
+  assert.equal((await handle(opts('https://evil.example'), corsEnv)).status, 403);
+
+  const get = (origin) => new Request('https://proxy.example/health', { headers: origin ? { origin } : {} });
+  const res = await handle(get('https://bible.example'), corsEnv);
+  assert.equal(res.headers.get('access-control-allow-origin'), 'https://bible.example');
+  assert.equal((await handle(get('https://evil.example'), corsEnv)).headers.get('access-control-allow-origin'), null);
+  // Mobile apps send no Origin: unchanged.
+  const app = await handle(get(), env);
+  assert.equal(app.status, 200);
+  assert.equal(app.headers.get('access-control-allow-origin'), null);
+});

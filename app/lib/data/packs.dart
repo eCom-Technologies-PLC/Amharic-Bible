@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
@@ -162,7 +163,7 @@ class PackStore {
   File _unpacked(String id) => File(p.join(dir.path, '$id.db.tmp'));
 
   Future<List<InstalledPack>> installed() async {
-    if (!await dir.exists()) return [];
+    if (kIsWeb || !await dir.exists()) return [];
     final out = <InstalledPack>[];
     await for (final f in dir.list()) {
       if (f is! File || !f.path.endsWith('.json')) continue;

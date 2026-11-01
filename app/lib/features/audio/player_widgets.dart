@@ -101,7 +101,7 @@ class PlayerScreen extends ConsumerWidget {
     return AppScaffold(
       title: a.version?.localName ?? '',
       actions: [
-        if (a.version?.audioAllowDownload ?? false)
+        if ((a.version?.audioAllowDownload ?? false) && ref.watch(audioRepositoryProvider).canDownload)
           IconButton(
             tooltip: s.downloadBook,
             icon: const Icon(Icons.download_outlined),

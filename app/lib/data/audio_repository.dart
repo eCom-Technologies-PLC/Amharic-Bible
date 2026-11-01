@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
@@ -66,6 +67,10 @@ class AudioRepository {
 
   bool get configured => baseUrl.isNotEmpty;
 
+  /// Chapters can be saved for offline listening (not on the web, which has
+  /// no file system; there every chapter streams).
+  bool get canDownload => !kIsWeb;
+
   File _audioFile(String fileset, String book, int chapter) =>
       File(p.join(storageDir.path, fileset, book, '$chapter.mp3'));
   File _timingFile(String fileset, String book, int chapter) =>
@@ -73,7 +78,7 @@ class AudioRepository {
 
   Future<ChapterAudio> resolve(String fileset, String book, int chapter) async {
     final local = _audioFile(fileset, book, chapter);
-    if (await local.exists()) {
+    if (canDownload && await local.exists()) {
       final tf = _timingFile(fileset, book, chapter);
       final timings = await tf.exists() ? _parseTimings(jsonDecode(await tf.readAsString())) : <VerseTiming>[];
       return ChapterAudio(uri: local.uri, timings: timings, isLocal: true);
@@ -114,7 +119,8 @@ class AudioRepository {
     return out;
   }
 
-  Future<bool> isDownloaded(String fileset, String book, int chapter) => _audioFile(fileset, book, chapter).exists();
+  Future<bool> isDownloaded(String fileset, String book, int chapter) async =>
+      canDownload && await _audioFile(fileset, book, chapter).exists();
 
   /// Downloads every chapter of a book; yields the number of chapters done.
   /// Finished chapters are skipped and an interrupted one resumes, so retrying
@@ -163,7 +169,7 @@ class AudioRepository {
   /// Downloaded books per fileset, with their size in bytes.
   Future<Map<String, Map<String, int>>> downloads() async {
     final out = <String, Map<String, int>>{};
-    if (!await storageDir.exists()) return out;
+    if (!canDownload || !await storageDir.exists()) return out;
     await for (final fs in storageDir.list()) {
       if (fs is! Directory) continue;
       final books = <String, int>{};

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,6 +61,17 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
     setState(() => _busy = true);
     try {
       final png = await renderCardPng(_cardKey);
+      if (kIsWeb) {
+        final name = 'verse_${DateTime.now().millisecondsSinceEpoch}.png';
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile.fromData(png, name: name, mimeType: 'image/png')],
+            fileNameOverrides: [name],
+            text: reference,
+          ),
+        );
+        return;
+      }
       final dir = await getTemporaryDirectory();
       final file = File(p.join(dir.path, 'verse_${DateTime.now().millisecondsSinceEpoch}.png'));
       await file.writeAsBytes(png);

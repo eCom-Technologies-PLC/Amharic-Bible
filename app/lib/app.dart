@@ -174,9 +174,52 @@ class AppShell extends StatelessWidget {
 
   final StatefulNavigationShell shell;
 
+  void _go(int i) => shell.goBranch(i, initialLocation: i == shell.currentIndex);
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final tabs = [
+      (icon: Icons.home_outlined, selected: Icons.home, label: s.home),
+      (icon: Icons.menu_book_outlined, selected: Icons.menu_book, label: s.read),
+      (icon: Icons.search, selected: Icons.search, label: s.search),
+      (icon: Icons.person_outline, selected: Icons.person, label: s.me),
+    ];
+
+    // Wide windows (desktop browsers, landscape tablets): navigation rail on the side.
+    if (MediaQuery.sizeOf(context).width >= AppDimens.navigationRailMinWidth) {
+      return Scaffold(
+        body: Row(
+          children: [
+            SafeArea(
+              right: false,
+              child: NavigationRail(
+                selectedIndex: shell.currentIndex,
+                onDestinationSelected: _go,
+                destinations: [
+                  for (final t in tabs)
+                    NavigationRailDestination(
+                      icon: Icon(t.icon),
+                      selectedIcon: Icon(t.selected),
+                      label: Text(t.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                ],
+              ),
+            ),
+            const VerticalDivider(),
+            Expanded(
+              child: Column(
+                children: [
+                  Expanded(child: shell),
+                  const MiniPlayer(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       body: shell,
       bottomNavigationBar: Column(
@@ -185,24 +228,10 @@ class AppShell extends StatelessWidget {
           const MiniPlayer(),
           NavigationBar(
             selectedIndex: shell.currentIndex,
-            onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
+            onDestinationSelected: _go,
             destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.home_outlined),
-                selectedIcon: const Icon(Icons.home),
-                label: s.home,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.menu_book_outlined),
-                selectedIcon: const Icon(Icons.menu_book),
-                label: s.read,
-              ),
-              NavigationDestination(icon: const Icon(Icons.search), label: s.search),
-              NavigationDestination(
-                icon: const Icon(Icons.person_outline),
-                selectedIcon: const Icon(Icons.person),
-                label: s.me,
-              ),
+              for (final t in tabs)
+                NavigationDestination(icon: Icon(t.icon), selectedIcon: Icon(t.selected), label: t.label),
             ],
           ),
         ],
