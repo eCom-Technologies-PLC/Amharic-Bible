@@ -16,7 +16,7 @@ import '../../state/study.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 import '../study/study_widgets.dart';
-import '../study/verse_study_screen.dart' show EntityTile;
+import '../study/verse_study_screen.dart' show EntityTile, openReader;
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -65,15 +65,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final version = await ref.read(currentVersionProvider.future);
     final parser = await ref.read(referenceParserProvider.future);
     final content = ref.read(contentRepositoryProvider);
-    final hits = _allVersions
-        ? await content.searchAll(q, testament: _filter)
-        : await content.search(version.id, q, testament: _filter);
     final study = ref.read(studyRepositoryProvider);
-    final matches = StudyMatches(
-      words: await study.searchLexicon(q, limit: 5),
-      entities: await study.searchEntities(q, limit: 5),
-      dictionary: await study.searchDictionary(q, limit: 3),
-    );
+    final grammar = parseGrammarQuery(q);
+    final List<SearchHit> hits;
+    final StudyMatches matches;
+    if (grammar != null) {
+      // "morph:V-AAI G25": grammar search instead of a word search.
+      final (found, total) = await study.searchMorphology(grammar.code, strongs: grammar.strongs, limit: 100);
+      hits = const [];
+      matches = StudyMatches(grammarCode: grammar.code, grammar: found, grammarTotal: total);
+    } else {
+      hits = _allVersions
+          ? await content.searchAll(q, testament: _filter)
+          : await content.search(version.id, q, testament: _filter);
+      matches = StudyMatches(
+        words: await study.searchLexicon(q, limit: 5),
+        entities: await study.searchEntities(q, limit: 5),
+        dictionary: await study.searchDictionary(q, limit: 3),
+      );
+    }
     if (!mounted || q != _query) return;
     setState(() {
       _reference = parser.parse(q);
@@ -233,13 +243,33 @@ TextSpan highlightMatches(String text, List<String> terms, TextStyle matchStyle)
 /// Study material matching a search: lexicon words (by Strong's number,
 /// lemma or English meaning), people/places/events and dictionary entries.
 class StudyMatches {
-  const StudyMatches({this.words = const [], this.entities = const [], this.dictionary = const []});
+  const StudyMatches({
+    this.words = const [],
+    this.entities = const [],
+    this.dictionary = const [],
+    this.grammarCode,
+    this.grammar = const [],
+    this.grammarTotal = 0,
+  });
 
   final List<LexEntry> words;
   final List<Entity> entities;
   final List<DictionaryEntry> dictionary;
 
-  bool get isEmpty => words.isEmpty && entities.isEmpty && dictionary.isEmpty;
+  /// A grammar search ("morph:V-AAI"): the code, the verses found (capped) and their total.
+  final String? grammarCode;
+  final List<Occurrence> grammar;
+  final int grammarTotal;
+
+  bool get isEmpty => words.isEmpty && entities.isEmpty && dictionary.isEmpty && grammarCode == null;
+}
+
+/// "morph:V-AAI" or "@HVqw", optionally with a Strong's number ("G25 morph:V-AAI").
+({String code, String? strongs})? parseGrammarQuery(String q) {
+  final m = RegExp(r'(?:morph:|@)(\S+)', caseSensitive: false).firstMatch(q);
+  if (m == null) return null;
+  final strongs = RegExp(r'\b([GHgh])0*(\d+)\b').firstMatch(q.replaceFirst(m[0]!, ''));
+  return (code: m[1]!, strongs: strongs == null ? null : '${strongs[1]!.toUpperCase()}${strongs[2]}');
 }
 
 class _StudyResults extends ConsumerWidget {
@@ -251,12 +281,31 @@ class _StudyResults extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (matches.isEmpty) return const SizedBox.shrink();
     final s = S.of(context);
+    final books = ref.watch(refBooksProvider).value ?? const <Book>[];
     final attribution = {
       for (final r in ref.watch(studyResourcesProvider).value ?? const <StudyResource>[]) r.kind: r.attribution,
     };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (matches.grammarCode case final code?) ...[
+          SectionHeader(s.grammarMatches, first: true),
+          Gutter(
+            child: Text(
+              [
+                describeMorph(s, code),
+                s.grammarMatchCount(matches.grammar.length, matches.grammarTotal),
+              ].where((x) => x.isNotEmpty).join('\n'),
+              style: context.text.bodySmall,
+            ),
+          ),
+          for (final o in matches.grammar)
+            AppListTile(
+              title: formatKeys(books, [o.vkey], amharic: s.isAmharic),
+              subtitleWidget: Text(o.word, style: context.scriptureSnippet.copyWith(fontWeight: FontWeight.w600)),
+              onTap: () => openReader(context, books, o.vkey),
+            ),
+        ],
         if (matches.words.isNotEmpty) ...[
           SectionHeader(s.words, first: true),
           for (final w in matches.words)

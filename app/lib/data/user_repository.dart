@@ -235,6 +235,7 @@ class UserRepository {
     body: r['body'] as String,
     createdAt: DateTime.fromMillisecondsSinceEpoch(r['created_at'] as int),
     updatedAt: DateTime.fromMillisecondsSinceEpoch(r['updated_at'] as int),
+    tags: parseTags(r['tags'] as String?),
   );
 
   Future<List<Note>> notesInRange(int lo, int hi) async {
@@ -252,7 +253,14 @@ class UserRepository {
     return rows.map(_note).toList();
   }
 
-  Future<Note> saveNote({String? id, required int vkeyStart, required int vkeyEnd, required String body}) async {
+  Future<Note> saveNote({
+    String? id,
+    required int vkeyStart,
+    required int vkeyEnd,
+    required String body,
+    List<String> tags = const [],
+  }) async {
+    final tagText = tags.isEmpty ? null : tags.join(', ');
     final now = _now;
     late Note saved;
     await db.transaction((tx) async {
@@ -263,11 +271,12 @@ class UserRepository {
           'vkey_start': vkeyStart,
           'vkey_end': vkeyEnd,
           'body': body,
+          'tags': tagText,
           'created_at': now,
           'updated_at': now,
         });
       } else {
-        await tx.update('note', {'body': body, 'updated_at': now}, where: 'id = ?', whereArgs: [id]);
+        await tx.update('note', {'body': body, 'tags': tagText, 'updated_at': now}, where: 'id = ?', whereArgs: [id]);
       }
       await _outbox(tx, 'note', id!, 'upsert');
       saved = _note((await tx.query('note', where: 'id = ?', whereArgs: [id])).first);

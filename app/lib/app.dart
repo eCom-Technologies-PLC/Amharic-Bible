@@ -18,6 +18,7 @@ import 'features/search/search_screen.dart';
 import 'features/share/share_image_screen.dart';
 import 'features/study/ask_screen.dart';
 import 'features/study/entity_screen.dart';
+import 'features/study/timeline_screen.dart';
 import 'features/study/verse_study_screen.dart';
 import 'features/study/word_study_screen.dart';
 import 'features/settings/about_screen.dart';
@@ -104,6 +105,7 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
         return AskScreen(vkeys: askVerses(int.tryParse(q['v'] ?? '') ?? 0, int.tryParse(q['end'] ?? '')));
       },
     ),
+    GoRoute(path: '/timeline', parentNavigatorKey: _rootKey, builder: (_, _) => const TimelineScreen()),
     GoRoute(
       path: '/word/:id',
       parentNavigatorKey: _rootKey,

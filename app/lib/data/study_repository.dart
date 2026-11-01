@@ -147,6 +147,61 @@ class StudyRepository {
     return out.take(limit).toList();
   }
 
+  /// Verses with words whose grammar matches [code]: a Robinson prefix for
+  /// Greek ("V-AAI" = aorist active indicative verbs) or, for Hebrew and
+  /// Aramaic, the language letter and a segment ("HVqw" = Qal sequential
+  /// imperfect verbs, also behind prefixes like "HC/Vqw3ms"). Optionally only
+  /// forms of [strongs]. Returns the verse count too, since results are capped.
+  Future<(List<Occurrence>, int)> searchMorphology(String code, {String? strongs, int limit = 200}) async {
+    final c = code.trim();
+    if (c.isEmpty) return (const <Occurrence>[], 0);
+    final hebrew = !c.contains('-') && (c.startsWith('H') || c.startsWith('A')) && c.length > 1;
+    final cond = hebrew ? "substr(w.morph, 1, 1) = ? AND ('/' || substr(w.morph, 2)) LIKE ?" : 'w.morph LIKE ?';
+    final condArgs = hebrew ? [c[0], '%/${c.substring(1)}%'] : ['$c%'];
+    final out = <Occurrence>[];
+    var total = 0;
+    for (final (s, filter, args) in _versionTables()) {
+      final f = filter.replaceAll('version_id', 'w.version_id');
+      final strongsCond = strongs == null ? '' : ' AND w.strongs = ?';
+      final whereArgs = [...condArgs, ?strongs, ...args];
+      total +=
+          Sqflite.firstIntValue(
+            await db.rawQuery(
+              'SELECT COUNT(DISTINCT w.version_id || w.vkey) FROM $s.word w WHERE $cond$strongsCond$f',
+              whereArgs,
+            ),
+          ) ??
+          0;
+      final rows = await db.rawQuery(
+        "SELECT w.version_id, w.vkey, group_concat(w.text, ' ') AS words, v.text AS verse "
+        'FROM $s.word w JOIN $s.verse v ON v.version_id = w.version_id AND v.vkey = w.vkey '
+        'WHERE $cond$strongsCond$f GROUP BY w.version_id, w.vkey ORDER BY w.vkey LIMIT ?',
+        [...whereArgs, limit],
+      );
+      for (final r in rows) {
+        out.add(
+          Occurrence(
+            versionId: r['version_id'] as String,
+            vkey: r['vkey'] as int,
+            word: r['words'] as String,
+            verseText: r['verse'] as String,
+          ),
+        );
+      }
+    }
+    out.sort((a, b) => a.vkey.compareTo(b.vkey));
+    return (out.take(limit).toList(), total);
+  }
+
+  /// Dated events in chronological order (Theographic), for the timeline.
+  Future<List<Entity>> events() async {
+    final rows = await _fromEach(
+      sources.forTable('entity'),
+      (s) => "SELECT * FROM $s.entity WHERE kind = 'event' AND start_year IS NOT NULL",
+    );
+    return rows.map(Entity.fromRow).toList()..sort((a, b) => a.startYear!.compareTo(b.startYear!));
+  }
+
   /// Lexicon entries matching a Strong's number ("G26", "h430") or, for
   /// longer queries, the lemma, transliteration or English renderings.
   Future<List<LexEntry>> searchLexicon(String query, {int limit = 20}) async {

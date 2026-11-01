@@ -22,6 +22,7 @@ class NoteEditorScreen extends ConsumerStatefulWidget {
 
 class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   final _controller = TextEditingController();
+  final _tags = TextEditingController();
   bool _loaded = false;
 
   @override
@@ -34,7 +35,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     if (widget.noteId != null) {
       final notes = await ref.read(userRepositoryProvider).notesInRange(widget.vkeyStart, widget.vkeyEnd);
       final note = notes.where((n) => n.id == widget.noteId).firstOrNull;
-      if (note != null) _controller.text = note.body;
+      if (note != null) {
+        _controller.text = note.body;
+        _tags.text = note.tags.join(', ');
+      }
     }
     if (mounted) setState(() => _loaded = true);
   }
@@ -42,6 +46,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _tags.dispose();
     super.dispose();
   }
 
@@ -51,7 +56,13 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     if (body.isEmpty) {
       if (widget.noteId != null) await repo.deleteNote(widget.noteId!);
     } else {
-      await repo.saveNote(id: widget.noteId, vkeyStart: widget.vkeyStart, vkeyEnd: widget.vkeyEnd, body: body);
+      await repo.saveNote(
+        id: widget.noteId,
+        vkeyStart: widget.vkeyStart,
+        vkeyEnd: widget.vkeyEnd,
+        body: body,
+        tags: parseTags(_tags.text),
+      );
     }
     invalidateUserData(ref);
     if (mounted) context.pop();
@@ -85,7 +96,18 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           ? const LoadingState()
           : Padding(
               padding: const EdgeInsets.all(AppSpacing.screen),
-              child: AppTextField(controller: _controller, hint: s.noteHint, autofocus: true, multiline: true),
+              // The note field fills the space above the tags field and
+              // scrolls itself; the scaffold keeps both above the keyboard.
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: AppTextField(controller: _controller, hint: s.noteHint, autofocus: true, multiline: true),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppTextField(controller: _tags, label: s.tags, hint: s.tagsHint, prefixIcon: Icons.label_outline),
+                ],
+              ),
             ),
     );
   }

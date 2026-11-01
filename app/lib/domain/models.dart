@@ -162,11 +162,15 @@ class Note {
     required this.body,
     required this.createdAt,
     required this.updatedAt,
+    this.tags = const [],
   });
   final String id;
   final int vkeyStart;
   final int vkeyEnd;
   final String body;
+
+  /// Labels that group notes into notebooks ("prayer", "sermon: John 3").
+  final List<String> tags;
   final DateTime createdAt;
   final DateTime updatedAt;
 }
@@ -199,4 +203,14 @@ class BibleRef {
 
   @override
   String toString() => encode();
+}
+
+/// Tags typed as a list: "prayer, family፣ sermon" -> [prayer, family, sermon]
+/// (comma or Ethiopic comma; trimmed; duplicates dropped, first spelling kept).
+List<String> parseTags(String? text) {
+  final seen = <String>{};
+  return [
+    for (final t in (text ?? '').split(RegExp('[,፣]')))
+      if (t.trim().isNotEmpty && seen.add(t.trim().toLowerCase())) t.trim(),
+  ];
 }

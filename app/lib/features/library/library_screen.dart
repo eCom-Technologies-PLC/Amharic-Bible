@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
+import '../../domain/notes_export.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
@@ -183,42 +185,110 @@ class _BookmarksTab extends ConsumerWidget {
   }
 }
 
-class _NotesTab extends ConsumerWidget {
+class _NotesTab extends ConsumerStatefulWidget {
   const _NotesTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NotesTab> createState() => _NotesTabState();
+}
+
+/// Notes, filterable by tag (tags work as notebooks), with a Markdown export.
+class _NotesTabState extends ConsumerState<_NotesTab> {
+  String? _tag;
+
+  Future<void> _export(List<Note> notes, List<Book> books) async {
+    final s = S.of(context);
+    final version = await ref.read(currentVersionProvider.future);
+    final content = ref.read(contentRepositoryProvider);
+    final texts = <String, String>{};
+    for (final n in notes) {
+      final keys = n.vkeyStart ~/ 1000 == n.vkeyEnd ~/ 1000
+          ? [for (var k = n.vkeyStart; k <= n.vkeyEnd; k++) k]
+          : [n.vkeyStart];
+      texts[n.id] = (await content.verses(version.id, keys)).map((v) => v.text).join(' ');
+    }
+    final md = notesMarkdown(
+      notes,
+      reference: (n) => formatKeys(books, _keys(n), amharic: s.isAmharic),
+      verseTexts: texts,
+      versionName: version.name,
+      attribution: version.attribution,
+      labels: NotesExportLabels(
+        title: s.notesExportTitle,
+        exported: s.exportedOn,
+        tags: s.tags,
+        scripture: s.scriptureFrom,
+      ),
+      now: DateTime.now(),
+    );
+    await SharePlus.instance.share(ShareParams(text: md, subject: s.notesExportTitle));
+  }
+
+  static List<int> _keys(Note n) => n.vkeyStart ~/ 1000 == n.vkeyEnd ~/ 1000
+      ? [for (var k = n.vkeyStart; k <= n.vkeyEnd; k++) k]
+      : [n.vkeyStart, n.vkeyEnd];
+
+  @override
+  Widget build(BuildContext context) {
     final s = S.of(context);
     final settings = ref.watch(settingsProvider);
     return AsyncView(
       value: ref.watch(notesListProvider),
       onRetry: () => ref.invalidate(notesListProvider),
-      data: (items) {
-        if (items.isEmpty) return EmptyState(message: s.emptyNotes, icon: Icons.sticky_note_2_outlined);
+      data: (all) {
+        if (all.isEmpty) return EmptyState(message: s.emptyNotes, icon: Icons.sticky_note_2_outlined);
         final version = ref.watch(currentVersionProvider).value;
         final books = version != null ? ref.watch(booksProvider(version.id)).value ?? const <Book>[] : const <Book>[];
-        return ListView.separated(
-          itemCount: items.length,
-          separatorBuilder: (_, _) => const Divider(indent: AppSpacing.screen),
-          itemBuilder: (_, i) {
-            final n = items[i];
-            final keys = n.vkeyStart ~/ 1000 == n.vkeyEnd ~/ 1000
-                ? [for (var k = n.vkeyStart; k <= n.vkeyEnd; k++) k]
-                : [n.vkeyStart, n.vkeyEnd];
-            return AppListTile(
-              leadingIcon: Icons.sticky_note_2_outlined,
-              title: formatKeys(books, keys, amharic: s.isAmharic),
-              subtitleWidget: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(n.body, maxLines: 4, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(formatDate(n.updatedAt, settings, s), style: context.text.bodySmall),
-                ],
+        final tags = {for (final n in all) ...n.tags}.toList()..sort();
+        final tag = tags.contains(_tag) ? _tag : null;
+        final items = tag == null ? all : all.where((n) => n.tags.contains(tag)).toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (tags.isNotEmpty)
+              FilterBar<String?>(
+                selected: tag,
+                onSelected: (t) => setState(() => _tag = t),
+                options: [FilterOption(null, s.all), for (final t in tags) FilterOption(t, t)],
               ),
-              onTap: () => context.push('/note?start=${n.vkeyStart}&end=${n.vkeyEnd}&id=${n.id}'),
-            );
-          },
+            AppListTile(
+              leadingIcon: Icons.ios_share,
+              title: s.exportNotes,
+              subtitle: s.exportNotesHint(items.length),
+              onTap: () => _export(items, books),
+            ),
+            const Divider(),
+            Expanded(
+              child: ListView.separated(
+                itemCount: items.length,
+                separatorBuilder: (_, _) => const Divider(indent: AppSpacing.screen),
+                itemBuilder: (_, i) {
+                  final n = items[i];
+                  return AppListTile(
+                    leadingIcon: Icons.sticky_note_2_outlined,
+                    title: formatKeys(books, _keys(n), amharic: s.isAmharic),
+                    subtitleWidget: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(n.body, maxLines: 4, overflow: TextOverflow.ellipsis),
+                        if (n.tags.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Wrap(
+                            spacing: AppSpacing.xs,
+                            runSpacing: AppSpacing.xs,
+                            children: [for (final t in n.tags) StatusBadge(t, icon: Icons.label_outline)],
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(formatDate(n.updatedAt, settings, s), style: context.text.bodySmall),
+                      ],
+                    ),
+                    onTap: () => context.push('/note?start=${n.vkeyStart}&end=${n.vkeyEnd}&id=${n.id}'),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );

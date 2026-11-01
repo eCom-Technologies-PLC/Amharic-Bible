@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:amharic_bible/app.dart';
-import 'package:amharic_bible/domain/preferences.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/domain/models.dart';
@@ -14,6 +14,7 @@ import 'package:amharic_bible/features/study/word_study_screen.dart';
 import 'package:amharic_bible/data/sync/account_service.dart';
 import 'package:amharic_bible/state/account.dart';
 import 'package:amharic_bible/state/providers.dart';
+import 'package:amharic_bible/ui/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -377,5 +378,61 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
     expect(find.text('John 1:1 · RP2018'), findsOneWidget);
+  });
+
+  testWidgets('notes take tags, and the notes list filters by tag', (tester) async {
+    await tester.runAsync(
+      () =>
+          UserRepository(userDb).saveNote(vkeyStart: 1001001, vkeyEnd: 1001001, body: 'Creation.', tags: ['creation']),
+    );
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/me/library?tab=2',
+    );
+    final router = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first)).read(routerProvider);
+    unawaited(router.push('/note?start=43003016'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'God loves the world.');
+    await tester.enterText(find.byType(TextField).last, 'love, prayer');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Export notes (Markdown)'), findsOneWidget);
+    expect(find.textContaining('God loves'), findsOneWidget);
+    expect(find.textContaining('Creation.'), findsOneWidget);
+    final prayer = find.descendant(of: find.byType(FilterBar<String?>), matching: find.text('prayer'));
+    await tester.ensureVisible(prayer); // the chip row scrolls sideways
+    await tester.tap(prayer);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('God loves'), findsOneWidget);
+    expect(find.textContaining('Creation.'), findsNothing);
+  });
+
+  testWidgets('grammar search lists verses with matching forms', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/search',
+    );
+    await tester.enterText(find.byType(TextField), 'morph:V-AAI');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Grammar matches'), findsOneWidget);
+    expect(find.textContaining('verb · aorist · active · indicative'), findsOneWidget);
+    expect(find.text('John 3:16'), findsWidgets);
+  });
+
+  testWidgets('the timeline lists events in order and opens them', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/timeline',
+    );
+    expect(find.text('Bible timeline'), findsOneWidget);
+    expect(find.text('Creation of all things'), findsOneWidget);
+    expect(find.text('4003 BC'), findsOneWidget);
+    await tester.tap(find.text('Creation of all things'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mentioned in (3)'), findsOneWidget);
   });
 }

@@ -246,6 +246,19 @@ class S {
   String get stopReading => _('stopReading');
   String get noVoice => _('noVoice');
 
+  String get tags => _('tags');
+  String get tagsHint => _('tagsHint');
+  String get exportNotes => _('exportNotes');
+  String get notesExportTitle => _('notesExportTitle');
+  String get exportedOn => _('exportedOn');
+  String get scriptureFrom => _('scriptureFrom');
+  String get grammarMatches => _('grammarMatches');
+  String get timeline => _('timeline');
+  String exportNotesHint(int n) =>
+      isAmharic ? '$n ማስታወሻዎች፣ ከጥቅሶቻቸው ጋር' : (n == 1 ? '1 note, with its passage' : '$n notes, with their passages');
+  String grammarMatchCount(int shown, int total) =>
+      isAmharic ? 'በ$total ጥቅሶች ይገኛል (የመጀመሪያዎቹ $shown)' : 'In $total verses (first $shown shown)';
+
   /// A grammatical term from lib/domain/morphology.dart ("noun", "aorist", …).
   String grammar(String key) => _m['g.$key'] ?? _en['g.$key'] ?? key;
 
@@ -444,6 +457,14 @@ const _am = {
   'readAloud': 'በስልኩ ድምፅ አንብብ',
   'stopReading': 'ማንበብ አቁም',
   'noVoice': 'ስልክዎ ለዚህ ቋንቋ ድምፅ የለውም። በስልኩ ቅንብሮች ውስጥ የጽሑፍ-ወደ-ንግግር ድምፅ ይጫኑ።',
+  'tags': 'መለያዎች',
+  'tagsHint': 'ለምሳሌ፦ ጸሎት፣ ቤተሰብ',
+  'exportNotes': 'ማስታወሻዎችን ላክ (Markdown)',
+  'notesExportTitle': 'የመጽሐፍ ቅዱስ ማስታወሻዎቼ',
+  'exportedOn': 'የተላከበት ቀን',
+  'scriptureFrom': 'የመጽሐፍ ቅዱስ ጥቅሶች ከ',
+  'grammarMatches': 'በሰዋስው የተገኙ',
+  'timeline': 'የመጽሐፍ ቅዱስ የዘመን ሰሌዳ',
   'study': 'ጥናት',
   'verseStudy': 'የጥቅስ ጥናት',
   'originalText': 'በመጀመሪያው ቋንቋ',
@@ -762,6 +783,14 @@ const _en = {
   'readAloud': 'Read aloud',
   'stopReading': 'Stop reading',
   'noVoice': 'Your phone has no voice for this language. Install a text-to-speech voice in your phone\'s settings.',
+  'tags': 'Tags',
+  'tagsHint': 'For example: prayer, family',
+  'exportNotes': 'Export notes (Markdown)',
+  'notesExportTitle': 'My Bible notes',
+  'exportedOn': 'Exported',
+  'scriptureFrom': 'Scripture quotations from',
+  'grammarMatches': 'Grammar matches',
+  'timeline': 'Bible timeline',
   'study': 'Study',
   'verseStudy': 'Verse study',
   'originalText': 'Original text',

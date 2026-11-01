@@ -105,6 +105,9 @@ abstract final class AppDimens {
 
   /// Widest an interlinear gloss may grow before it wraps.
   static const double glossMaxWidth = 120;
+
+  /// Year column on the timeline ("1446 BC" / two Amharic lines).
+  static const double timelineYearWidth = 88;
 }
 
 extension CompactLayout on BuildContext {

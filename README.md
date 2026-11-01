@@ -98,6 +98,14 @@ Features:
 - **Personal study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16"),
   exact phrases in quotes ("so loved", «ዓለምን ወደደ»), and a switch to search every version at once.
 - **Compare:** the selected verses in every installed version, from the selection bar.
+- **Notes:** tags work as notebooks (filter the notes list by tag); export notes as Markdown with each passage
+  quoted and the version cited.
+- **Grammar search:** `morph:V-AAI` (Greek aorist active indicative), `@HVqw` (Hebrew Qal wayyiqtol), optionally
+  with a Strong's number (`G25 morph:V-AAI`).
+- **Timeline:** dated biblical events in order (Me → Bible timeline).
+- **Habits:** an optional daily reading reminder and an opt-in reading streak (Settings → Reminders and habits).
+- **Read aloud:** versions without recorded audio are read with the phone's text-to-speech voice.
+- **Downloads:** Wi-Fi only by default; interrupted audio and study-pack downloads resume.
 - **Recently read:** the last chapters you opened, on Home.
 - **Deep links:** `amharicbible://open/read?ref=JHN.3.16` opens the reader at John 3:16 (Android and iOS).
 - **Original languages:** Hebrew and Greek texts (Hebrew right to left), an interlinear mode with each word's
