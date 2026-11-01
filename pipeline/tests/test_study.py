@@ -164,6 +164,22 @@ class BuildTest(unittest.TestCase):
             self.assertFalse(out.exists())
 
 
+class QualityReportTest(unittest.TestCase):
+    def test_report_counts_versions_and_resources(self):
+        import json
+        with tempfile.TemporaryDirectory() as d:
+            out, report = Path(d) / "content.db", Path(d) / "report.json"
+            self.assertEqual(build_db.build(FIXTURES, out, sample=True, allow_unverified=True, report=report), 0)
+            data = json.loads(report.read_text())
+            wlc = data["versions"]["WLC"]
+            self.assertEqual((wlc["books"], wlc["verses"], wlc["words"], wlc["variants"]), (2, 9, 91, 1))
+            self.assertEqual(data["versions"]["RP2018"]["variants"], 4)
+            self.assertEqual(data["resources"]["OBXREF"]["rows"], 32)
+            self.assertEqual(data["resources"]["HCF"]["license_status"], "verify")
+            md = report.with_suffix(".md").read_text()
+            self.assertIn("| WLC | 2 |", md)
+
+
 class PackageTest(unittest.TestCase):
     def test_manifest_and_compressed_packs(self):
         import gzip

@@ -110,3 +110,10 @@ test('delete_my_account removes the user and their records only', async () => {
   const left = (await db.query('select distinct user_id from public.user_records')).rows.map((r) => r.user_id);
   assert.deepEqual(left, [ALICE]);
 });
+
+test('error reports: anyone can send, nobody but the service role can read', async () => {
+  await as(null, (tx) => tx.query(`select public.report_error($1, $2, '1.0.0', 'android')`, ['x'.repeat(3000), 'stack']));
+  await assert.rejects(as(ALICE, (tx) => tx.query('select * from public.error_reports')), /permission denied/);
+  const r = (await db.query('select char_length(message) as n, platform from public.error_reports')).rows[0];
+  assert.deepEqual(r, { n: 2000, platform: 'android' }); // truncated, not refused
+});

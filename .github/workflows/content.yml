@@ -28,12 +28,19 @@ jobs:
         run: python pipeline/fetch_sources.py
       - name: Build content.db
         run: |
-          python pipeline/build_db.py --sources content/sources --out build/content.db \
+          python pipeline/build_db.py --sources content/sources --out build/content.db --report build/report.json \
             ${{ inputs.allow_unverified && '--allow-unverified' || '' }}
       - uses: actions/upload-artifact@v4
         with:
           name: content-db
           path: build/content.db
+      - uses: actions/upload-artifact@v4
+        with:
+          # Also shown on the run's summary page.
+          name: content-quality-report
+          path: |
+            build/report.json
+            build/report.md
       - name: Package study packs for download
         run: python pipeline/package_packs.py --packs build/packs
       - uses: actions/upload-artifact@v4

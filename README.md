@@ -31,7 +31,10 @@ python pipeline/fetch_sources.py
 python pipeline/build_db.py --sources content/sources --out build/content.db
 ```
 
-`build_db.py` refuses to package a version or resource whose `license.status` is not `confirmed`.
+`build_db.py` refuses to package a version or resource whose `license.status` is not `confirmed`. With
+`--report build/report.json` it also writes a content quality report (books, chapters, verses, words, variants,
+warnings and license status per version; rows per resource) as JSON and Markdown; the **Build full content**
+workflow shows it on the run's summary page.
 **AMH1962 is still `verify`.** Confirm its terms (and the eBible.org source ID) before a release. Then run the
 **Build full content** workflow, which builds `content.db` and a release APK that bundles it.
 
@@ -179,6 +182,13 @@ only, and the app shows the verse text from its own database. Answers are always
 
 The shared token only stops casual misuse (it ships inside the app); add rate limiting (for example Cloudflare
 rate-limiting rules) before a public release, because every request is billed to the API key.
+
+## Error reports (optional)
+
+With accounts set up, Settings → Privacy offers **Send error reports** (off by default). When it is on, crashes
+and errors go to the `error_reports` table (`20261103000000_error_reports.sql`): the error, where it happened,
+the app version (`--dart-define=APP_VERSION=...`) and platform. No Bible text, notes or account details. Only the
+service role can read the table (Supabase dashboard → Table editor).
 
 ## Licenses
 

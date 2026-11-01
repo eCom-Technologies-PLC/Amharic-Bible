@@ -20,6 +20,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
 import sqlite3
 import sys
 from pathlib import Path
@@ -122,13 +123,15 @@ def insert_resource(db: sqlite3.Connection, rid: str, reg: dict) -> None:
                 reg["license"]["status"], reg["license"]["summary"]))
 
 
-def build_version(db, vid, reg, vdir, catalog, sample, aliases) -> int:
+def build_version(db, vid, reg, vdir, catalog, sample, aliases, issues=None) -> int:
     """Insert one Bible version; returns the number of validation errors."""
     coverage = reg.get("coverage")  # "OT" / "NT" for texts covering one testament
     books = [b for b in read_version_dir(vdir, reg) if b.code in catalog]
     books.sort(key=lambda b: catalog[b.code].num)
     expected = {c: b for c, b in catalog.items() if not coverage or b.testament == coverage}
     report = validate_version(vid, books, expected, complete=not sample)
+    if issues is not None:
+        issues[vid] = {"warnings": report.warnings, "errors": report.errors}
     for w in report.warnings:
         print(f"[{vid}] warning: {w}")
     for e in report.errors:
@@ -248,8 +251,56 @@ def finish(db: sqlite3.Connection, meta: dict) -> None:
     db.close()
 
 
+def quality_report(dbs: list[Path], issues: dict) -> dict:
+    """Counts per version and resource across the built databases, with the
+    validation warnings and errors, for reviewers (--report)."""
+    versions, resources = {}, {}
+    for path in dbs:
+        db = sqlite3.connect(path)
+        for vid, name, status in db.execute("SELECT id, name, license_status FROM version"):
+            q = lambda sql: db.execute(sql, (vid,)).fetchone()[0]  # noqa: E731
+            versions[vid] = {
+                "name": name, "license_status": status, "database": path.name,
+                "books": q("SELECT COUNT(*) FROM book WHERE version_id = ?"),
+                "chapters": q("SELECT COUNT(DISTINCT vkey / 1000) FROM verse WHERE version_id = ? AND vkey % 1000 > 0"),
+                "verses": q("SELECT COUNT(*) FROM verse WHERE version_id = ? AND vkey % 1000 > 0"),
+                "words": q("SELECT COUNT(*) FROM word WHERE version_id = ?"),
+                "variants": q("SELECT COUNT(*) FROM variant WHERE version_id = ?"),
+                **issues.get(vid, {"warnings": [], "errors": []}),
+            }
+        for rid, kind, name, status in db.execute("SELECT id, kind, name, license_status FROM resource"):
+            table = {"lexicon": "lexicon", "crossrefs": "xref", "entities": "entity", "commentary": "commentary"}.get(kind)
+            rows = 0
+            if table and table != "xref":
+                rows = db.execute(f"SELECT COUNT(*) FROM {table} WHERE resource_id = ?", (rid,)).fetchone()[0]
+            elif table:
+                rows = db.execute("SELECT COUNT(*) FROM xref").fetchone()[0]
+            resources.setdefault(rid, {"kind": kind, "name": name, "license_status": status,
+                                       "database": path.name, "rows": rows})
+        db.close()
+    return {"versions": versions, "resources": resources}
+
+
+def report_markdown(report: dict) -> str:
+    lines = ["## Content quality report", "",
+             "| Version | Books | Chapters | Verses | Words | Variants | Warnings | Errors | License |",
+             "|---|---|---|---|---|---|---|---|---|"]
+    for vid, v in sorted(report["versions"].items()):
+        lines.append(f"| {vid} | {v['books']} | {v['chapters']} | {v['verses']} | {v['words']} | {v['variants']} "
+                     f"| {len(v['warnings'])} | {len(v['errors'])} | {v['license_status']} |")
+    lines += ["", "| Resource | Kind | Rows | License |", "|---|---|---|---|"]
+    for rid, r in sorted(report["resources"].items()):
+        lines.append(f"| {rid} | {r['kind']} | {r['rows']} | {r['license_status']} |")
+    flagged = [(vid, w) for vid, v in sorted(report["versions"].items()) for w in v["errors"] + v["warnings"]]
+    if flagged:
+        lines += ["", "<details><summary>Warnings and errors</summary>", ""]
+        lines += [f"- **{vid}**: {w}" for vid, w in flagged[:300]]
+        lines += ["", "</details>"]
+    return "\n".join(lines) + "\n"
+
+
 def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
-          only: list[str] | None = None) -> int:
+          only: list[str] | None = None, report: Path | None = None) -> int:
     catalog = load_books()
     versions = load_versions()
     resources = load_resources()
@@ -268,6 +319,7 @@ def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
     errors = 0
     aliases: dict[str, set[str]] = {}
     packs: list[tuple[Path, sqlite3.Connection, str]] = []
+    issues: dict[str, dict] = {}
     meta = {
         "schema_version": str(SCHEMA_VERSION),
         "built_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
@@ -300,7 +352,7 @@ def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
         elif not license_ok(rid, reg, allow_unverified):
             errors += 1
         elif rid in versions:
-            errors += build_version(target(rid, reg), rid, reg, d, catalog, sample, aliases)
+            errors += build_version(target(rid, reg), rid, reg, d, catalog, sample, aliases, issues)
         else:
             errors += build_resource(target(rid, reg), rid, reg, d, catalog)
 
@@ -324,6 +376,16 @@ def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
     print(f"wrote {out} ({out.stat().st_size // 1024} KiB)")
     for pack, _, _ in packs:
         print(f"wrote {pack} ({pack.stat().st_size // 1024} KiB)")
+    if report:
+        data = quality_report([out, *(p for p, _, _ in packs)], issues)
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        md = report_markdown(data)
+        report.with_suffix(".md").write_text(md, encoding="utf-8")
+        if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+            with open(summary, "a", encoding="utf-8") as f:
+                f.write(md)
+        print(f"wrote {report} and {report.with_suffix('.md')}")
     return 0
 
 
@@ -336,8 +398,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--allow-unverified", action="store_true",
                     help="package versions whose license is not yet confirmed (dev only)")
     ap.add_argument("--only", nargs="*", help="limit to these version or resource IDs")
+    ap.add_argument("--report", type=Path, help="write a content quality report (JSON and Markdown) here")
     a = ap.parse_args(argv)
-    return build(a.sources, a.out, a.sample, a.allow_unverified, a.only)
+    return build(a.sources, a.out, a.sample, a.allow_unverified, a.only, a.report)
 
 
 if __name__ == "__main__":

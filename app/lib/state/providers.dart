@@ -10,6 +10,7 @@ import '../ui/tokens/tokens.dart';
 import '../core/vkey.dart';
 import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
+import '../data/error_reports.dart';
 import '../data/network.dart';
 import '../data/packs.dart';
 import '../data/reminders.dart';
@@ -24,6 +25,9 @@ final contentDbProvider = Provider<Database>((ref) => throw UnimplementedError()
 final userDbProvider = Provider<Database>((ref) => throw UnimplementedError());
 final audioRepositoryProvider = Provider<AudioRepository>((ref) => throw UnimplementedError());
 final initialSettingsProvider = Provider<Settings>((ref) => const Settings());
+
+/// Opt-in error reports; main() overrides this with one that can send.
+final errorReporterProvider = Provider<ErrorReporter>((ref) => ErrorReporter(enabled: false));
 
 /// Connection type for "Download on Wi-Fi only"; main() overrides this.
 final networkInfoProvider = Provider<NetworkInfo>((ref) => const UnknownNetwork());
@@ -74,6 +78,7 @@ class Settings {
     this.reminderMinutes,
     this.streaks = false,
     this.wifiOnly = true,
+    this.errorReports = false,
     this.ethiopianCalendar = true,
     this.languageCode = 'am',
     this.versionId,
@@ -103,6 +108,9 @@ class Settings {
 
   /// Download study packs and audio only on Wi-Fi.
   final bool wifiOnly;
+
+  /// Send crash and error reports (opt-in).
+  final bool errorReports;
   final bool ethiopianCalendar;
   final String languageCode;
   final String? versionId;
@@ -129,6 +137,7 @@ class Settings {
     int? Function()? reminderMinutes,
     bool? streaks,
     bool? wifiOnly,
+    bool? errorReports,
     bool? ethiopianCalendar,
     String? languageCode,
     String? versionId,
@@ -148,6 +157,7 @@ class Settings {
     reminderMinutes: reminderMinutes != null ? reminderMinutes() : this.reminderMinutes,
     streaks: streaks ?? this.streaks,
     wifiOnly: wifiOnly ?? this.wifiOnly,
+    errorReports: errorReports ?? this.errorReports,
     ethiopianCalendar: ethiopianCalendar ?? this.ethiopianCalendar,
     languageCode: languageCode ?? this.languageCode,
     versionId: versionId ?? this.versionId,
@@ -169,6 +179,7 @@ class Settings {
     'reminder': reminderMinutes?.toString(),
     'streaks': '$streaks',
     'wifi_only': '$wifiOnly',
+    'error_reports': '$errorReports',
     'ethiopian_calendar': '$ethiopianCalendar',
     'language': languageCode,
     'version': versionId,
@@ -193,6 +204,7 @@ class Settings {
       reminderMinutes: int.tryParse(m['reminder'] ?? ''),
       streaks: b('streaks', d.streaks),
       wifiOnly: b('wifi_only', d.wifiOnly),
+      errorReports: b('error_reports', d.errorReports),
       ethiopianCalendar: b('ethiopian_calendar', d.ethiopianCalendar),
       languageCode: m['language'] ?? d.languageCode,
       versionId: m['version'],

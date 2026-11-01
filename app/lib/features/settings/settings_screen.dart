@@ -160,6 +160,19 @@ class SettingsScreen extends ConsumerWidget {
             value: settings.streaks,
             onChanged: (v) => notifier.update((x) => x.copyWith(streaks: v)),
           ),
+          if (ref.watch(errorReporterProvider).available) ...[
+            SectionHeader(s.privacy),
+            SwitchListTile(
+              secondary: const Icon(Icons.bug_report_outlined),
+              title: Text(s.sendErrorReports),
+              subtitle: Text(s.sendErrorReportsHint),
+              value: settings.errorReports,
+              onChanged: (v) {
+                ref.read(errorReporterProvider).enabled = v;
+                notifier.update((x) => x.copyWith(errorReports: v));
+              },
+            ),
+          ],
           SectionHeader(s.downloads),
           SwitchListTile(
             secondary: const Icon(Icons.wifi),

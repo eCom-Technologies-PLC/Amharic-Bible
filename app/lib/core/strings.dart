@@ -315,6 +315,10 @@ class S {
       ? 'በመጽሐፍ ቅዱስ መተግበሪያው «$group» የጥናት ቡድንን ይቀላቀሉ። ኮድ፦ $code'
       : 'Join the study group "$group" in the Amharic Bible app. Code: $code';
 
+  String get privacy => _('privacy');
+  String get sendErrorReports => _('sendErrorReports');
+  String get sendErrorReportsHint => _('sendErrorReportsHint');
+
   /// A grammatical term from lib/domain/morphology.dart ("noun", "aorist", …).
   String grammar(String key) => _m['g.$key'] ?? _en['g.$key'] ?? key;
 
@@ -569,6 +573,9 @@ const _am = {
   'makeTeacher': 'መምህር አድርግ',
   'makeMember': 'አባል አድርግ',
   'removeFromGroup': 'ከቡድኑ አስወግድ',
+  'privacy': 'ግላዊነት',
+  'sendErrorReports': 'የስሕተት ሪፖርቶችን ላክ',
+  'sendErrorReportsHint': 'መተግበሪያው ሲበላሽ ምን እንደተፈጠረ ይላካል። የመጽሐፍ ቅዱስ ጽሑፍ፣ ማስታወሻዎች ወይም ኢሜይል አይላኩም።',
   'study': 'ጥናት',
   'verseStudy': 'የጥቅስ ጥናት',
   'originalText': 'በመጀመሪያው ቋንቋ',
@@ -943,6 +950,9 @@ const _en = {
   'makeTeacher': 'Make teacher',
   'makeMember': 'Make member',
   'removeFromGroup': 'Remove from group',
+  'privacy': 'Privacy',
+  'sendErrorReports': 'Send error reports',
+  'sendErrorReportsHint': 'When the app breaks, what went wrong is sent. No Bible text, notes or email are included.',
   'study': 'Study',
   'verseStudy': 'Verse study',
   'originalText': 'Original text',

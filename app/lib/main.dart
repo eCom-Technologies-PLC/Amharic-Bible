@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,7 @@ import 'app.dart';
 import 'core/config.dart';
 import 'data/audio_repository.dart';
 import 'data/databases.dart';
+import 'data/error_reports.dart';
 import 'data/groups.dart';
 import 'data/network.dart';
 import 'data/packs.dart';
@@ -46,6 +48,19 @@ Future<void> main() async {
   final packs = PackStore(Directory(p.join(support.path, 'packs')));
   final sources = await attachPacks(contentDb, await packs.installed());
   final reminders = await LocalNotificationReminders.init();
+  final errors = ErrorReporter(
+    enabled: settings.errorReports,
+    send: AppConfig.accountsConfigured ? supabaseErrorSender(Supabase.instance.client) : null,
+  );
+  final presentError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    presentError?.call(details);
+    errors.report(details.exception, details.stack);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    errors.report(error, stack);
+    return false; // still let the platform handle it
+  };
 
   runApp(
     ProviderScope(
@@ -57,6 +72,7 @@ Future<void> main() async {
         initialContentSourcesProvider.overrideWithValue(sources),
         reminderSchedulerProvider.overrideWithValue(reminders),
         networkInfoProvider.overrideWithValue(ConnectivityNetwork()),
+        errorReporterProvider.overrideWithValue(errors),
         speechEngineProvider.overrideWithValue(DeviceSpeech()),
         accountServiceProvider.overrideWithValue(account),
         groupServiceProvider.overrideWithValue(
