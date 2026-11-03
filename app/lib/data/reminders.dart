@@ -59,8 +59,10 @@ abstract class ReminderScheduler {
   /// when it was refused.
   Future<bool> requestPermission();
 
-  /// Replaces the scheduled reminder with [schedule] (none when null). It never
-  /// asks for permission: without it nothing is scheduled, and it says false.
+  /// Replaces the scheduled reminder with [schedule] (none when null); false
+  /// when that failed. It never asks for permission: while notifications are
+  /// blocked the phone keeps the reminder from showing, and shows it again
+  /// once they are allowed.
   Future<bool> schedule(ReminderSchedule? schedule);
 
   /// The addresses of reminders tapped while the app runs.
@@ -110,6 +112,10 @@ class LocalNotificationReminders implements ReminderScheduler {
   ReminderSchedule? _scheduled;
   ChannelNames? _names;
 
+  /// The change being made: the app doesn't wait for one before asking for
+  /// the next, so they are made one at a time, in the order asked.
+  Future<bool> _changing = Future.value(true);
+
   static Future<LocalNotificationReminders> init() async {
     tzdata.initializeTimeZones();
     try {
@@ -148,22 +154,26 @@ class LocalNotificationReminders implements ReminderScheduler {
     return true;
   }
 
-  /// Whether notifications are allowed, without asking.
-  Future<bool> _permitted() async {
-    if (_android case final android?) return await android.areNotificationsEnabled() ?? false;
-    if (_ios case final ios?) return (await ios.checkPermissions())?.isEnabled ?? false;
-    return true;
-  }
-
   @override
-  Future<bool> schedule(ReminderSchedule? schedule) async {
+  Future<bool> schedule(ReminderSchedule? schedule) => _changing = _changing.then((_) => _replace(schedule));
+
+  Future<bool> _replace(ReminderSchedule? schedule) async {
     // The app asks again whenever what the reminder says may have changed;
     // most of the time it hasn't.
     if (schedule != null && schedule == _scheduled) return true;
-    await _plugin.cancel(id: _id);
-    _scheduled = null;
-    if (schedule == null) return true;
-    if (!await _permitted()) return false;
+    try {
+      await _plugin.cancel(id: _id);
+      _scheduled = null;
+      if (schedule != null) await _add(schedule);
+      _scheduled = schedule;
+      return true;
+    } catch (e) {
+      debugPrint('reminder not scheduled: $e');
+      return false;
+    }
+  }
+
+  Future<void> _add(ReminderSchedule schedule) async {
     final now = tz.TZDateTime.now(tz.local);
     var at = tz.TZDateTime(tz.local, now.year, now.month, now.day, schedule.minutes ~/ 60, schedule.minutes % 60);
     if (!at.isAfter(now)) at = at.add(const Duration(days: 1));
@@ -187,8 +197,6 @@ class LocalNotificationReminders implements ReminderScheduler {
       matchDateTimeComponents: DateTimeComponents.time,
       payload: schedule.route,
     );
-    _scheduled = schedule;
-    return true;
   }
 
   @override
@@ -199,19 +207,23 @@ class LocalNotificationReminders implements ReminderScheduler {
     _names = names;
     final android = _android;
     if (android == null) return;
-    final made = {
-      for (final c in await android.getNotificationChannels() ?? const <AndroidNotificationChannel>[]) c.id: c,
-    };
-    for (final (id, name, about) in [
-      (_channel, names.reminder, names.reminderAbout),
-      (audioNotificationChannel, names.audio, names.audioAbout),
-    ]) {
-      final channel = made[id];
-      if (channel == null || (channel.name == name && channel.description == about)) continue;
-      // Android renames a channel made again with its id, keeping the rest.
-      await android.createNotificationChannel(
-        AndroidNotificationChannel(id, name, description: about, importance: channel.importance),
-      );
+    try {
+      final made = {
+        for (final c in await android.getNotificationChannels() ?? const <AndroidNotificationChannel>[]) c.id: c,
+      };
+      for (final (id, name, about) in [
+        (_channel, names.reminder, names.reminderAbout),
+        (audioNotificationChannel, names.audio, names.audioAbout),
+      ]) {
+        final channel = made[id];
+        if (channel == null || (channel.name == name && channel.description == about)) continue;
+        // Android renames a channel made again with its id, keeping the rest.
+        await android.createNotificationChannel(
+          AndroidNotificationChannel(id, name, description: about, importance: channel.importance),
+        );
+      }
+    } catch (e) {
+      debugPrint('notification channels not renamed: $e');
     }
   }
 

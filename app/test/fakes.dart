@@ -57,8 +57,8 @@ class FakeReminders implements ReminderScheduler {
 
   @override
   Future<bool> schedule(ReminderSchedule? schedule) async {
-    scheduled = allowed ? schedule : null;
-    return allowed || schedule == null;
+    scheduled = schedule;
+    return true;
   }
 
   @override
