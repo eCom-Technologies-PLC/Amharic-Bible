@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'core/localizations.dart';
 import 'core/strings.dart';
 import 'core/web/web_storage.dart';
+import 'data/reminders.dart';
 import 'features/common.dart';
 import 'ui/ui.dart';
 import 'domain/models.dart';
@@ -215,6 +216,18 @@ final routerProvider = Provider<GoRouter>(
 /// opens a reminder's reading when it is tapped while the app runs.
 final _remindersProvider = Provider<void>((ref) {
   final scheduler = ref.watch(reminderSchedulerProvider);
+  // Android lists the notification channels by name: in the reader's language.
+  ref.listen(settingsProvider.select((s) => s.languageCode), (_, language) {
+    final s = S.forLocale(Locale(language));
+    scheduler.nameChannels(
+      ChannelNames(
+        reminder: s.reminderChannel,
+        reminderAbout: s.reminderChannelAbout,
+        audio: s.audioChannel,
+        audioAbout: s.audioChannelAbout,
+      ),
+    );
+  }, fireImmediately: true);
   ref.listen(reminderScheduleProvider, (_, next) {
     if (next case AsyncData(:final value)) scheduler.schedule(value);
   }, fireImmediately: true);

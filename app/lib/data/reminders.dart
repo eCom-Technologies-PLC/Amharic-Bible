@@ -32,6 +32,27 @@ class ReminderSchedule {
   String toString() => 'ReminderSchedule($minutes, $title, $body, $route)';
 }
 
+/// The audio player's notification channel; just_audio_background makes it
+/// the first time something plays.
+const audioNotificationChannel = 'com.ecomtech.amharic_bible.audio';
+
+/// The notification channels' names and descriptions, in the reader's
+/// language: Android lists them in the app's notification settings.
+@immutable
+class ChannelNames {
+  const ChannelNames({
+    required this.reminder,
+    required this.reminderAbout,
+    required this.audio,
+    required this.audioAbout,
+  });
+
+  final String reminder;
+  final String reminderAbout;
+  final String audio;
+  final String audioAbout;
+}
+
 /// Schedules the optional daily reading reminder.
 abstract class ReminderScheduler {
   /// Asks for permission to notify, when the reader turns reminders on; false
@@ -47,6 +68,11 @@ abstract class ReminderScheduler {
 
   /// The address of the reminder whose tap started the app, if one did.
   Future<String?> launchRoute();
+
+  /// Names the app's notification channels (the reminder's and the audio
+  /// player's): ones already made are renamed, and the reminder's takes the
+  /// name when it is made.
+  Future<void> nameChannels(ChannelNames names);
 }
 
 /// Used in tests and where notifications are unavailable (the web).
@@ -62,6 +88,9 @@ class NoReminders implements ReminderScheduler {
 
   @override
   Future<String?> launchRoute() async => null;
+
+  @override
+  Future<void> nameChannels(ChannelNames names) async {}
 }
 
 /// The daily reminder through flutter_local_notifications: one notification
@@ -73,9 +102,13 @@ class LocalNotificationReminders implements ReminderScheduler {
 
   static const _id = 1;
 
+  /// The reminder's notification channel.
+  static const _channel = 'reading_reminder';
+
   final FlutterLocalNotificationsPlugin _plugin;
   final StreamController<String> _opened;
   ReminderSchedule? _scheduled;
+  ChannelNames? _names;
 
   static Future<LocalNotificationReminders> init() async {
     tzdata.initializeTimeZones();
@@ -143,8 +176,9 @@ class LocalNotificationReminders implements ReminderScheduler {
         // A plan day's readings can be longer than the one line Android shows
         // at first; expanded, it shows them all.
         android: AndroidNotificationDetails(
-          'reading_reminder',
-          'Reading reminder',
+          _channel,
+          _names?.reminder ?? 'Reading reminder',
+          channelDescription: _names?.reminderAbout,
           styleInformation: BigTextStyleInformation(schedule.body),
         ),
         iOS: const DarwinNotificationDetails(),
@@ -159,6 +193,27 @@ class LocalNotificationReminders implements ReminderScheduler {
 
   @override
   Stream<String> get opened => _opened.stream;
+
+  @override
+  Future<void> nameChannels(ChannelNames names) async {
+    _names = names;
+    final android = _android;
+    if (android == null) return;
+    final made = {
+      for (final c in await android.getNotificationChannels() ?? const <AndroidNotificationChannel>[]) c.id: c,
+    };
+    for (final (id, name, about) in [
+      (_channel, names.reminder, names.reminderAbout),
+      (audioNotificationChannel, names.audio, names.audioAbout),
+    ]) {
+      final channel = made[id];
+      if (channel == null || (channel.name == name && channel.description == about)) continue;
+      // Android renames a channel made again with its id, keeping the rest.
+      await android.createNotificationChannel(
+        AndroidNotificationChannel(id, name, description: about, importance: channel.importance),
+      );
+    }
+  }
 
   @override
   Future<String?> launchRoute() async {

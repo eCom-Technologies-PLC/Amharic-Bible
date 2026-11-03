@@ -1446,11 +1446,16 @@ explore page lists them to browse instead. Amharic names belong in the content p
   - Tests: the pipeline's clipping, simplifying and encoding, and the checked-in file (land at Jerusalem, Patmos and
     Addis Ababa, sea in the Mediterranean and the Caspian, the Sea of Galilee, the Dead Sea and Lake Tana); in the
     app, decoding, distances and directions, and the place page. The layout audit already renders a place.
+- **Notification channels in the reader's language (§3.9):** Android's notification settings named the audio
+  channel in Amharic and the reminder's in English. Both now follow the app's language ("Reading reminder" · "Bible
+  audio", "የንባብ ማስታወሻ" · "መጽሐፍ ቅዱስ ድምፅ"), with a description each. A channel takes its name when it is made
+  (the audio player's from the saved language at start), and the app renames both when the language changes.
 
 **Waiting:**
 
 - A check of the reminders on a real Android phone and iPhone: the text, a tap while the app is open, in the
-  background and closed, and after a restart of the phone.
+  background and closed, and after a restart of the phone; on Android, the channels' names in the app's notification
+  settings before and after switching the language.
 
 - Amharic chapter pages for the Old Testament, once the Bible Society of Ethiopia supplies it (the New Testament's
   pages are built, with the full copyright statement).

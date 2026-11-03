@@ -13,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/config.dart';
 import 'core/date_data.dart';
+import 'core/strings.dart';
 import 'data/audio_repository.dart';
 import 'data/databases.dart';
 import 'data/error_reports.dart';
@@ -34,14 +35,6 @@ Future<void> main() async {
   // (see README → Web app). A no-op on phones.
   usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
-  // On the web the browser handles background playback and media controls.
-  if (!kIsWeb) {
-    await JustAudioBackground.init(
-      androidNotificationChannelId: 'com.ecomtech.amharic_bible.audio',
-      androidNotificationChannelName: 'መጽሐፍ ቅዱስ ድምፅ',
-      androidNotificationOngoing: true,
-    );
-  }
   useWebDatabases();
   // Amharic and English only: intl's own data holds every language.
   initializeAppDateFormatting();
@@ -55,6 +48,18 @@ Future<void> main() async {
   final contentDb = await openContentDb();
   final userDb = await openUserDb();
   final settings = Settings.fromMap(await UserRepository(userDb).settings());
+  // On the web the browser handles background playback and media controls.
+  // The player's notification channel is named in the reader's language when
+  // it is made; the app renames it if the language changes.
+  if (!kIsWeb) {
+    final s = S.forLocale(settings.locale);
+    await JustAudioBackground.init(
+      androidNotificationChannelId: audioNotificationChannel,
+      androidNotificationChannelName: s.audioChannel,
+      androidNotificationChannelDescription: s.audioChannelAbout,
+      androidNotificationOngoing: true,
+    );
+  }
   // The web has no file system: study packs and audio downloads are mobile only.
   final support = kIsWeb ? '' : (await getApplicationSupportDirectory()).path;
   final packs = PackStore(Directory(p.join(support, 'packs')));

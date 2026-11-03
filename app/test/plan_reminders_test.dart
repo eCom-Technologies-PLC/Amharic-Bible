@@ -167,6 +167,18 @@ void main() {
       expect(find.text('Test plan · Day 1 of 2'), findsOneWidget);
     });
 
+    testWidgets("the notification channels are named in the reader's language", (tester) async {
+      final reminders = FakeReminders();
+      await pumpApp(tester, reminders);
+      expect(reminders.channelNames?.reminder, 'Reading reminder');
+      expect(reminders.channelNames?.audio, 'Bible audio');
+      final container = ProviderScope.containerOf(tester.element(find.byType(AmharicBibleApp)));
+      await container.read(settingsProvider.notifier).update((x) => x.copyWith(languageCode: 'am'));
+      await tester.pumpAndSettle();
+      expect(reminders.channelNames?.reminder, 'የንባብ ማስታወሻ');
+      expect(reminders.channelNames?.audio, 'መጽሐፍ ቅዱስ ድምፅ');
+    });
+
     testWidgets('a note being written stays open when a reminder is tapped', (tester) async {
       await tester.runAsync(() => UserRepository(userDb).startPlan('test'));
       final reminders = FakeReminders();

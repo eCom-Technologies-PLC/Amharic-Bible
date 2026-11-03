@@ -66,6 +66,12 @@ class FakeReminders implements ReminderScheduler {
 
   @override
   Future<String?> launchRoute() async => launch;
+
+  /// The channel names the app last gave.
+  ChannelNames? channelNames;
+
+  @override
+  Future<void> nameChannels(ChannelNames names) async => channelNames = names;
 }
 
 /// In-memory stand-in for the Supabase table + push_records() function, with

@@ -1,4 +1,3 @@
-
 import 'package:amharic_bible/data/content_repository.dart';
 import 'package:amharic_bible/state/providers.dart';
 import 'package:amharic_bible/state/read_aloud.dart';

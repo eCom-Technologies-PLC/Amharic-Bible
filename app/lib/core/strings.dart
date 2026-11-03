@@ -321,6 +321,10 @@ class S {
   String get reminderBody => _('reminderBody');
   String get notificationsBlocked => _('notificationsBlocked');
   String get reminderPlanHint => _('reminderPlanHint');
+  String get reminderChannel => _('reminderChannel');
+  String get reminderChannelAbout => _('reminderChannelAbout');
+  String get audioChannel => _('audioChannel');
+  String get audioChannelAbout => _('audioChannelAbout');
   String get reminderOffer => _('reminderOffer');
   String get notNow => _('notNow');
   String reminderSetFor(String time) => isAmharic ? 'ዕለታዊ ማስታወሻ ለ$time ተዘጋጅቷል' : 'Daily reminder set for $time';
@@ -799,6 +803,10 @@ const _am = {
   'reminderBody': 'የዛሬው የመጽሐፍ ቅዱስ ንባብ ጊዜ ደርሷል።',
   'notificationsBlocked': 'ማሳወቂያዎች ተከልክለዋል። በስልክዎ ቅንብሮች ውስጥ ይፍቀዱ።',
   'reminderPlanHint': 'የጀመሩት የንባብ ዕቅድ ካለ፣ ማስታወሻው የዕቅዱን ቀጣይ ንባብ ይናገራል፤ ሲነኩትም ንባቡን ይከፍታል።',
+  'reminderChannel': 'የንባብ ማስታወሻ',
+  'reminderChannelAbout': 'በየቀኑ የሚመጣው የንባብ ማስታወሻ',
+  'audioChannel': 'መጽሐፍ ቅዱስ ድምፅ',
+  'audioChannelAbout': 'የሚጫወተውና መቆጣጠሪያዎቹ',
   'reminderOffer': 'በየቀኑ በዚህ ሰዓት ማንበብ ይፈልጋሉ? ዕለታዊ ማስታወሻ ቀጣዩን ንባብዎን ይነግርዎታል፤ ሲነኩትም ይከፍተዋል።',
   'notNow': 'አሁን አይደለም',
   'readingStreak': 'የንባብ ተከታታይ ቀናት',
@@ -1334,6 +1342,10 @@ const _en = {
   'reminderBody': 'Time for today\'s Bible reading.',
   'notificationsBlocked': 'Notifications are blocked. Allow them in your phone\'s settings.',
   'reminderPlanHint': 'With a reading plan under way, it names the plan\'s next reading, and a tap opens it.',
+  'reminderChannel': 'Reading reminder',
+  'reminderChannelAbout': 'The daily reminder to read',
+  'audioChannel': 'Bible audio',
+  'audioChannelAbout': "What's playing, with its controls",
   'reminderOffer': 'Read at this time every day? A daily reminder names your next reading, and a tap opens it.',
   'notNow': 'Not now',
   'readingStreak': 'Reading streak',
