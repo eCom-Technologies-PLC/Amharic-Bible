@@ -1227,12 +1227,34 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
   "Open in reader" for verses. The conversation lasts while the screen is open.
 - **Places:** a "Show on a map" button (OpenStreetMap, with a pin) under the coordinates.
 
+**Done (part 3: Groups, Settings, share image):**
+
+- **Groups:**
+  - A header under the title: members' initials and their count, and an Invite button that opens the code with
+    Share, Copy and (for teachers) a new code.
+  - The discussion reads as a conversation: your messages on one side, others' on the other with their initial, the
+    newest by the composer at the bottom (above the keyboard).
+  - "Leave group" moved from beside the title into the menu, still confirmed.
+  - The empty discussion invites a first message.
+- **Settings in sections:** Language and region (language, Ethiopian calendar, Ge'ez numerals) · Reading (version,
+  side by side, and "Reading appearance", which opens the Aa sheet instead of repeating its controls) · Reminders and
+  habits · Audio and downloads · Privacy. The daily reminder is set to the minute on a time wheel in a sheet, not only
+  on the hour.
+- **Share image:**
+  - Text size (smaller, default, larger).
+  - An ornament frame (a placeholder for the illustrator's haräg border).
+  - With or without the version in the reference.
+  - An illuminated background matching the verse-of-the-day card.
+  - Backgrounds wrap instead of scrolling sideways, so all nine stay in reach (a mouse can't drag a row sideways).
+- **Shared:** `MonogramAvatar` (the reader on Me, group members).
+
 **Left for Phase 5:**
 
+- Save the verse image to the gallery: needs a native plugin and photo-library permissions on Android and iOS,
+  tested on devices. Until then the share sheet offers saving on phones, and the web downloads the image.
 - An offline map card for places (a simplified coastline of Bible lands from Natural Earth, built by the content
   pipeline); for now the map opens online.
 - Plans: covers (illustrator), "Behind? Adjust the schedule", a month view, the completion celebration and card.
-- Groups polish (§7.13), Settings regrouping (§7.11), share-image additions (§7.12).
 - Search: a passage preview beside the results on wide windows; Amharic stemming (pipeline).
 
 **Content gaps found:** people and places have English names only, so typing an Amharic name finds nothing; the

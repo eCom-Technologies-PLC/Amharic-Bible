@@ -110,10 +110,12 @@ Features:
   with a Strong's number (`G25 morph:V-AAI`).
 - **Timeline:** dated biblical events in order, grouped into eras (Search & Study → Bible timeline). Places
   open on a map (online).
-- **Study groups (needs accounts):** create a group or join with an 8-character code; discuss, follow a shared
-  reading plan with everyone's progress, and teachers give assignments (passage, task, due date) that members
-  mark done. Members see each other's chosen display names, never emails.
-- **Habits:** an optional daily reading reminder and an opt-in reading streak (Settings → Reminders and habits).
+- **Study groups (needs accounts):** create a group or join with an 8-character code (Invite, at the top of the
+  group, shares or copies it); discuss as a conversation, follow a shared reading plan with everyone's progress,
+  and teachers give assignments (passage, task, due date) that members mark done. Members see each other's chosen
+  display names, never emails.
+- **Habits:** an optional daily reading reminder at any time of day, and an opt-in reading streak (Settings →
+  Reminders and habits).
 - **Read aloud:** versions without recorded audio are read with the phone's text-to-speech voice.
 - **Downloads:** Wi-Fi only by default; interrupted audio and study-pack downloads resume.
 - **Recently read:** the last chapters you opened, on Home.
@@ -133,7 +135,8 @@ Features:
 - **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
   60 days, with a strip of the plan's days and a "today's reading" card on Home (where a first plan starts in one
   tap). A day marks itself read once the end of each of its chapters has been on screen a few seconds, with Undo.
-- **Share:** verses as text, or as an image card (8 backgrounds, square or story size, 1080 px PNG).
+- **Share:** verses as text, or as an image card (9 backgrounds, square or story size, three text sizes, an
+  optional ornament frame, with or without the version; a 1080 px PNG).
 - **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes, plans and your
   reading position across devices. Export your data as JSON, or delete your account, from inside the app.
 - Verse of the day, an Amharic or English UI, and the Ethiopian calendar.

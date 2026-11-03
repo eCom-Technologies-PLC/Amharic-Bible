@@ -258,6 +258,35 @@ void main() {
     expect(find.text('Teacher'), findsOneWidget);
   });
 
+  testWidgets('the header invites, messages read as a conversation, and Leave is in the menu', (tester) async {
+    final groups = FakeGroups('teacher');
+    final gid = await groups.create(name: 'Youth study', displayName: 'Pastor Abebe');
+    await pump(tester, groups: groups);
+    expect(find.textContaining('Share a thought or a question'), findsNothing); // the list, not the group yet
+    await tester.tap(find.text('Youth study'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 member'), findsOneWidget);
+    expect(find.textContaining('Share a thought or a question'), findsOneWidget); // empty discussion
+    await tester.tap(find.text('Invite'));
+    await tester.pumpAndSettle();
+    expect(find.text(groups.groups[gid]!.inviteCode), findsOneWidget);
+    await tester.tapAt(const Offset(20, 20)); // close the sheet
+    await tester.pumpAndSettle();
+    // The composer is at the bottom, below the messages.
+    await tester.enterText(find.byType(TextField), 'Welcome!');
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.text('Welcome!')).dy, lessThan(tester.getTopLeft(find.byType(TextField)).dy));
+    // Leaving asks first, from the menu.
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leave group'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(AppButton, 'Leave group'));
+    await tester.pumpAndSettle();
+    expect(find.text('Youth study'), findsNothing);
+  });
+
   testWidgets('a member joins with a code and cannot give assignments', (tester) async {
     final groups = FakeGroups('teacher');
     final gid = await groups.create(name: 'Youth study', displayName: 'Pastor Abebe');

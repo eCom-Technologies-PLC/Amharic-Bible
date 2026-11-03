@@ -469,6 +469,19 @@ class S {
   String get aiStartWith => _('aiStartWith');
   String get aiOptions => _('aiOptions');
   String get aiLevel => _('aiLevel');
+  String get languageAndRegion => _('languageAndRegion');
+  String get reading => _('reading');
+  String get audioAndDownloads => _('audioAndDownloads');
+  String get remindMe => _('remindMe');
+  String get turnOff => _('turnOff');
+  String get invite => _('invite');
+  String memberCount(int n) => isAmharic ? (n == 1 ? '1 አባል' : '$n አባላት') : (n == 1 ? '1 member' : '$n members');
+  String get cardStyle => _('cardStyle');
+  String get textSmaller => _('textSmaller');
+  String get textDefault => _('textDefault');
+  String get textLarger => _('textLarger');
+  String get showVersion => _('showVersion');
+  String get ornamentFrame => _('ornamentFrame');
   String get showOnMap => _('showOnMap');
   String get mapOpenFailed => _('mapOpenFailed');
 
@@ -776,7 +789,7 @@ const _am = {
   'readingPlan': 'የንባብ ዕቅድ',
   'writeMessage': 'መልእክት ይጻፉ…',
   'send': 'ላክ',
-  'noMessages': 'እስካሁን መልእክት የለም።',
+  'noMessages': 'እስካሁን መልእክት የለም። ሐሳብዎን ወይም ጥያቄዎን ለቡድኑ ያካፍሉ።',
   'noAssignments': 'እስካሁን የቤት ሥራ የለም።',
   'newAssignment': 'አዲስ የቤት ሥራ',
   'assignmentText': 'የቤት ሥራው',
@@ -988,6 +1001,19 @@ const _am = {
   'aiStartWith': 'በዚህ ይጀምሩ',
   'aiOptions': 'የመልስ ምርጫዎች',
   'aiLevel': 'ደረጃ',
+  // Settings, groups, share image
+  'languageAndRegion': 'ቋንቋና አካባቢ',
+  'reading': 'ንባብ',
+  'audioAndDownloads': 'ድምፅና ማውረድ',
+  'remindMe': 'አስታውሰኝ',
+  'turnOff': 'አጥፋ',
+  'invite': 'ጋብዝ',
+  'cardStyle': 'ቅጥ',
+  'textSmaller': 'ትንሽ ፊደል',
+  'textDefault': 'መደበኛ ፊደል',
+  'textLarger': 'ትልቅ ፊደል',
+  'showVersion': 'ትርጉሙን አሳይ',
+  'ornamentFrame': 'የጌጥ ክፈፍ',
   'showOnMap': 'በካርታ ላይ አሳይ',
   'mapOpenFailed': 'ካርታውን መክፈት አልተቻለም',
   'era.beginnings': 'ፍጥረትና የጥንቱ ዓለም',
@@ -1277,7 +1303,7 @@ const _en = {
   'readingPlan': 'Reading plan',
   'writeMessage': 'Write a message…',
   'send': 'Send',
-  'noMessages': 'No messages yet.',
+  'noMessages': 'No messages yet. Share a thought or a question with the group.',
   'noAssignments': 'No assignments yet.',
   'newAssignment': 'New assignment',
   'assignmentText': 'The assignment',
@@ -1489,6 +1515,19 @@ const _en = {
   'aiStartWith': 'Start with',
   'aiOptions': 'Answer options',
   'aiLevel': 'Level',
+  // Settings, groups, share image
+  'languageAndRegion': 'Language and region',
+  'reading': 'Reading',
+  'audioAndDownloads': 'Audio and downloads',
+  'remindMe': 'Remind me',
+  'turnOff': 'Turn off',
+  'invite': 'Invite',
+  'cardStyle': 'Style',
+  'textSmaller': 'Smaller text',
+  'textDefault': 'Default text size',
+  'textLarger': 'Larger text',
+  'showVersion': 'Show the version',
+  'ornamentFrame': 'Ornament frame',
   'showOnMap': 'Show on a map',
   'mapOpenFailed': "Couldn't open the map",
   'era.beginnings': 'Beginnings',

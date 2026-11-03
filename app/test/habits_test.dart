@@ -6,6 +6,8 @@ import 'package:amharic_bible/data/reminders.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/domain/streaks.dart';
 import 'package:amharic_bible/state/providers.dart';
+import 'package:amharic_bible/ui/ui.dart' show AppDimens;
+import 'package:flutter/cupertino.dart' show CupertinoDatePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,6 +92,18 @@ void main() {
     return ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
   }
 
+  testWidgets('settings come in sections; the reading look does not repeat the numerals switch', (tester) async {
+    await pumpSettings(tester, FakeReminders());
+    expect(find.text('Language and region'), findsOneWidget);
+    expect(find.text("Ge'ez numerals"), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Reading appearance'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reading appearance'));
+    await tester.pumpAndSettle();
+    expect(find.text('Verse numbers'), findsOneWidget); // in the sheet
+    expect(find.text("Ge'ez numerals"), findsNothing); // the sheet leaves it out; Settings has it above
+  });
+
   testWidgets('choosing a reminder time schedules it; Off cancels it', (tester) async {
     final reminders = FakeReminders();
     final container = await pumpSettings(tester, reminders);
@@ -97,14 +111,29 @@ void main() {
     await tester.pumpAndSettle(); // lay out the scrolled list before tapping
     await tester.tap(find.text('Daily reading reminder'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('07:00'));
+    // The wheel starts at 07:00.
+    await tester.tap(find.text('Remind me'));
     await tester.pumpAndSettle();
     expect(reminders.scheduled, 420);
     expect(reminders.body, "Time for today's Bible reading.");
     expect(container.read(settingsProvider).reminderMinutes, 420);
+    // Any minute, not just whole hours: turn the minutes on, slowly.
     await tester.tap(find.text('Daily reading reminder'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Off').last);
+    final wheel = find.byType(CupertinoDatePicker);
+    await tester.timedDragFrom(
+      tester.getCenter(wheel) + Offset(tester.getSize(wheel).width / 4, 0),
+      const Offset(0, -AppDimens.timeWheelItem * 15),
+      const Duration(seconds: 2),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remind me'));
+    await tester.pumpAndSettle();
+    expect(reminders.scheduled! ~/ 60, 7);
+    expect(reminders.scheduled! % 60, greaterThan(0));
+    await tester.tap(find.text('Daily reading reminder'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Turn off'));
     await tester.pumpAndSettle();
     expect(reminders.scheduled, isNull);
     expect(container.read(settingsProvider).reminderMinutes, isNull);
@@ -116,7 +145,7 @@ void main() {
     await tester.pumpAndSettle(); // lay out the scrolled list before tapping
     await tester.tap(find.text('Daily reading reminder'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('07:00'));
+    await tester.tap(find.text('Remind me'));
     await tester.pumpAndSettle();
     expect(container.read(settingsProvider).reminderMinutes, isNull);
     expect(find.textContaining('Notifications are blocked'), findsOneWidget);

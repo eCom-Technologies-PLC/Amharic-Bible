@@ -98,6 +98,38 @@ class StatTile extends StatelessWidget {
   );
 }
 
+/// A round avatar with the first letter of someone's name (the app keeps no
+/// photos): the reader on Me, group members in stacks and discussions. An
+/// empty name shows a person icon.
+class MonogramAvatar extends StatelessWidget {
+  const MonogramAvatar({super.key, required this.name, this.small = false});
+
+  final String name;
+
+  /// Smaller, for stacks of members and chat lines.
+  final bool small;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colors;
+    final trimmed = name.trim();
+    final letter = trimmed.isEmpty ? '' : String.fromCharCode(trimmed.runes.first).toUpperCase();
+    return CircleAvatar(
+      radius: (small ? AppDimens.avatarSm : AppDimens.avatar) / 2,
+      backgroundColor: scheme.primaryContainer,
+      foregroundColor: scheme.onPrimaryContainer,
+      child: letter.isEmpty
+          ? Icon(Icons.person_outline, size: small ? AppIconSize.sm : AppIconSize.md)
+          : Text(
+              letter,
+              style: (small ? context.text.labelLarge : context.text.titleMedium)?.copyWith(
+                color: scheme.onPrimaryContainer,
+              ),
+            ),
+    );
+  }
+}
+
 /// A tool or destination to open: an icon, a title and a line saying what it
 /// is for (the study tools on the Search & Study page). Tiles in a row should
 /// share its height (`IntrinsicHeight` + `CrossAxisAlignment.stretch`).

@@ -15,6 +15,21 @@ abstract final class ShareCardTokens {
   static const double lineHeight = 1.6;
   static const double footerOpacity = 0.7;
 
+  /// The verse size choices (smaller, default, larger), as factors.
+  static const textScales = [0.85, 1.0, 1.15];
+
+  /// The ornament frame: a double rule inset from the edge, with diamonds at
+  /// the corners and the middle of the top and bottom (a placeholder for the
+  /// illustrator's haräg border).
+  static const double frameInset = 12;
+  static const double frameGap = 3;
+  static const double frameStroke = 1;
+  static const double frameDiamond = 5;
+  static const double frameOpacity = 0.55;
+
+  /// Padding inside the frame, so the reference and footer clear it.
+  static const EdgeInsets framedPadding = EdgeInsets.fromLTRB(32, 36, 32, 28);
+
   /// Starting verse size by text length; FittedBox shrinks further if needed.
   static double verseSize(int length) => (30 - length / 14).clamp(15, 28).toDouble();
 }
@@ -40,4 +55,5 @@ const cardBackgrounds = [
   CardBackground([Color(0xFF2E86AB), Color(0xFF6CC3D5)], Colors.white), // sky
   CardBackground([Colors.white], Color(0xFF1B1B1B)),
   CardBackground([Colors.black], Colors.white),
+  CardBackground([Color(0xFFF2DFB4), Color(0xFFFBF5E8)], Color(0xFF3B2F20)), // illuminated (verse of the day)
 ];

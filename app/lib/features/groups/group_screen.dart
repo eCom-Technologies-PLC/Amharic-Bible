@@ -44,11 +44,28 @@ Future<void> _deletePost(BuildContext context, WidgetRef ref, String groupId, St
 String _passage(List<Book> books, int start, int? end, bool amharic) =>
     formatKeys(books, [for (var k = start; k <= (end ?? start) && k - start < 200; k++) k], amharic: amharic);
 
-/// One study group: discussion, assignments, the shared reading plan and members.
+/// One study group: who is in it and a way to invite more, then the
+/// discussion, assignments, the shared reading plan and members, in tabs.
 class GroupScreen extends ConsumerWidget {
   const GroupScreen({super.key, required this.groupId});
 
   final String groupId;
+
+  Future<void> _leave(BuildContext context, WidgetRef ref) async {
+    final s = S.of(context);
+    final ok = await showConfirmDialog(
+      context: context,
+      title: s.leaveGroup,
+      message: s.leaveGroupConfirm,
+      confirmLabel: s.leaveGroup,
+      cancelLabel: s.cancel,
+      destructive: true,
+    );
+    if (!ok || !context.mounted) return;
+    await _change(context, ref, groupId, (g) => g.leave(groupId));
+    ref.invalidate(myGroupsProvider);
+    if (context.mounted) context.pop();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,50 +76,144 @@ class GroupScreen extends ConsumerWidget {
       child: AppScaffold(
         title: detail.value?.group.name ?? s.studyGroups,
         actions: [
-          IconButton(
-            tooltip: s.leaveGroup,
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final ok = await showConfirmDialog(
-                context: context,
-                title: s.leaveGroup,
-                message: s.leaveGroupConfirm,
-                confirmLabel: s.leaveGroup,
-                cancelLabel: s.cancel,
-                destructive: true,
-              );
-              if (!ok || !context.mounted) return;
-              await _change(context, ref, groupId, (g) => g.leave(groupId));
-              ref.invalidate(myGroupsProvider);
-              if (context.mounted) context.pop();
-            },
+          // Leaving is rare and final: in the menu, not beside the title.
+          PopupMenuButton<String>(
+            tooltip: s.moreActions,
+            onSelected: (_) => _leave(context, ref),
+            itemBuilder: (_) => [PopupMenuItem(value: 'leave', child: Text(s.leaveGroup))],
           ),
         ],
-        bottom: TabBar(
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          tabs: [
-            Tab(text: s.discussion),
-            Tab(text: s.assignments),
-            Tab(text: s.readingPlan),
-            Tab(text: s.members),
-          ],
-        ),
         body: AsyncView(
           value: detail,
           onRetry: () => ref.invalidate(groupDetailProvider(groupId)),
           data: (d) => ContentWidth(
-            child: TabBarView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Discussion(detail: d),
-                _Assignments(detail: d),
-                _Plan(detail: d),
-                _Members(detail: d),
+                _GroupHeader(detail: d),
+                TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  tabs: [
+                    Tab(text: s.discussion),
+                    Tab(text: s.assignments),
+                    Tab(text: s.readingPlan),
+                    Tab(text: s.members),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _Discussion(detail: d),
+                      _Assignments(detail: d),
+                      _Plan(detail: d),
+                      _Members(detail: d),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Who is in the group (the first few, then the count) and Invite.
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({required this.detail});
+
+  final GroupDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final members = detail.members;
+    return Gutter(
+      vertical: AppSpacing.sm,
+      child: Row(
+        children: [
+          for (final m in members.take(4))
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+              child: Tooltip(
+                message: m.name,
+                child: MonogramAvatar(name: m.name, small: true),
+              ),
+            ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              s.memberCount(members.length),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+            ),
+          ),
+          AppButton.secondary(
+            label: s.invite,
+            icon: Icons.person_add_alt_1_outlined,
+            size: AppButtonSize.sm,
+            onPressed: () => showAppBottomSheet<void>(
+              context: context,
+              title: s.invite,
+              builder: (_) => _InviteCode(groupId: detail.group.id),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The group's invite code, with Copy, Share and (for teachers) a new code.
+/// Watches the group, so a new code shows at once.
+class _InviteCode extends ConsumerWidget {
+  const _InviteCode({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final g = ref.watch(groupDetailProvider(groupId)).value?.group;
+    if (g == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SelectableText(g.inviteCode, style: context.text.headlineSmall),
+        Text(s.inviteCodeHint, style: context.text.bodySmall),
+        const SizedBox(height: AppSpacing.md),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            AppButton(
+              label: s.share,
+              icon: Icons.share_outlined,
+              size: AppButtonSize.sm,
+              onPressed: () => shareText(context, s.inviteMessage(g.name, g.inviteCode)),
+            ),
+            AppButton.secondary(
+              label: s.copy,
+              icon: Icons.copy,
+              size: AppButtonSize.sm,
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: g.inviteCode));
+                if (context.mounted) showAppSnack(context, s.copied);
+              },
+            ),
+            if (g.isTeacher)
+              AppButton.ghost(
+                label: s.newInviteCode,
+                icon: Icons.refresh,
+                size: AppButtonSize.sm,
+                onPressed: () => _change(context, ref, g.id, (svc) => svc.newInviteCode(g.id)),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -139,10 +250,36 @@ class _DiscussionState extends ConsumerState<_Discussion> {
     final me = ref.watch(groupServiceProvider)?.userId;
     final settings = ref.watch(settingsProvider);
     final books = ref.watch(refBooksProvider).value ?? const <Book>[];
+    // Newest first, shown from the bottom up: the latest sits by the composer.
     final messages = d.posts.where((p) => !p.isAssignment).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Expanded(
+          child: messages.isEmpty
+              ? EmptyState(message: s.noMessages, icon: Icons.forum_outlined)
+              : ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  itemCount: messages.length,
+                  itemBuilder: (context, i) {
+                    final p = messages[i];
+                    return _Message(
+                      name: d.nameOf(p.userId),
+                      date: formatDate(p.createdAt.toLocal(), settings, s),
+                      passage: p.vkeyStart == null ? null : _passage(books, p.vkeyStart!, p.vkeyEnd, s.isAmharic),
+                      day: p.day,
+                      body: p.body,
+                      mine: p.userId == me,
+                      onDelete: p.userId == me || d.group.isTeacher
+                          ? () => _deletePost(context, ref, d.group.id, p.id)
+                          : null,
+                    );
+                  },
+                ),
+        ),
+        const Divider(),
+        // The composer at the bottom, so it stays above the keyboard.
         Gutter(
           vertical: AppSpacing.sm,
           child: Row(
@@ -155,46 +292,102 @@ class _DiscussionState extends ConsumerState<_Discussion> {
                   onSubmitted: (_) => _send(),
                 ),
               ),
-              IconButton(tooltip: s.send, icon: const Icon(Icons.send), onPressed: _send),
+              const SizedBox(width: AppSpacing.sm),
+              IconButton.filled(tooltip: s.send, icon: const Icon(Icons.send), onPressed: _send),
             ],
           ),
-        ),
-        Expanded(
-          child: messages.isEmpty
-              ? EmptyState(message: s.noMessages, icon: Icons.forum_outlined)
-              : ListView.separated(
-                  itemCount: messages.length,
-                  separatorBuilder: (_, _) => const Divider(indent: AppSpacing.screen),
-                  itemBuilder: (context, i) {
-                    final p = messages[i];
-                    return AppListTile(
-                      title: '${d.nameOf(p.userId)} · ${formatDate(p.createdAt.toLocal(), settings, s)}',
-                      subtitleWidget: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (p.vkeyStart != null)
-                            Text(
-                              _passage(books, p.vkeyStart!, p.vkeyEnd, s.isAmharic),
-                              style: context.text.labelMedium?.copyWith(color: context.colors.primary),
-                            ),
-                          if (p.day != null) Text(s.day(p.day!), style: context.text.labelMedium),
-                          Text(p.body, style: context.text.bodyMedium),
-                        ],
-                      ),
-                      trailing: p.userId == me || d.group.isTeacher
-                          ? IconButton(
-                              tooltip: s.delete,
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _deletePost(context, ref, d.group.id, p.id),
-                            )
-                          : null,
-                    );
-                  },
-                ),
         ),
       ],
     );
   }
+}
+
+/// A message in the discussion: the writer's own at the end of the line,
+/// others' at the start with their initial. The writer and teachers can
+/// delete it (after confirming).
+class _Message extends StatelessWidget {
+  const _Message({
+    required this.name,
+    required this.date,
+    required this.passage,
+    required this.day,
+    required this.body,
+    required this.mine,
+    required this.onDelete,
+  });
+
+  final String name;
+  final String date;
+  final String? passage;
+  final int? day;
+  final String body;
+  final bool mine;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final scheme = context.colors;
+    final ink = mine ? scheme.onPrimaryContainer : scheme.onSurface;
+    final bubble = DecoratedBox(
+      decoration: BoxDecoration(
+        color: mine ? scheme.primaryContainer : scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (passage case final passage?)
+              Text(passage, style: context.text.labelMedium?.copyWith(color: mine ? ink : scheme.primary)),
+            if (day case final day?) Text(s.day(day), style: context.text.labelMedium?.copyWith(color: ink)),
+            Text(body, style: context.text.bodyMedium?.copyWith(color: ink)),
+          ],
+        ),
+      ),
+    );
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        mine ? AppSpacing.xxxl : AppSpacing.screen,
+        AppSpacing.xs,
+        mine ? AppSpacing.screen : AppSpacing.xxxl,
+        AppSpacing.xs,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!mine) ...[MonogramAvatar(name: name, small: true), const SizedBox(width: AppSpacing.sm)],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$name · $date',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (mine && onDelete != null) _deleteButton(s),
+                    Flexible(child: bubble),
+                    if (!mine && onDelete != null) _deleteButton(s),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _deleteButton(S s) =>
+      IconButton(tooltip: s.delete, icon: const Icon(Icons.delete_outline), onPressed: onDelete);
 }
 
 class _Assignments extends ConsumerWidget {
@@ -483,39 +676,12 @@ class _Members extends ConsumerWidget {
       children: [
         AppCard(
           eyebrow: s.inviteCode,
-          actions: [
-            IconButton(
-              tooltip: s.copy,
-              icon: const Icon(Icons.copy),
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: g.inviteCode));
-                if (context.mounted) showAppSnack(context, s.copied);
-              },
-            ),
-            IconButton(
-              tooltip: s.share,
-              icon: const Icon(Icons.share_outlined),
-              onPressed: () => shareText(context, s.inviteMessage(g.name, g.inviteCode)),
-            ),
-            if (g.isTeacher)
-              IconButton(
-                tooltip: s.newInviteCode,
-                icon: const Icon(Icons.refresh),
-                onPressed: () => _change(context, ref, g.id, (svc) => svc.newInviteCode(g.id)),
-              ),
-          ],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SelectableText(g.inviteCode, style: context.text.headlineSmall),
-              Text(s.inviteCodeHint, style: context.text.bodySmall),
-            ],
-          ),
+          child: _InviteCode(groupId: g.id),
         ),
         SectionHeader('${s.members} (${d.members.length})'),
         for (final m in d.members)
           AppListTile(
-            leadingIcon: m.isTeacher ? Icons.school_outlined : Icons.person_outline,
+            leading: MonogramAvatar(name: m.name, small: true),
             title: m.name,
             subtitle: m.isTeacher ? s.teacher : s.member,
             trailing: g.isTeacher && m.userId != me

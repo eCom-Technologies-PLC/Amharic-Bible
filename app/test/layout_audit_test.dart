@@ -339,7 +339,16 @@ void main() {
           route: '/me/settings',
           device: smallLargeText,
           settings: Settings(languageCode: lang),
-          interact: (t) => t.tap(find.byIcon(Icons.view_column_outlined)),
+          interact: (t) async {
+            // Side by side is under Reading, below the first screen on a small phone.
+            await t.scrollUntilVisible(
+              find.byIcon(Icons.view_column_outlined),
+              200,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await t.pumpAndSettle();
+            await t.tap(find.byIcon(Icons.view_column_outlined));
+          },
         );
         expect(errors, isEmpty);
       });

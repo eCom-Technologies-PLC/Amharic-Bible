@@ -118,6 +118,14 @@ abstract final class AppDimens {
   /// for a three-digit day).
   static const double dayCell = 56;
 
+  /// Monogram avatars: a person on Me; group members in stacks and chat lines.
+  static const double avatar = 40;
+  static const double avatarSm = 32;
+
+  /// The reminder's time wheel and one row of it, before text scaling.
+  static const double timeWheel = 216;
+  static const double timeWheelItem = 32;
+
   /// Thin progress line (mini player).
   static const double progressThin = 2;
 

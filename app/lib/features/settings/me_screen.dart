@@ -67,15 +67,8 @@ class _AccountHeader extends ConsumerWidget {
     final s = S.of(context);
     final configured = ref.watch(accountServiceProvider) != null;
     final email = ref.watch(accountEmailProvider).value;
-    final scheme = context.colors;
     return AppListTile(
-      leading: CircleAvatar(
-        backgroundColor: scheme.primaryContainer,
-        foregroundColor: scheme.onPrimaryContainer,
-        child: email != null && email.isNotEmpty
-            ? Text(email.substring(0, 1).toUpperCase(), style: context.text.titleMedium)
-            : const Icon(Icons.person_outline),
-      ),
+      leading: MonogramAvatar(name: email ?? ''),
       title: email ?? s.guest,
       subtitle: email != null
           ? s.syncOn

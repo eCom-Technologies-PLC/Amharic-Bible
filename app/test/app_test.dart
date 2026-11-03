@@ -18,6 +18,7 @@ import 'package:amharic_bible/features/study/word_study_screen.dart';
 import 'package:amharic_bible/data/sync/account_service.dart';
 import 'package:amharic_bible/state/account.dart';
 import 'package:amharic_bible/state/providers.dart';
+import 'package:amharic_bible/ui/tokens/share_card_tokens.dart';
 import 'package:amharic_bible/ui/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -256,6 +257,34 @@ void main() {
     // Width 1080 and height 1920 (9:16) from the IHDR chunk.
     int be32(int o) => (png[o] << 24) | (png[o + 1] << 16) | (png[o + 2] << 8) | png[o + 3];
     expect((be32(16), be32(20)), (1080, 1920));
+  });
+
+  testWidgets('the verse image can have a frame, larger text and no version', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/share-image?keys=43003016',
+    );
+    final page = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(find.text('Show the version'), 200, scrollable: page);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ornament frame'));
+    await tester.tap(find.byTooltip('Larger text'));
+    await tester.tap(find.text('Show the version'));
+    await tester.pumpAndSettle();
+    final card = tester.widget<VerseCard>(find.byType(VerseCard));
+    expect(card.frame, isTrue);
+    expect(card.textScale, ShareCardTokens.textScales.last);
+    expect(card.reference, 'ዮሐንስ 3፥16');
+    final key =
+        tester
+                .widget<RepaintBoundary>(
+                  find.ancestor(of: find.byType(VerseCard), matching: find.byType(RepaintBoundary)).first,
+                )
+                .key!
+            as GlobalKey;
+    final png = (await tester.runAsync(() => renderCardPng(key)))!;
+    expect(png.sublist(0, 4), [0x89, 0x50, 0x4E, 0x47]); // PNG signature
   });
 
   testWidgets('sign in with an emailed code, then local changes sync', (tester) async {

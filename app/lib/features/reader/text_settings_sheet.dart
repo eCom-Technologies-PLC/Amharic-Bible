@@ -6,10 +6,12 @@ import '../../state/providers.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
 
-Future<void> showTextSettingsSheet(BuildContext context) => showAppBottomSheet<void>(
+/// The Aa sheet. Settings leaves out Ge'ez numerals ([numerals]), which it
+/// shows under language and region instead.
+Future<void> showTextSettingsSheet(BuildContext context, {bool numerals = true}) => showAppBottomSheet<void>(
   context: context,
   title: S.of(context).readingLook,
-  builder: (_) => const TextSettingsSheet(showDisplayOptions: true),
+  builder: (_) => TextSettingsSheet(showDisplayOptions: true, showNumerals: numerals),
 );
 
 String themeLabel(S s, ReaderTheme t) => switch (t) {
@@ -25,10 +27,18 @@ String themeLabel(S s, ReaderTheme t) => switch (t) {
 /// embed it without the interlinear switch; the reader's Aa sheet adds the
 /// display switches (verse numbers, red letters, Ge'ez numerals).
 class TextSettingsSheet extends ConsumerWidget {
-  const TextSettingsSheet({super.key, this.showInterlinear = true, this.showDisplayOptions = false});
+  const TextSettingsSheet({
+    super.key,
+    this.showInterlinear = true,
+    this.showDisplayOptions = false,
+    this.showNumerals = true,
+  });
 
   final bool showInterlinear;
   final bool showDisplayOptions;
+
+  /// With [showDisplayOptions], whether the Ge'ez numerals switch is among them.
+  final bool showNumerals;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,12 +146,13 @@ class TextSettingsSheet extends ConsumerWidget {
             value: settings.redLetters,
             onChanged: (v) => notifier.update((x) => x.copyWith(redLetters: v)),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(s.geezNumerals),
-            value: settings.geezNumerals,
-            onChanged: (v) => notifier.update((x) => x.copyWith(geezNumerals: v)),
-          ),
+          if (showNumerals)
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(s.geezNumerals),
+              value: settings.geezNumerals,
+              onChanged: (v) => notifier.update((x) => x.copyWith(geezNumerals: v)),
+            ),
         ],
       ],
     );

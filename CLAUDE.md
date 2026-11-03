@@ -71,6 +71,7 @@ All future UI work in this repository must follow this CLAUDE.md section.
   (`padding: EdgeInsets.zero` inside a sheet, which has its own).
 - Data: `AppCard` (eyebrow → content → actions), `HeroCard` (the one featured card of a screen, e.g. the verse of the
   day) with `OrnamentRule` (placeholder for the illustrated haräg ornament), `StatTile` (a count and label),
+  `MonogramAvatar` (a person's initial; `small` for stacks and chat lines),
   `ToolTile` (a tool to open: icon, title and a line of description; a row of them shares its height),
   `AppListTile`, `StatusBadge` (`BadgeTone`), `ProgressRing`.
 - States: `AsyncView` (loading/error/data for any `AsyncValue`), `EmptyState`, `LoadingState`, `ErrorState` (friendly text + retry; never show exception text to readers), `InlineSpinner`.
@@ -98,6 +99,9 @@ All future UI work in this repository must follow this CLAUDE.md section.
   selection tints in all four themes; keep it passing when changing colors.
 - A text field at the bottom of a screen (the Ask composer) goes at the end of the body's `Column`, not in
   `AppScaffold.bottomBar`: the keyboard covers the bottom bar, while the body resizes above it.
+- A row of choices that may not fit (color swatches, backgrounds) wraps (`Wrap`) rather than scrolling sideways:
+  on the web a mouse can't drag a row, and on phones options past the edge go unnoticed. Chip rows that are clearly
+  scrollable (`FilterBar`) are the exception.
 - Never put dropdowns or segmented buttons in a `ListTile` trailing slot — use an `AppListTile` with the current value as subtitle that opens `showOptionPicker` (this crashed on narrow screens).
 - Scripture text always uses `context.reading` styles (or `context.scriptureSnippet` / `scriptureFeature` outside the reader), never `TextStyle(fontSize: ...)`.
 - One loading pattern: centered spinner (`LoadingState`); `InlineSpinner` inside buttons and rows.

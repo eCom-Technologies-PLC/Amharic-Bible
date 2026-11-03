@@ -55,6 +55,9 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
   int _bg = 0;
   CardShape _shape = CardShape.square;
   bool _serif = true;
+  int _size = 1; // index into ShareCardTokens.textScales
+  bool _frame = false;
+  bool _withVersion = true;
   bool _busy = false;
 
   Future<void> _share(String reference) async {
@@ -97,6 +100,7 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
         value: content,
         data: (c) {
           if (c == null) return EmptyState(message: s.notInVersion, icon: Icons.image_not_supported_outlined);
+          final reference = _withVersion ? '${c.reference} (${c.version})' : c.reference;
           return AppListView(
             children: [
               Gutter(
@@ -108,21 +112,24 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
                       key: _cardKey,
                       child: VerseCard(
                         text: c.text,
-                        reference: '${c.reference} (${c.version})',
+                        reference: reference,
                         footer: s.appName,
                         background: cardBackgrounds[_bg],
                         shape: _shape,
                         fontFamily: _serif ? AppFonts.serif : AppFonts.sans,
+                        textScale: ShareCardTokens.textScales[_size],
+                        frame: _frame,
                       ),
                     ),
                   ),
                 ),
               ),
               SectionHeader(s.background),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              // Wraps rather than scrolls: every background stays in view, and
+              // a mouse can't drag a row sideways.
+              Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen - AppSpacing.xs),
-                child: Row(
+                child: Wrap(
                   children: [
                     for (var i = 0; i < cardBackgrounds.length; i++)
                       SwatchButton(
@@ -135,8 +142,8 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
                   ],
                 ),
               ),
+              SectionHeader(s.cardStyle),
               Gutter(
-                vertical: AppSpacing.lg,
                 child: Wrap(
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,
@@ -171,9 +178,29 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
                       selected: {_serif},
                       onSelectionChanged: (v) => setState(() => _serif = v.first),
                     ),
+                    SegmentedButton<int>(
+                      segments: [
+                        ButtonSegment(value: 0, icon: const Icon(Icons.text_decrease), tooltip: s.textSmaller),
+                        ButtonSegment(value: 1, icon: const Icon(Icons.text_fields), tooltip: s.textDefault),
+                        ButtonSegment(value: 2, icon: const Icon(Icons.text_increase), tooltip: s.textLarger),
+                      ],
+                      selected: {_size},
+                      onSelectionChanged: (v) => setState(() => _size = v.first),
+                    ),
+                    FilterChip(
+                      label: Text(s.ornamentFrame),
+                      selected: _frame,
+                      onSelected: (v) => setState(() => _frame = v),
+                    ),
+                    FilterChip(
+                      label: Text(s.showVersion),
+                      selected: _withVersion,
+                      onSelected: (v) => setState(() => _withVersion = v),
+                    ),
                   ],
                 ),
               ),
+              const SizedBox(height: AppSpacing.lg),
             ],
           );
         },
@@ -188,7 +215,7 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
                   size: AppButtonSize.lg,
                   expand: true,
                   loading: _busy,
-                  onPressed: () => _share('${ready.reference} (${ready.version})'),
+                  onPressed: () => _share(_withVersion ? '${ready.reference} (${ready.version})' : ready.reference),
                 ),
               ],
             ),
@@ -207,6 +234,8 @@ class VerseCard extends StatelessWidget {
     required this.background,
     required this.shape,
     required this.fontFamily,
+    this.textScale = 1,
+    this.frame = false,
   });
 
   final String text;
@@ -216,15 +245,21 @@ class VerseCard extends StatelessWidget {
   final CardShape shape;
   final String fontFamily;
 
+  /// Factor on the verse's starting size (ShareCardTokens.textScales).
+  final double textScale;
+
+  /// Draws the ornament frame inside the edge.
+  final bool frame;
+
   @override
   Widget build(BuildContext context) {
     const width = ShareCardTokens.canvasWidth;
     final color = background.text;
-    return Container(
+    final card = Container(
       width: width,
       height: width / shape.aspect,
       decoration: background.decoration,
-      padding: ShareCardTokens.padding,
+      padding: frame ? ShareCardTokens.framedPadding : ShareCardTokens.padding,
       child: Column(
         children: [
           Expanded(
@@ -238,7 +273,7 @@ class VerseCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: fontFamily,
-                      fontSize: ShareCardTokens.verseSize(text.length),
+                      fontSize: ShareCardTokens.verseSize(text.length) * textScale,
                       height: ShareCardTokens.lineHeight,
                       color: color,
                     ),
@@ -270,7 +305,57 @@ class VerseCard extends StatelessWidget {
         ],
       ),
     );
+    if (!frame) return card;
+    return CustomPaint(
+      foregroundPainter: _OrnamentFrame(color.withValues(alpha: ShareCardTokens.frameOpacity)),
+      child: card,
+    );
   }
+}
+
+/// A double rule inset from the card's edge, with small diamonds at the
+/// corners and the middle of the top and bottom: a placeholder for the
+/// illustrator's harag border.
+class _OrnamentFrame extends CustomPainter {
+  const _OrnamentFrame(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = ShareCardTokens.frameStroke;
+    final fill = Paint()..color = color;
+    const inset = ShareCardTokens.frameInset;
+    final outer = Rect.fromLTWH(inset, inset, size.width - inset * 2, size.height - inset * 2);
+    canvas
+      ..drawRect(outer, line)
+      ..drawRect(outer.deflate(ShareCardTokens.frameGap), line);
+    const d = ShareCardTokens.frameDiamond;
+    for (final c in [
+      outer.topLeft,
+      outer.topCenter,
+      outer.topRight,
+      outer.bottomLeft,
+      outer.bottomCenter,
+      outer.bottomRight,
+    ]) {
+      canvas.drawPath(
+        Path()
+          ..moveTo(c.dx, c.dy - d)
+          ..lineTo(c.dx + d, c.dy)
+          ..lineTo(c.dx, c.dy + d)
+          ..lineTo(c.dx - d, c.dy)
+          ..close(),
+        fill,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_OrnamentFrame old) => old.color != color;
 }
 
 /// Renders the widget under [key] (a RepaintBoundary) to PNG bytes at a
