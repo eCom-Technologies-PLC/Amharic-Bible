@@ -9,6 +9,7 @@ import '../../state/providers.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import 'place_map.dart';
 import 'study_widgets.dart';
 import 'verse_study_screen.dart' show entityIcon, entityKindLabel, openReader;
 
@@ -35,9 +36,8 @@ class EntityScreen extends ConsumerWidget {
   }
 }
 
-/// Opens a map with a pin at the place (OpenStreetMap, in the browser or the
-/// phone's map app). An offline map of Bible lands is planned in the content
-/// pipeline; until then this needs a connection.
+/// Opens a larger map with a pin at the place (OpenStreetMap, in the browser
+/// or the phone's map app); it needs a connection, unlike the place's own map.
 Future<void> _openMap(BuildContext context, double lat, double lon) async {
   final s = S.of(context);
   final map = Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lon#map=9/$lat/$lon');
@@ -68,6 +68,10 @@ class _Entity extends ConsumerWidget {
         : ref.watch(versesByKeyProvider((versionId: current.id, keys: shown.join(',')))).value ?? const <int, Verse>{};
     final resources = ref.watch(studyResourcesProvider).value ?? const <StudyResource>[];
     final years = [?e.startYear, if (e.endYear != e.startYear) ?e.endYear].map(s.year).join(' – ');
+    // A place comes with its map, between its name and its description.
+    final (lat, lon) = (e.lat, e.lon);
+    final mapped = lat != null && lon != null;
+    final summary = Text(e.summary, style: context.text.bodyLarge);
 
     return AppListView(
       children: [
@@ -84,27 +88,14 @@ class _Entity extends ConsumerWidget {
                 Text(years, style: context.text.titleSmall),
                 Text(s.datesApproximate, style: context.text.bodySmall),
               ],
-              if ((e.lat, e.lon) case (final lat?, final lon?)) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '${s.coordinates}: ${lat.toStringAsFixed(4)}, ${lon.toStringAsFixed(4)}',
-                  style: context.text.bodyMedium,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                AppButton.outline(
-                  label: s.showOnMap,
-                  icon: Icons.map_outlined,
-                  size: AppButtonSize.sm,
-                  onPressed: () => _openMap(context, lat, lon),
-                ),
-              ],
-              if (e.summary.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.md),
-                Text(e.summary, style: context.text.bodyLarge),
-              ],
+              if (!mapped && e.summary.isNotEmpty) ...[const SizedBox(height: AppSpacing.md), summary],
             ],
           ),
         ),
+        if (mapped) ...[
+          PlaceMapCard(name: e.name, lat: lat, lon: lon, onOpenOnline: () => _openMap(context, lat, lon)),
+          if (e.summary.isNotEmpty) Gutter(vertical: AppSpacing.lg, child: summary),
+        ],
         SectionHeader('${s.mentionedIn} (${keys.length})', first: true),
         for (final k in shown)
           AppListTile(

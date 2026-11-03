@@ -528,7 +528,9 @@ void main() {
       settings: const Settings(languageCode: 'en'),
       initial: '/entity/place%3Agaleed_432',
     );
-    expect(find.text('Show on a map'), findsOneWidget);
+    // Its own map, which works offline, and a larger one online.
+    expect(find.text('Map data: Natural Earth'), findsOneWidget);
+    expect(find.text('Larger map'), findsOneWidget);
   });
 
   testWidgets('tapping a word shows its grammar and opens the word study', (tester) async {

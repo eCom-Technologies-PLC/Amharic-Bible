@@ -149,6 +149,11 @@ abstract final class AppDimens {
   /// A share card shown inside a sheet (the finished-plan card).
   static const double shareCardPreview = 280;
 
+  /// A place's map: at most this high on wide windows (it shows more land
+  /// rather than growing), and the small map of the whole region beside it.
+  static const double placeMapMaxHeight = 360;
+  static const double mapLocatorWidth = 96;
+
   /// The reminder's time wheel and one row of it, before text scaling.
   static const double timeWheel = 216;
   static const double timeWheelItem = 32;

@@ -20,7 +20,10 @@ Amharic Bible: an offline-first Flutter app for Android, iOS and the web (`app/`
 - Generated app data (never hand-edit): `app/lib/core/unicode_data.dart` (search normalization's Unicode
   decompositions) from `python pipeline/build_dart_unicode.py`, after moving to a Python with a newer Unicode
   (`test_dart_unicode.py` checks it against `unicodedata`); `app/lib/core/date_data.dart` (Amharic and English date
-  names) from `python pipeline/build_dart_dates.py <flutter sdk>`, after a Flutter upgrade
+  names) from `python pipeline/build_dart_dates.py <flutter sdk>`, after a Flutter upgrade;
+  `app/assets/map/bible_lands.bin` (the places' map) from `python pipeline/build_map.py --natural-earth <folder>
+  --out app/assets/map/bible_lands.bin`, with Natural Earth's 1:10m land, lakes and rivers as GeoJSON in the folder
+  (`test_map.py` checks the file)
 - Audio proxy: `node --test server/audio-proxy/proxy.test.mjs`
 - Study assistant: `cd server/study-assistant && npm ci && npm test`
 - Sync SQL: `cd server/supabase/test && npm ci && npm test`

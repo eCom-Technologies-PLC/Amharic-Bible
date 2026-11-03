@@ -516,6 +516,21 @@ class S {
   String get installApp => _('installApp');
   String get installAppHint => _('installAppHint');
   String get showOnMap => _('showOnMap');
+  String get map => _('map');
+  String get largerMap => _('largerMap');
+  String get mapCredit => _('mapCredit');
+  String get mapSource => _('mapSource');
+
+  /// What a place's map shows, for screen readers.
+  String mapOf(String place) => isAmharic ? '$place እና አካባቢውን የሚያሳይ ካርታ' : 'Map of $place and the lands around it';
+
+  /// Where a place lies from Jerusalem: [direction] is a compass point, 0
+  /// north to 7 north-west.
+  String fromJerusalem(int km, int direction) => isAmharic
+      ? 'ከኢየሩሳሌም በስተ ${_compassAm[direction]} $km ኪ.ሜ. ገደማ'
+      : 'About $km km ${_compassEn[direction]} of Jerusalem';
+  static const _compassAm = ['ሰሜን', 'ሰሜን ምሥራቅ', 'ምሥራቅ', 'ደቡብ ምሥራቅ', 'ደቡብ', 'ደቡብ ምዕራብ', 'ምዕራብ', 'ሰሜን ምዕራብ'];
+  static const _compassEn = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
   String get mapOpenFailed => _('mapOpenFailed');
 
   /// An era of biblical history on the timeline, by `BibleEra.name`.
@@ -1065,6 +1080,10 @@ const _am = {
   'installApp': 'መተግበሪያውን ጫን',
   'installAppHint': 'ከመነሻ ገጽዎ በቀጥታ ይክፈቱት፤ ያለ ኢንተርኔትም ይሰራል።',
   'showOnMap': 'በካርታ ላይ አሳይ',
+  'map': 'ካርታ',
+  'largerMap': 'ትልቅ ካርታ',
+  'mapCredit': 'የካርታ መረጃ፦ Natural Earth',
+  'mapSource': 'የመጽሐፍ ቅዱስ ምድር ካርታ የብስ፣ ሐይቆችና ወንዞች (የሕዝብ ንብረት)',
   'mapOpenFailed': 'ካርታውን መክፈት አልተቻለም',
   'era.beginnings': 'ፍጥረትና የጥንቱ ዓለም',
   'era.patriarchs': 'የአበው ዘመን',
@@ -1596,6 +1615,10 @@ const _en = {
   'installApp': 'Install the app',
   'installAppHint': 'Open it from your home screen or desktop; it works offline too.',
   'showOnMap': 'Show on a map',
+  'map': 'Map',
+  'largerMap': 'Larger map',
+  'mapCredit': 'Map data: Natural Earth',
+  'mapSource': 'Land, lakes and rivers on the map of Bible lands (public domain)',
   'mapOpenFailed': "Couldn't open the map",
   'era.beginnings': 'Beginnings',
   'era.patriarchs': 'The patriarchs',

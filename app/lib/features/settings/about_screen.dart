@@ -66,6 +66,8 @@ class AboutScreen extends ConsumerWidget {
                   ),
                 ),
             ],
+            SectionHeader(s.map),
+            AppListTile(title: 'Natural Earth', subtitle: s.mapSource),
             SectionHeader(s.font),
             const AppListTile(
               title: 'Noto Serif Ethiopic, Noto Sans Ethiopic, Noto Serif (Greek), Noto Serif Hebrew',

@@ -1364,7 +1364,7 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 - Save the verse image to the gallery: needs a native plugin and photo-library permissions on Android and iOS,
   tested on devices. Until then the share sheet offers saving on phones, and the web downloads the image.
 - An offline map card for places (a simplified coastline of Bible lands from Natural Earth, built by the content
-  pipeline); for now the map opens online.
+  pipeline); for now the map opens online (done in Phase 6).
 - Plans: covers (illustrator).
 - Search: a passage preview beside the results on wide windows; Amharic stemming (pipeline).
 
@@ -1434,6 +1434,18 @@ explore page lists them to browse instead. Amharic names belong in the content p
     It sits above the text, since the text scrolls along with the audio.
   - Doing what a tip says also puts it away: a swipe, or a tap that moves the listening to a verse.
   - The layout audit renders both at 320 dp with 1.3× text in both languages.
+- **Places on a map, offline (§7.6):** a place's page has a map card instead of its latitude and longitude.
+  - `pipeline/build_map.py` keeps Natural Earth's 1:10m land, natural lakes and chosen rivers (the Nile and Ethiopia's
+    rivers, Mesopotamia's, the Jordan) inside 10°W–70°E and 5°N–47°N, which holds every place in the data but India
+    and Uphaz. Simplified to about a kilometre, it is a 24 KB file the app draws itself.
+  - The card shows the place's surroundings at a fixed scale (about 2.6° of latitude on a phone, more land on wider
+    windows), with a pin; beside it, a small map of the whole region frames that window; and a line says how far and
+    which way the place lies from Jerusalem, which screen readers hear with the map.
+  - Colors come from each reading theme (water in its info tone); "Larger map" opens OpenStreetMap online. Places
+    beyond the map show their coordinates, as before. About credits Natural Earth.
+  - Tests: the pipeline's clipping, simplifying and encoding, and the checked-in file (land at Jerusalem, Patmos and
+    Addis Ababa, sea in the Mediterranean and the Caspian, the Sea of Galilee, the Dead Sea and Lake Tana); in the
+    app, decoding, distances and directions, and the place page. The layout audit already renders a place.
 
 **Waiting:**
 

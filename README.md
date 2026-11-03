@@ -124,8 +124,10 @@ Features:
   quoted and the version cited.
 - **Grammar search:** `morph:V-AAI` (Greek aorist active indicative), `@HVqw` (Hebrew Qal wayyiqtol), optionally
   with a Strong's number (`G25 morph:V-AAI`).
-- **Timeline:** dated biblical events in order, grouped into eras (Search & Study → Bible timeline). Places
-  open on a map (online).
+- **Timeline:** dated biblical events in order, grouped into eras (Search & Study → Bible timeline).
+- **Places on a map, offline:** a place's page shows it on a map of Bible lands (land, lakes and rivers from
+  Natural Earth, from Spain to Ophir and south past Ethiopia), with a small map of the whole region and how far and
+  which way it lies from Jerusalem ("About 870 km east of Jerusalem"). A larger map opens online.
 - **Study groups (needs accounts):** create a group or join with an 8-character code (Invite, at the top of the
   group, shares or copies it); discuss as a conversation, follow a shared reading plan with everyone's progress,
   and teachers give assignments (passage, task, due date) that members mark done. Members see each other's chosen
@@ -307,4 +309,5 @@ service role can read the table (Supabase dashboard → Table editor).
 Fonts: Noto Serif/Sans Ethiopic, Noto Serif (a Greek subset) and Noto Serif Hebrew, SIL Open Font License (`app/assets/fonts/OFL.txt`). Bible texts: see
 `content/versions.json`. Study resources: see `content/resources.json`. Each attribution is shown in the app
 under About → Sources and Study sources. The Strong's and Theographic data are ShareAlike: changes to that data
-must be shared under the same license.
+must be shared under the same license. The map of Bible lands (`app/assets/map/bible_lands.bin`, built by
+`pipeline/build_map.py`) is from Natural Earth, which is in the public domain.

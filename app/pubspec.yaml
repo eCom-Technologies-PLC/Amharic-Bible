@@ -48,6 +48,8 @@ flutter:
   assets:
     - assets/content/content.db
     - assets/plans/plans.json
+    # Land, lakes and rivers of Bible lands (pipeline/build_map.py, Natural Earth).
+    - assets/map/bible_lands.bin
   fonts:
     - family: NotoSerifEthiopic
       fonts:
