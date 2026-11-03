@@ -115,36 +115,40 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         onSubmitted: (q) => _run(q, remember: true),
         onClear: () => _run(''),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          FilterBar<TestamentFilter>(
-            selected: _filter,
-            onSelected: (f) {
-              setState(() => _filter = f);
-              _run(_query);
-            },
-            options: [
-              FilterOption(TestamentFilter.all, s.all),
-              FilterOption(TestamentFilter.oldTestament, s.oldTestament),
-              FilterOption(TestamentFilter.newTestament, s.newTestament),
-            ],
-          ),
-          FilterBar<bool>(
-            selected: _allVersions,
-            onSelected: (all) {
-              setState(() => _allVersions = all);
-              _run(_query);
-            },
-            options: [
-              FilterOption(false, ref.watch(currentVersionProvider).value?.abbrev ?? s.read),
-              FilterOption(true, s.allVersions),
-            ],
-          ),
-          const Divider(),
-          Expanded(child: _results(context, s, settings, bookList)),
-        ],
-      ),
+      body: ContentWidth(child: _body(context, s, settings, bookList)),
+    );
+  }
+
+  Widget _body(BuildContext context, S s, Settings settings, List<Book> bookList) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilterBar<TestamentFilter>(
+          selected: _filter,
+          onSelected: (f) {
+            setState(() => _filter = f);
+            _run(_query);
+          },
+          options: [
+            FilterOption(TestamentFilter.all, s.all),
+            FilterOption(TestamentFilter.oldTestament, s.oldTestament),
+            FilterOption(TestamentFilter.newTestament, s.newTestament),
+          ],
+        ),
+        FilterBar<bool>(
+          selected: _allVersions,
+          onSelected: (all) {
+            setState(() => _allVersions = all);
+            _run(_query);
+          },
+          options: [
+            FilterOption(false, ref.watch(currentVersionProvider).value?.abbrev ?? s.read),
+            FilterOption(true, s.allVersions),
+          ],
+        ),
+        const Divider(),
+        Expanded(child: _results(context, s, settings, bookList)),
+      ],
     );
   }
 

@@ -151,6 +151,10 @@ class _BrowserTitleState extends State<_BrowserTitle> {
 }
 
 /// Scrollable screen content with the standard padding and vertical rhythm.
+///
+/// On wide windows the content is centered at [AppDimens.contentMaxWidth]
+/// while the list itself stays full width, so it scrolls from anywhere in the
+/// window and its scrollbar sits at the edge.
 class AppListView extends StatelessWidget {
   const AppListView({super.key, required this.children, this.padding, this.controller});
 
@@ -162,12 +166,39 @@ class AppListView extends StatelessWidget {
   /// [Gutter] add the screen padding themselves, so tiles can be full-width).
   static const defaultPadding = EdgeInsets.symmetric(vertical: AppSpacing.sm);
 
+  /// [padding] plus the side margins that center content of at most
+  /// [AppDimens.contentMaxWidth] in a list [width] wide. For screens that
+  /// build their own `ListView` (e.g. `ListView.builder`).
+  static EdgeInsets centered(BuildContext context, double width, [EdgeInsetsGeometry padding = defaultPadding]) {
+    final side = width > AppDimens.contentMaxWidth ? (width - AppDimens.contentMaxWidth) / 2 : 0.0;
+    return padding.resolve(Directionality.of(context)) + EdgeInsets.symmetric(horizontal: side);
+  }
+
   @override
-  Widget build(BuildContext context) => ListView(
-    controller: controller,
-    padding: padding ?? defaultPadding,
-    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    children: children,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) => ListView(
+      controller: controller,
+      padding: centered(context, box.maxWidth, padding ?? defaultPadding),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      children: children,
+    ),
+  );
+}
+
+/// Centers a screen body that isn't an [AppListView] (tab views, screens with
+/// their own lists) at [AppDimens.contentMaxWidth] on wide windows.
+class ContentWidth extends StatelessWidget {
+  const ContentWidth({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: AppDimens.contentMaxWidth),
+      child: child,
+    ),
   );
 }
 

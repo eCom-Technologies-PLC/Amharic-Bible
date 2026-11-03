@@ -32,7 +32,7 @@ class LibraryScreen extends ConsumerWidget {
             Tab(text: s.notes),
           ],
         ),
-        body: const TabBarView(children: [_HighlightsTab(), _BookmarksTab(), _NotesTab()]),
+        body: const ContentWidth(child: TabBarView(children: [_HighlightsTab(), _BookmarksTab(), _NotesTab()])),
       ),
     );
   }

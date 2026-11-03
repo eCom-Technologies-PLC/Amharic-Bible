@@ -62,7 +62,7 @@ class TodaysReadingCards extends ConsumerWidget {
         for (final p in active)
           AppCard(
             eyebrow: s.todaysReading,
-            onTap: () => context.push('/me/plans/${p.plan.id}'),
+            onTap: () => context.go('/plans/${p.plan.id}'),
             trailing: p.finished
                 ? null
                 : IconButton(

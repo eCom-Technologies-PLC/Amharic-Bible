@@ -94,6 +94,7 @@ void main() {
     final reminders = FakeReminders();
     final container = await pumpSettings(tester, reminders);
     await tester.scrollUntilVisible(find.text('Daily reading reminder'), 200);
+    await tester.pumpAndSettle(); // lay out the scrolled list before tapping
     await tester.tap(find.text('Daily reading reminder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('07:00'));
@@ -112,6 +113,7 @@ void main() {
   testWidgets('a refused permission leaves the reminder off and says why', (tester) async {
     final container = await pumpSettings(tester, FakeReminders(allowed: false));
     await tester.scrollUntilVisible(find.text('Daily reading reminder'), 200);
+    await tester.pumpAndSettle(); // lay out the scrolled list before tapping
     await tester.tap(find.text('Daily reading reminder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('07:00'));

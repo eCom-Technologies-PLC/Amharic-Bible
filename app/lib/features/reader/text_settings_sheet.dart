@@ -18,9 +18,12 @@ String themeLabel(S s, ReaderTheme t) => switch (t) {
 };
 
 /// Reading appearance: text size, line spacing, font, theme and (when an
-/// original-language text is installed) interlinear words.
+/// original-language text is installed) interlinear words. The welcome steps
+/// embed it without the interlinear switch.
 class TextSettingsSheet extends ConsumerWidget {
-  const TextSettingsSheet({super.key});
+  const TextSettingsSheet({super.key, this.showInterlinear = true});
+
+  final bool showInterlinear;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,7 +93,7 @@ class TextSettingsSheet extends ConsumerWidget {
             onSelectionChanged: (v) => notifier.update((x) => x.copyWith(serif: v.first)),
           ),
         ),
-        if (ref.watch(versionsWithWordsProvider).value?.isNotEmpty ?? false)
+        if (showInterlinear && (ref.watch(versionsWithWordsProvider).value?.isNotEmpty ?? false))
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(Icons.translate),

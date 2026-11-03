@@ -19,14 +19,16 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'helpers.dart';
 
 const routes = [
+  '/welcome',
   '/home',
   '/read?ref=JHN.3',
   '/read?ref=PSA.23',
   '/search',
   '/me',
-  '/me/plans',
-  '/me/plans/nt-90',
-  '/me/plans/bible-year',
+  '/plans',
+  '/plans/nt-90',
+  '/plans/bible-year',
+  '/plans/groups',
   '/me/library',
   '/me/settings',
   '/me/account',
@@ -45,7 +47,6 @@ const routes = [
   '/entity/place%3Agaleed_432',
   '/ask?v=43003016',
   '/timeline',
-  '/me/groups',
 ];
 
 class Device {
@@ -235,6 +236,21 @@ void main() {
           interact: (t) async {
             await t.enterText(find.byType(TextField), 'God');
             await t.testTextInput.receiveAction(TextInputAction.search);
+          },
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang welcome: reading comfort and where to begin', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/welcome',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, onboarded: false),
+          interact: (t) async {
+            await t.tap(find.text(lang == 'am' ? 'አማርኛ' : 'English'));
+            await t.pumpAndSettle(); // step 2: text settings
+            await t.tap(find.text(lang == 'am' ? 'ቀጥል' : 'Next'));
           },
         );
         expect(errors, isEmpty);

@@ -87,6 +87,7 @@ class Settings {
     this.lastSyncedAt,
     this.lastRef,
     this.recentSearches = const [],
+    this.onboarded = true,
   });
 
   final ReaderTheme readerTheme;
@@ -122,6 +123,10 @@ class Settings {
   final BibleRef? lastRef;
   final List<String> recentSearches;
 
+  /// False only on a fresh install (nothing stored yet), until the welcome
+  /// steps are finished or skipped; installs from before them count as done.
+  final bool onboarded;
+
   double get fontSize => AppFonts.readingSizes[fontSizeIndex.clamp(0, AppFonts.readingSizes.length - 1)];
   String get fontFamily => serif ? AppFonts.serif : AppFonts.sans;
   Locale get locale => Locale(languageCode);
@@ -146,6 +151,7 @@ class Settings {
     DateTime? Function()? lastSyncedAt,
     BibleRef? lastRef,
     List<String>? recentSearches,
+    bool? onboarded,
   }) => Settings(
     readerTheme: readerTheme ?? this.readerTheme,
     fontSizeIndex: fontSizeIndex ?? this.fontSizeIndex,
@@ -166,6 +172,7 @@ class Settings {
     lastSyncedAt: lastSyncedAt != null ? lastSyncedAt() : this.lastSyncedAt,
     lastRef: lastRef ?? this.lastRef,
     recentSearches: recentSearches ?? this.recentSearches,
+    onboarded: onboarded ?? this.onboarded,
   );
 
   Map<String, String?> toMap() => {
@@ -188,6 +195,7 @@ class Settings {
     'last_synced': lastSyncedAt?.millisecondsSinceEpoch.toString(),
     'last_ref': lastRef?.encode(),
     'recent_searches': jsonEncode(recentSearches),
+    'onboarded': '$onboarded',
   };
 
   factory Settings.fromMap(Map<String, String> m) {
@@ -217,6 +225,8 @@ class Settings {
       recentSearches: m['recent_searches'] != null
           ? List<String>.from(jsonDecode(m['recent_searches']!) as List)
           : const [],
+      // Anything stored means an install from before the welcome steps existed.
+      onboarded: b('onboarded', m.isNotEmpty),
     );
   }
 }
@@ -361,6 +371,13 @@ final streakProvider = FutureProvider<Streak>((ref) async {
   ref.watch(settingsProvider.select((s) => s.lastRef));
   final days = await ref.watch(userRepositoryProvider).readingDays();
   return streakFrom(days, ref.watch(clockProvider)());
+});
+
+/// Days read this week, Sunday first (Today's week row).
+final weekRhythmProvider = FutureProvider<List<bool>>((ref) async {
+  ref.watch(settingsProvider.select((s) => s.lastRef));
+  final days = await ref.watch(userRepositoryProvider).readingDays();
+  return weekRhythm(days, ref.watch(clockProvider)());
 });
 
 /// Providers that read the user database, refreshed after it changes.

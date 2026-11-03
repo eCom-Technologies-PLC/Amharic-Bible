@@ -15,6 +15,7 @@ import 'features/groups/groups_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/library/note_editor_screen.dart';
+import 'features/onboarding/welcome_screen.dart';
 import 'features/plans/plan_detail_screen.dart';
 import 'features/plans/plans_screen.dart';
 import 'features/reader/book_picker_screen.dart';
@@ -36,14 +37,28 @@ import 'state/providers.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 
+/// Addresses that moved when Plans and Groups got their own tab; old links
+/// and bookmarks keep working.
+String? _movedRoute(GoRouterState state) {
+  final path = state.uri.path;
+  final String? moved = switch (path) {
+    '/me/groups' => '/plans/groups',
+    _ when path == '/me/plans' || path.startsWith('/me/plans/') => path.replaceFirst('/me/plans', '/plans'),
+    _ => null,
+  };
+  return moved == null ? null : Uri(path: moved, query: state.uri.hasQuery ? state.uri.query : null).toString();
+}
+
 GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
   navigatorKey: _rootKey,
   initialLocation: initialLocation,
+  redirect: (_, state) => _movedRoute(state),
   // A mistyped or outdated link gets a friendly page, not the router's own.
   errorBuilder: (_, _) => const NotFoundScreen(),
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => AppShell(shell: shell),
+      // Tab order: Today · Read · Plans · Search & Study · Me (AppShell.tabs).
       branches: [
         StatefulShellBranch(
           routes: [GoRoute(path: '/home', builder: (_, _) => const HomeScreen())],
@@ -53,6 +68,21 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
             GoRoute(
               path: '/read',
               builder: (_, state) => ReaderScreen(target: BibleRef.decode(state.uri.queryParameters['ref'])),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/plans',
+              builder: (_, _) => const PlansScreen(),
+              routes: [
+                GoRoute(path: 'groups', builder: (_, _) => const GroupsScreen()),
+                GoRoute(
+                  path: ':id',
+                  builder: (_, state) => PlanDetailScreen(planId: state.pathParameters['id']!),
+                ),
+              ],
             ),
           ],
         ),
@@ -71,18 +101,7 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
                       LibraryScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0),
                 ),
                 GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
-                GoRoute(path: 'groups', builder: (_, _) => const GroupsScreen()),
                 GoRoute(path: 'account', builder: (_, _) => const AccountScreen()),
-                GoRoute(
-                  path: 'plans',
-                  builder: (_, _) => const PlansScreen(),
-                  routes: [
-                    GoRoute(
-                      path: ':id',
-                      builder: (_, state) => PlanDetailScreen(planId: state.pathParameters['id']!),
-                    ),
-                  ],
-                ),
                 GoRoute(path: 'about', builder: (_, _) => const AboutScreen()),
                 GoRoute(path: 'downloads', builder: (_, _) => const DownloadsScreen()),
               ],
@@ -91,6 +110,7 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
         ),
       ],
     ),
+    GoRoute(path: '/welcome', parentNavigatorKey: _rootKey, builder: (_, _) => const WelcomeScreen()),
     GoRoute(path: '/books', parentNavigatorKey: _rootKey, builder: (_, _) => const BookPickerScreen()),
     GoRoute(path: '/player', parentNavigatorKey: _rootKey, builder: (_, _) => const PlayerScreen()),
     GoRoute(
@@ -147,7 +167,11 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
   ],
 );
 
-final routerProvider = Provider<GoRouter>((ref) => buildRouter());
+/// A fresh install opens on the welcome steps; links (a shared verse on the
+/// web, a deep link on a phone) still open where they point.
+final routerProvider = Provider<GoRouter>(
+  (ref) => buildRouter(initialLocation: ref.read(settingsProvider).onboarded ? '/home' : '/welcome'),
+);
 
 class AmharicBibleApp extends ConsumerWidget {
   const AmharicBibleApp({super.key});
@@ -179,7 +203,12 @@ class AmharicBibleApp extends ConsumerWidget {
   }
 }
 
-/// Bottom navigation (Home, Read, Search, Me) with the mini player above it.
+/// The app's navigation: Today · Read · Plans · Search & Study · Me.
+///
+/// A bottom bar on phones (with the mini player above it), a rail from
+/// [AppDimens.navigationRailMinWidth] (tablets, phones in landscape) and a
+/// sidebar with the app's name from [AppDimens.navigationSidebarMinWidth]
+/// (desktop browsers); beside a rail the mini player sits under the content.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.shell});
 
@@ -190,21 +219,27 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    // Same order as the router's branches.
     final tabs = [
-      (icon: Icons.home_outlined, selected: Icons.home, label: s.home),
+      (icon: Icons.wb_sunny_outlined, selected: Icons.wb_sunny, label: s.today),
       (icon: Icons.menu_book_outlined, selected: Icons.menu_book, label: s.read),
-      (icon: Icons.search, selected: Icons.search, label: s.search),
+      (icon: Icons.event_note_outlined, selected: Icons.event_note, label: s.plans),
+      (icon: Icons.search, selected: Icons.manage_search, label: s.search),
       (icon: Icons.person_outline, selected: Icons.person, label: s.me),
     ];
+    final width = MediaQuery.sizeOf(context).width;
 
-    // Wide windows (desktop browsers, landscape tablets): navigation rail on the side.
-    if (MediaQuery.sizeOf(context).width >= AppDimens.navigationRailMinWidth) {
+    if (width >= AppDimens.navigationRailMinWidth) {
+      final sidebar = width >= AppDimens.navigationSidebarMinWidth;
       return Scaffold(
         body: Row(
           children: [
             SafeArea(
               right: false,
               child: NavigationRail(
+                extended: sidebar,
+                labelType: sidebar ? NavigationRailLabelType.none : NavigationRailLabelType.all,
+                leading: sidebar ? const _Wordmark() : null,
                 selectedIndex: shell.currentIndex,
                 onDestinationSelected: _go,
                 destinations: [
@@ -249,4 +284,20 @@ class AppShell extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The app's name at the top of the sidebar (until the illustrator's logo exists).
+class _Wordmark extends StatelessWidget {
+  const _Wordmark();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xl),
+    child: Text(
+      S.of(context).appName,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: context.text.titleLarge?.copyWith(color: context.colors.primary, fontFamily: AppFonts.serif),
+    ),
+  );
 }

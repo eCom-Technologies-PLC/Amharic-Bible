@@ -33,3 +33,11 @@ Streak streakFrom(Iterable<DateTime> days, DateTime today) {
   }
   return Streak(current: current, best: best, readToday: readToday);
 }
+
+/// Which days of [today]'s week, Sunday first, have any reading: a gentle
+/// picture of the week rather than a count that can be lost.
+List<bool> weekRhythm(Iterable<DateTime> days, DateTime today) {
+  final set = {for (final d in days) _day(d)};
+  final sunday = today.day - today.weekday % 7; // DateTime.weekday: Monday 1 … Sunday 7
+  return [for (var i = 0; i < 7; i++) set.contains(DateTime(today.year, today.month, sunday + i))];
+}

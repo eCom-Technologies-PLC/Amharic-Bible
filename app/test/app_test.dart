@@ -6,6 +6,7 @@ import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/domain/models.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
+import 'package:amharic_bible/features/reader/reader_screen.dart';
 import 'package:amharic_bible/features/reader/selection_bar.dart';
 import 'package:amharic_bible/features/share/share_image_screen.dart';
 import 'package:amharic_bible/features/study/study_widgets.dart';
@@ -66,7 +67,10 @@ void main() {
     await pumpApp(tester);
     expect(find.text('የዕለቱ ጥቅስ'), findsOneWidget);
     expect(find.textContaining('የሙከራ ጽሑፍ'), findsWidgets);
-    expect(find.text('ቤት'), findsOneWidget); // bottom navigation in Amharic
+    // Bottom navigation in Amharic: Today, and Plans with its own tab.
+    final nav = find.byType(NavigationBar);
+    expect(find.descendant(of: nav, matching: find.text('ዛሬ')), findsOneWidget);
+    expect(find.descendant(of: nav, matching: find.text('ዕቅዶች')), findsOneWidget);
   });
 
   testWidgets('reader opens John 3, a verse can be selected and highlighted', (tester) async {
@@ -153,8 +157,9 @@ void main() {
     await pumpApp(
       tester,
       settings: const Settings(languageCode: 'en'),
-      initial: '/me/plans',
+      initial: '/me/plans', // the old address still leads to the Plans tab
     );
+    expect(find.text('Plans'), findsWidgets);
     await tester.tap(find.text('The Gospels in 30 days'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Start plan'));
@@ -336,13 +341,15 @@ void main() {
       tester,
       settings: const Settings(languageCode: 'en', versionId: 'WEB', lastRef: BibleRef('JHN', 3, 16)),
     );
+    expect(find.text('John 3'), findsOneWidget); // the Continue card, first on Today
     // Scroll to the row itself: the verse of the day above it changes length
     // from day to day, so the section header alone can leave it below the fold.
     await tester.scrollUntilVisible(find.text('Psalms 23'), 200);
     await tester.pumpAndSettle(); // lay out the scrolled list before tapping
     expect(find.text('Recently read'), findsOneWidget);
     expect(find.text('Psalms 23'), findsOneWidget);
-    expect(find.text('John 3'), findsOneWidget); // only in the Continue card
+    // The chapter to continue isn't repeated in the list.
+    expect(find.descendant(of: find.byType(AppListTile), matching: find.text('John 3')), findsNothing);
     await tester.tap(find.text('Psalms 23'));
     await tester.pumpAndSettle();
     expect(find.byType(ParagraphView), findsWidgets);
@@ -363,6 +370,27 @@ void main() {
     expect(find.text('ዮሐንስ 3'), findsOneWidget);
     final router = GoRouter.of(tester.element(find.byType(ParagraphView).first));
     expect(router.routerDelegate.currentConfiguration.uri.toString(), '/read?ref=JHN.3');
+  });
+
+  testWidgets('the welcome steps set the language and open the chosen start', (tester) async {
+    await pumpApp(tester, settings: const Settings(onboarded: false), initial: '/welcome');
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+    expect(find.text('Make reading comfortable'), findsOneWidget); // the UI switched to English
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start with the Gospel of John'));
+    await tester.pumpAndSettle();
+    // The reader opens at John 1 (not in the sample text, which has John 3).
+    expect(find.byType(ReaderScreen), findsOneWidget);
+    final saved = await UserRepository(userDb).settings();
+    expect((saved['language'], saved['onboarded']), ('en', 'true'));
+  });
+
+  test('only a fresh install needs the welcome steps', () {
+    expect(Settings.fromMap(const {}).onboarded, isFalse);
+    expect(Settings.fromMap(const {'last_ref': 'JHN.3'}).onboarded, isTrue); // installed before them
+    expect(Settings.fromMap(const {'onboarded': 'true'}).onboarded, isTrue);
   });
 
   testWidgets('a link to a missing page shows a way home', (tester) async {

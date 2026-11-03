@@ -10,5 +10,6 @@ export 'widgets/app_card.dart';
 export 'widgets/app_scaffold.dart';
 export 'widgets/app_text_field.dart';
 export 'widgets/dialogs.dart';
+export 'widgets/hero_card.dart';
 export 'widgets/section_header.dart';
 export 'widgets/states.dart';

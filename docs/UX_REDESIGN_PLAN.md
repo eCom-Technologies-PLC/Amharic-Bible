@@ -1077,6 +1077,36 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 - **Golden screenshot tests:** they need a decision on where to generate them, because fonts render differently on
   Windows and Linux (CI).
 
+### Phase 2 (started 2026-11-03)
+
+**Done:**
+
+- **Navigation:** five tabs (Today · Read · Plans · Search & Study · Me). Plans and Groups have their own tab, and the
+  old `/me/plans…` and `/me/groups` addresses redirect.
+- **Shell:** a bottom bar on phones, a rail from 600 px, and a sidebar with the app's name from 1200 px. Page content
+  is centered at 840 px on wide windows (`AppListView`, `ContentWidth`).
+- **Today:**
+  - A greeting and the weekday with the date.
+  - Continue reading first.
+  - The verse of the day as a parchment hero card with an ornament rule.
+  - A start-a-plan card while there is no plan.
+  - This week's reading days.
+- **Welcome steps on a fresh install:**
+  - Language.
+  - Reading comfort: the reader's own text settings, applied live.
+  - Where to begin.
+
+  Every step can be skipped, and installs from before the welcome skip it.
+- **Me:** an account header (guest or signed in, with a sync nudge), library counts, and grouped Study and App
+  sections.
+- **New shared widgets:** `HeroCard`, `OrnamentRule`, `StatTile`, `ContentWidth`.
+
+**Left for later phases:**
+
+- The Search & Study explore page, where the study tools (now under Me) move (Phase 5).
+- In-reader tips, together with long-press selection (Phase 3).
+- A two-column Today and app bars aligned with the centered content on desktop (Phase 4).
+
 ---
 
 ## Sources

@@ -86,6 +86,15 @@ void main() {
         }
       });
 
+      test('the hero card stays readable across its gradient', () {
+        // HeroCard fades from secondaryContainer into the card color.
+        for (final bg in [scheme.secondaryContainer, card]) {
+          expect(contrast(scheme.primary, bg), greaterThanOrEqualTo(4.5), reason: 'label');
+          expect(contrast(scheme.onSecondaryContainer, bg), greaterThanOrEqualTo(4.5), reason: 'text');
+          expect(contrast(reading.verse.color!, bg), greaterThanOrEqualTo(4.5), reason: 'scripture');
+        }
+      });
+
       test('cards and the navigation bar stand apart from the page', () {
         expect(contrast(card, scheme.surface), greaterThanOrEqualTo(1.08), reason: 'card');
         expect(contrast(scheme.surfaceContainer, scheme.surface), greaterThanOrEqualTo(1.05), reason: 'navigation bar');

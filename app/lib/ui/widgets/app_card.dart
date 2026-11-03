@@ -63,6 +63,41 @@ class AppCard extends StatelessWidget {
   }
 }
 
+/// A count with its label on a small card, e.g. "12 Highlights" on the Me
+/// screen. Tapping opens what is counted.
+class StatTile extends StatelessWidget {
+  const StatTile({super.key, required this.value, required this.label, this.icon, this.onTap});
+
+  final String value;
+  final String label;
+  final IconData? icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (icon != null) Icon(icon, size: AppIconSize.sm, color: context.colors.secondary),
+            const SizedBox(height: AppSpacing.xs),
+            Text(value, maxLines: 1, style: context.text.headlineSmall),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.labelMedium?.copyWith(color: context.colors.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 /// List row with consistent height, padding, leading size and typography.
 class AppListTile extends StatelessWidget {
   const AppListTile({

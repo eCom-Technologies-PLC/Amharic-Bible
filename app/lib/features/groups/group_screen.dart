@@ -92,13 +92,15 @@ class GroupScreen extends ConsumerWidget {
         body: AsyncView(
           value: detail,
           onRetry: () => ref.invalidate(groupDetailProvider(groupId)),
-          data: (d) => TabBarView(
-            children: [
-              _Discussion(detail: d),
-              _Assignments(detail: d),
-              _Plan(detail: d),
-              _Members(detail: d),
-            ],
+          data: (d) => ContentWidth(
+            child: TabBarView(
+              children: [
+                _Discussion(detail: d),
+                _Assignments(detail: d),
+                _Plan(detail: d),
+                _Members(detail: d),
+              ],
+            ),
           ),
         ),
       ),

@@ -78,6 +78,49 @@ class S {
   String get shapeSquare => _('shapeSquare');
   String get shapeStory => _('shapeStory');
   String get pageNotFound => _('pageNotFound');
+  String get today => _('today');
+  String get plans => _('plans');
+  String get groupsIntro => _('groupsIntro');
+  String get thisWeek => _('thisWeek');
+  String get startAPlan => _('startAPlan');
+  String get startPlanHint => _('startPlanHint');
+  String get skip => _('skip');
+  String get next => _('next');
+  String get chooseLanguage => _('chooseLanguage');
+  String get readingComfort => _('readingComfort');
+  String get readingComfortHint => _('readingComfortHint');
+  String get whereToBegin => _('whereToBegin');
+  String get beginJohn => _('beginJohn');
+  String get beginJohnHint => _('beginJohnHint');
+  String get beginPlan => _('beginPlan');
+  String get beginPlanHint => _('beginPlanHint');
+  String get beginToday => _('beginToday');
+  String get beginTodayHint => _('beginTodayHint');
+
+  String get guest => _('guest');
+  String get syncOn => _('syncOn');
+  String get signInToSync => _('signInToSync');
+  String get notesOnDevice => _('notesOnDevice');
+  String get appSection => _('appSection');
+
+  /// "Step 2 of 3", for screen readers on the welcome steps.
+  String stepOf(int n, int total) => isAmharic ? 'ደረጃ $n ከ$total' : 'Step $n of $total';
+
+  /// A greeting for the time of day, in the polite form ("እንደምን አደሩ").
+  String greeting(int hour) {
+    if (hour >= 5 && hour < 12) return isAmharic ? 'እንደምን አደሩ' : 'Good morning';
+    if (hour >= 12 && hour < 18) return isAmharic ? 'እንደምን ዋሉ' : 'Good afternoon';
+    return isAmharic ? 'እንደምን አመሹ' : 'Good evening';
+  }
+
+  static const _weekdaysAm = ['እሑድ', 'ሰኞ', 'ማክሰኞ', 'ረቡዕ', 'ሐሙስ', 'ዓርብ', 'ቅዳሜ'];
+  static const _weekdaysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  /// The name of [DateTime.weekday] (Monday 1 … Sunday 7).
+  String weekdayName(int weekday) => (isAmharic ? _weekdaysAm : _weekdaysEn)[weekday % 7];
+
+  /// One-letter initial of the [i]th day of the week, Sunday first.
+  String weekdayInitial(int i) => (isAmharic ? _weekdaysAm : _weekdaysEn)[i].substring(0, 1);
   String get noteHint => _('noteHint');
   String get searchHint => _('searchHint');
   String get noResults => _('noResults');
@@ -420,6 +463,29 @@ const _am = {
   'shapeSquare': 'ካሬ',
   'shapeStory': 'ቁመታዊ',
   'pageNotFound': 'ይህ ገጽ አልተገኘም። አድራሻው ተቀይሮ ወይም ተሳስቶ ሊሆን ይችላል።',
+  'today': 'ዛሬ',
+  'plans': 'ዕቅዶች',
+  'groupsIntro': 'ከቤተ ክርስቲያንዎ ወይም ከጓደኞችዎ ጋር አብረው ያንብቡ፣ ይወያዩ።',
+  'thisWeek': 'ይህ ሳምንት',
+  'startAPlan': 'የንባብ ዕቅድ ይጀምሩ',
+  'startPlanHint': 'በቀን ጥቂት ምዕራፎች፤ ዕቅዱ የደረሱበትን ቦታ ያስታውሳል።',
+  'skip': 'ዝለል',
+  'next': 'ቀጥል',
+  'chooseLanguage': 'ቋንቋ ይምረጡ',
+  'readingComfort': 'ለንባብ እንዲመችዎ',
+  'readingComfortHint': 'የፊደሉን መጠንና ገጽታ ይምረጡ። በኋላም በንባብ ገጹ ላይ ባለው Aa መቀየር ይችላሉ።',
+  'whereToBegin': 'ከየት ይጀምሩ?',
+  'beginJohn': 'በዮሐንስ ወንጌል ይጀምሩ',
+  'beginJohnHint': 'የኢየሱስን ሕይወትና ትምህርት ለማወቅ ጥሩ መነሻ።',
+  'beginPlan': 'የንባብ ዕቅድ ይምረጡ',
+  'beginPlanHint': 'መጽሐፍ ቅዱስን በዓመት፣ አዲስ ኪዳንን በ90 ቀን፣ ወይም ወንጌላትን በ30 ቀን።',
+  'beginToday': 'ወደ ዛሬ ይሂዱ',
+  'beginTodayHint': 'የዕለቱ ጥቅስና የንባብዎ ቦታ።',
+  'guest': 'እንግዳ',
+  'syncOn': 'ድምቀቶችና ማስታወሻዎች ከዚህ መለያ ጋር ይመሳሰላሉ',
+  'signInToSync': 'ድምቀቶችዎና ማስታወሻዎችዎ እንዳይጠፉ ይግቡና ያመሳስሉ',
+  'notesOnDevice': 'ድምቀቶችዎና ማስታወሻዎችዎ በዚህ መሣሪያ ላይ ይቀመጣሉ',
+  'appSection': 'መተግበሪያ',
   'color.yellow': 'ቢጫ',
   'color.green': 'አረንጓዴ',
   'color.blue': 'ሰማያዊ',
@@ -828,6 +894,29 @@ const _en = {
   'shapeSquare': 'Square',
   'shapeStory': 'Story',
   'pageNotFound': "This page wasn't found. The address may have changed or have a typo.",
+  'today': 'Today',
+  'plans': 'Plans',
+  'groupsIntro': 'Read and talk it over together with your church or friends.',
+  'thisWeek': 'This week',
+  'startAPlan': 'Start a reading plan',
+  'startPlanHint': 'A few chapters a day; the plan remembers where you are.',
+  'skip': 'Skip',
+  'next': 'Next',
+  'chooseLanguage': 'Choose your language',
+  'readingComfort': 'Make reading comfortable',
+  'readingComfortHint': 'Pick a text size and look. You can change them later with Aa in the reader.',
+  'whereToBegin': 'Where would you like to begin?',
+  'beginJohn': 'Start with the Gospel of John',
+  'beginJohnHint': 'A good first book: the life and teaching of Jesus.',
+  'beginPlan': 'Choose a reading plan',
+  'beginPlanHint': 'The Bible in a year, the New Testament in 90 days, or the Gospels in 30 days.',
+  'beginToday': 'Go to Today',
+  'beginTodayHint': 'The verse of the day and where you left off.',
+  'guest': 'Guest',
+  'syncOn': 'Highlights and notes sync with this account',
+  'signInToSync': 'Sign in to back up your highlights and notes',
+  'notesOnDevice': 'Your highlights and notes are kept on this device',
+  'appSection': 'App',
   'color.yellow': 'Yellow',
   'color.green': 'Green',
   'color.blue': 'Blue',

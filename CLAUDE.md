@@ -49,11 +49,11 @@ All future UI work in this repository must follow this CLAUDE.md section.
 | Token | Values |
 |---|---|
 | Spacing | xs 4 · sm 8 · md 12 · lg 16 · xl 24 · xxl 32 · xxxl 48 · `screen` 16 (all screens, including the reader) · `section` 24 · `iconGap` 8 |
-| Radius | sm 8 (chips, swatches) · md 12 (cards, inputs, buttons, menus) · lg 16 (dialogs) · xl 28 (bottom sheets) |
+| Radius | sm 8 (chips, swatches) · md 12 (cards, inputs, buttons, menus) · lg 16 (dialogs) · hero 24 (hero cards) · xl 28 (bottom sheets) |
 | Elevation | flat 0 · card 1 · bar 3 · dialog 6 |
 | Icons | sm 18 · md 24 · lg 32 · xl 48 · hero 96 |
 | Heights | buttons 36 / 48 / 56 · input 56 · list tile 56 / 72 · app bar 56 · touch target 48 |
-| Layout | reading column max 680 (×2 side by side) · two columns from 600 · navigation rail from 840 · compact app bars below 320 effective width (width ÷ text scale) |
+| Layout | reading column max 680 (×2 side by side) · page content max 840 (`AppListView` / `ContentWidth` center it) · two columns from 600 · navigation rail from 600, sidebar from 1200 · compact app bars below 320 effective width (width ÷ text scale) |
 | Type (TextTheme) | display 40/36/32 · headline 30/26/24 · title 20/17/15 (w600) · body 17/15/13 · label 15/13/12. Line heights 1.25–1.4 for display/title, 1.5–1.55 for body (Ge'ez needs taller lines) |
 | Reading sizes | 15 · 17 · 19 (default) · 21 · 24 · 28; line heights 1.5 · 1.7 · 2.0 |
 | Motion | fast 150 ms · medium 250 ms · slow 400 ms · curve `easeOutCubic` · one page transition (`FadeForwardsPageTransitionsBuilder`) |
@@ -61,11 +61,14 @@ All future UI work in this repository must follow this CLAUDE.md section.
 **Shared widgets** (`app/lib/ui/widgets/`)
 
 - Structure: `AppScaffold` (`reading: true` puts the reader on the theme's paper color; `pageTitle` names the browser
-  tab on the web, default `title`), `AppListView`, `Gutter` (screen padding), `SectionHeader`, `LabeledGroup`,
+  tab on the web, default `title`), `AppListView` (centers content at 840 on wide windows), `ContentWidth` (the same
+  for bodies that aren't an `AppListView`), `Gutter` (screen padding), `SectionHeader`, `LabeledGroup`,
   `BottomActionBar`.
 - Actions: `AppButton` (`.secondary/.outline/.ghost/.destructive`; `size`, `icon`, `iconAtEnd`, `loading`, `expand`, `tight`), `LabeledIconButton`, `SwatchButton`. Icon-only actions use `IconButton` (themed to 48dp) with a `tooltip`.
 - Forms & filters: `AppTextField`, `AppSearchField`, `FilterBar` / `FilterOption`.
-- Data: `AppCard` (eyebrow → content → actions), `AppListTile`, `StatusBadge` (`BadgeTone`), `ProgressRing`.
+- Data: `AppCard` (eyebrow → content → actions), `HeroCard` (the one featured card of a screen, e.g. the verse of the
+  day) with `OrnamentRule` (placeholder for the illustrated haräg ornament), `StatTile` (a count and label),
+  `AppListTile`, `StatusBadge` (`BadgeTone`), `ProgressRing`.
 - States: `AsyncView` (loading/error/data for any `AsyncValue`), `EmptyState`, `LoadingState`, `ErrorState` (friendly text + retry; never show exception text to readers), `InlineSpinner`.
 - Overlays: `showAppDialog`, `showConfirmDialog`, `showAppBottomSheet`, `showOptionPicker` / `PickerOption`,
   `showAppSnack` (optional `actionLabel` / `onAction`, e.g. Undo).
@@ -89,7 +92,9 @@ All future UI work in this repository must follow this CLAUDE.md section.
 **Documented exceptions**
 
 - The share-image card (`VerseCard`) is a fixed 1080 px picture that must look the same in every theme, so it uses `ShareCardTokens` and its own palette rather than the app theme.
-- `AppShell` (in `app.dart`) uses a plain `Scaffold`: it is the navigation shell that hosts the bottom bar, not a screen.
+- `AppShell` (in `app.dart`) uses a plain `Scaffold`: it is the navigation shell (five tabs: Today · Read · Plans ·
+  Search & Study · Me) that hosts the bottom bar, rail or sidebar, not a screen. Old `/me/plans…` and `/me/groups`
+  addresses redirect to `/plans…`.
 - Fractions of the reading font size inside `ReadingStyles` (verse numbers 0.6×, footnote markers 0.7×, secondary version 0.92×) and scroll-alignment fractions in the reader are proportional by design.
 
 **Layout gate**

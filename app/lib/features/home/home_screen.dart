@@ -73,33 +73,32 @@ class HomeScreen extends ConsumerWidget {
               .firstOrNull
         : null;
 
+    final now = ref.watch(clockProvider)();
+    final hasPlan = ref.watch(activePlansProvider).value?.isNotEmpty ?? false;
+
     return AppScaffold(
-      title: s.appName,
-      actions: [
-        IconButton(
-          tooltip: s.settings,
-          icon: const Icon(Icons.settings_outlined),
-          onPressed: () => context.push('/me/settings'),
-        ),
-      ],
+      title: s.today,
+      actions: [IconButton(tooltip: s.search, icon: const Icon(Icons.search), onPressed: () => context.go('/search'))],
       body: AppListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.lg),
         children: [
           const SampleBanner(),
+          // Greeting and today's date (Ethiopian calendar by default).
           Gutter(
             vertical: AppSpacing.md,
-            child: Text(
-              formatDate(DateTime.now(), settings, s),
-              style: context.text.labelLarge?.copyWith(color: context.colors.onSurfaceVariant),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s.greeting(now.hour), style: context.text.headlineSmall),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '${s.weekdayName(now.weekday)} · ${formatDate(now, settings, s)}',
+                  style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+                ),
+              ],
             ),
           ),
-          switch (votd) {
-            AsyncData(value: final v?) => _VerseOfTheDayCard(votd: v, amharic: version?.language == 'amh'),
-            AsyncLoading() => const Padding(padding: EdgeInsets.all(AppSpacing.xxl), child: LoadingState()),
-            _ => const SizedBox.shrink(),
-          },
-          const TodaysReadingCards(),
-          if (settings.streaks) const _StreakCard(),
+          // Picking up where the reader left off comes first.
           AppCard(
             onTap: () => context.go(last != null ? '/read?ref=${last.encode()}' : '/read'),
             child: Row(
@@ -123,6 +122,15 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
           ),
+          switch (votd) {
+            AsyncData(value: final v?) => _VerseOfTheDayCard(votd: v, amharic: version?.language == 'amh'),
+            AsyncLoading() => const Padding(padding: EdgeInsets.all(AppSpacing.xxl), child: LoadingState()),
+            _ => const SizedBox.shrink(),
+          },
+          const TodaysReadingCards(),
+          if (!hasPlan) const _StartPlanCard(),
+          if (settings.streaks) const _StreakCard(),
+          const _WeekRhythm(),
           const _RecentlyRead(),
           Gutter(
             vertical: AppSpacing.lg,
@@ -130,6 +138,91 @@ class HomeScreen extends ConsumerWidget {
               s.tapToSelectHint,
               style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Invitation to start a plan, while the reader has none.
+class _StartPlanCard extends StatelessWidget {
+  const _StartPlanCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return AppCard(
+      onTap: () => context.go('/plans'),
+      child: Row(
+        children: [
+          Icon(Icons.event_note_outlined, color: context.colors.secondary),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s.startAPlan, style: context.text.titleMedium),
+                Text(s.startPlanHint, style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward),
+        ],
+      ),
+    );
+  }
+}
+
+/// The days read this week as seven marks, Sunday first: a gentle picture of
+/// the week, with no count to lose (the opt-in streak card has the count).
+class _WeekRhythm extends ConsumerWidget {
+  const _WeekRhythm();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final week = ref.watch(weekRhythmProvider).value;
+    if (week == null) return const SizedBox.shrink();
+    final today = ref.watch(clockProvider)().weekday % 7;
+    final scheme = context.colors;
+    return Gutter(
+      vertical: AppSpacing.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(s.thisWeek, style: context.text.labelLarge?.copyWith(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (var i = 0; i < 7; i++)
+                Semantics(
+                  label: s.weekdayName(i == 0 ? 7 : i),
+                  checked: week[i],
+                  child: ExcludeSemantics(
+                    child: Container(
+                      width: AppIconSize.lg,
+                      height: AppIconSize.lg,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: week[i] ? scheme.primary : null,
+                        border: Border.all(
+                          color: i == today ? scheme.secondary : scheme.outlineVariant,
+                          width: i == today ? AppDimens.selectedBorder : 1,
+                        ),
+                      ),
+                      child: Text(
+                        s.weekdayInitial(i),
+                        style: context.text.labelMedium?.copyWith(
+                          color: week[i] ? scheme.onPrimary : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -148,7 +241,7 @@ class _VerseOfTheDayCard extends StatelessWidget {
     final s = S.of(context);
     final v = votd.verse;
     final reference = formatReference(votd.book, vkeyChapter(v.vkey), [vkeyVerse(v.vkey)], amharic: amharic);
-    return AppCard(
+    return HeroCard(
       eyebrow: s.verseOfTheDay,
       onTap: () => context.go('/read?ref=${BibleRef(votd.book.code, vkeyChapter(v.vkey), vkeyVerse(v.vkey)).encode()}'),
       actions: [

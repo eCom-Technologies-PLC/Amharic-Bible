@@ -28,6 +28,7 @@ abstract final class AppRadius {
   static const double md = 12; // cards, inputs, buttons, menus
   static const double lg = 16; // dialogs
   static const double xl = 28; // bottom sheet top corners
+  static const double hero = 24; // hero cards (verse of the day)
   static const double full = 999;
 }
 
@@ -92,8 +93,16 @@ abstract final class AppDimens {
   static const double twoColumnMinWidth = 600;
 
   /// Width from which the app shell shows a navigation rail instead of the
-  /// bottom bar (desktop browsers, landscape tablets).
-  static const double navigationRailMinWidth = 840;
+  /// bottom bar (tablets, phones in landscape, browsers): Material's "medium".
+  static const double navigationRailMinWidth = 600;
+
+  /// Width from which the rail becomes a sidebar with the app's name and
+  /// labelled destinations (desktop browsers): Material's "large".
+  static const double navigationSidebarMinWidth = 1200;
+
+  /// Widest a page's content grows (lists, cards, forms); wider windows
+  /// center it, so lines and rows stay readable on desktop.
+  static const double contentMaxWidth = 840;
 
   /// Thin progress line (mini player).
   static const double progressThin = 2;
