@@ -232,15 +232,56 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       final (version, book, chapter) = (shown.version, shown.book, shown.chapter);
       final audio = ref.read(audioControllerProvider);
       if (audio.playing && audio.isChapter(version.id, book.code, chapter)) {
+        _known(_Tip.audio);
         unawaited(ref.read(audioControllerProvider.notifier).playChapter(version, book, chapter, fromVerse: k % 1000));
         return;
       }
       if (ref.read(readAloudProvider).isChapter(version.id, book.code, chapter)) {
+        _known(_Tip.audio);
         unawaited(startReadAloud(context, ref, version, book, chapter, fromVerse: k % 1000));
         return;
       }
     }
     ref.read(immersiveProvider.notifier).toggle();
+  }
+
+  /// Whether the chapter [r] is being listened to, recorded or read aloud: a
+  /// tap on a verse then moves the listening there.
+  bool _listening(BibleVersion version, BibleRef r) =>
+      ref.watch(audioControllerProvider.select((a) => a.playing && a.isChapter(version.id, r.bookCode, r.chapter))) ||
+      ref.watch(readAloudProvider.select((a) => a.isChapter(version.id, r.bookCode, r.chapter)));
+
+  /// The reader's one-time tips, one at a time and only on phones (where a
+  /// tap jumps the audio and a swipe changes chapter): the gestures on the
+  /// first visit, then, while listening, that a verse can be tapped to listen
+  /// from there, and otherwise, at a chapter's end, swiping to the next.
+  _Tip? _tip(Settings settings, {required bool listening}) {
+    if (!_holdToSelect) return null;
+    if (!settings.readerTipSeen) return _Tip.gestures;
+    if (listening && !settings.audioTipSeen) return _Tip.audio;
+    if (!settings.swipeTipSeen) return _Tip.swipe;
+    return null;
+  }
+
+  /// [tip] was dismissed, or the reader did what it says: it doesn't come
+  /// back.
+  void _known(_Tip tip) {
+    final settings = ref.read(settingsProvider);
+    final seen = switch (tip) {
+      _Tip.gestures => settings.readerTipSeen,
+      _Tip.audio => settings.audioTipSeen,
+      _Tip.swipe => settings.swipeTipSeen,
+    };
+    if (seen) return;
+    ref
+        .read(settingsProvider.notifier)
+        .update(
+          (x) => switch (tip) {
+            _Tip.gestures => x.copyWith(readerTipSeen: true),
+            _Tip.audio => x.copyWith(audioTipSeen: true),
+            _Tip.swipe => x.copyWith(swipeTipSeen: true),
+          },
+        );
   }
 
   /// A right-click on a verse (a mouse): select it, unless it is already part
@@ -386,6 +427,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         children: [
           const SampleBanner(),
           if (widget.planId != null && widget.planDay != null) _PlanBar(planId: widget.planId!, day: widget.planDay!),
+          // Above the text rather than in it: the text scrolls along with the
+          // audio.
+          if (_tip(ref.watch(settingsProvider), listening: _listening(version, r)) == _Tip.audio)
+            _ReaderTip(_Tip.audio, onDismiss: () => _known(_Tip.audio)),
           Expanded(
             // Matched inline (not via AsyncView) because _buildChapter uses
             // ref.listen, which must run during this widget's build.
@@ -478,6 +523,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         ) ??
         ref.watch(readAloudProvider.select((r) => r.isChapter(version.id, c.book.code, c.chapter) ? r.verse : null));
     final (:secondary, :secondaryVersion, :wordsSource, :words) = _companions(settings, version, c);
+    final tip = _tip(settings, listening: _listening(version, r));
     final interlinear = words != null && words.isNotEmpty;
     final wordsRtl = isRtlLanguage(
       (ref.watch(versionsProvider).value ?? const <BibleVersion>[])
@@ -569,7 +615,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             child = Column(
               children: [
                 _ChapterHeader(book: c.book.name, chapter: formatNumber(c.chapter, settings)),
-                if (_holdToSelect && !settings.readerTipSeen) const _GestureTip(),
+                if (tip == _Tip.gestures) _ReaderTip(_Tip.gestures, onDismiss: () => _known(_Tip.gestures)),
                 if (twoVersions) _ParallelHeader(left: version.abbrev, right: secondaryVersion.abbrev),
               ],
             );
@@ -580,6 +626,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             child = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Where the reader decides how to go on: swiping is quicker.
+                if (tip == _Tip.swipe) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  _ReaderTip(_Tip.swipe, onDismiss: () => _known(_Tip.swipe)),
+                ],
                 _ChapterNav(
                   onPrevious: () => _changeChapter(version, c.book, c.chapter, -1),
                   onNext: () => _changeChapter(version, c.book, c.chapter, 1),
@@ -637,6 +688,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         final v = d.primaryVelocity ?? 0;
         if (v.abs() < AppMotion.chapterSwipeVelocity) return;
         _changeChapter(version, c.book, c.chapter, v < 0 ? 1 : -1);
+        _known(_Tip.swipe);
       },
       // Keyboards (desktop browsers, tablets): the arrows change chapter, Esc
       // clears a selection and "/" opens search.
@@ -757,30 +809,46 @@ class _PlanBar extends ConsumerWidget {
   }
 }
 
-/// A one-time note about the reader's gestures, until it is dismissed.
-class _GestureTip extends ConsumerWidget {
-  const _GestureTip();
+/// The reader's one-time tips (plan §7.1), in the order they come.
+enum _Tip {
+  /// Press and hold to select, tap for the bars: the first visit.
+  gestures,
+
+  /// Tap a verse to listen from there: while listening.
+  audio,
+
+  /// Swipe for the next chapter: at a chapter's end.
+  swipe,
+}
+
+/// One of the reader's tips, until it is dismissed.
+class _ReaderTip extends StatelessWidget {
+  const _ReaderTip(this.tip, {required this.onDismiss});
+
+  final _Tip tip;
+  final VoidCallback onDismiss;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = S.of(context);
     final colors = context.appColors;
+    final (icon, text) = switch (tip) {
+      _Tip.gestures => (Icons.touch_app_outlined, s.readerTip),
+      _Tip.audio => (Icons.headphones_outlined, s.audioTip),
+      _Tip.swipe => (Icons.swipe_outlined, s.swipeTip),
+    };
     return Material(
       color: colors.infoContainer,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.sm, AppSpacing.xs, AppSpacing.sm),
         child: Row(
           children: [
-            Icon(Icons.touch_app_outlined, size: AppIconSize.sm, color: colors.onInfoContainer),
+            Icon(icon, size: AppIconSize.sm, color: colors.onInfoContainer),
             const SizedBox(width: AppSpacing.iconGap),
             Expanded(
-              child: Text(s.readerTip, style: context.text.bodySmall?.copyWith(color: colors.onInfoContainer)),
+              child: Text(text, style: context.text.bodySmall?.copyWith(color: colors.onInfoContainer)),
             ),
-            AppButton.ghost(
-              label: s.gotIt,
-              size: AppButtonSize.sm,
-              onPressed: () => ref.read(settingsProvider.notifier).update((x) => x.copyWith(readerTipSeen: true)),
-            ),
+            AppButton.ghost(label: s.gotIt, size: AppButtonSize.sm, onPressed: onDismiss),
           ],
         ),
       ),

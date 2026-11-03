@@ -2,8 +2,34 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:amharic_bible/data/reminders.dart';
+import 'package:amharic_bible/data/speech.dart';
 import 'package:amharic_bible/data/sync/account_service.dart';
 import 'package:amharic_bible/data/sync/sync_engine.dart';
+
+/// The phone's voice: each verse is "read" until [finishVerse].
+class FakeSpeech implements SpeechEngine {
+  FakeSpeech({this.voices = const {'am-ET', 'en-US'}});
+  final Set<String> voices;
+  final spoken = <(String, String)>[];
+  Completer<void>? _current;
+
+  @override
+  Future<bool> hasVoice(String locale) async => voices.contains(locale);
+
+  @override
+  Future<void> speak(String text, String locale) {
+    spoken.add((text, locale));
+    _current = Completer<void>();
+    return _current!.future;
+  }
+
+  void finishVerse() => _current?.complete();
+
+  @override
+  Future<void> stop() async {
+    if (_current != null && !_current!.isCompleted) _current!.complete();
+  }
+}
 
 /// Records the reminder the app keeps scheduled; [tap] stands for the reader
 /// tapping a reminder while the app runs.

@@ -1277,7 +1277,8 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 
 **Left for later phases:**
 
-- The other two contextual tips from §7.1: swipe for the next chapter, and tap a verse to play from there.
+- The other two contextual tips from §7.1: swipe for the next chapter, and tap a verse to play from there (done in
+  Phase 6).
 
 ### Phase 5 (started 2026-11-03)
 
@@ -1424,6 +1425,15 @@ explore page lists them to browse instead. Amharic names belong in the content p
     before it see it once too. Not on the web, which can't schedule notifications.
   - The sheet is shared with Settings (`showReminderSheet`), and the layout audit renders the offer at 320 dp with
     1.3× text in both languages.
+- **The reader's other two tips (§7.1):** on phones, one tip at a time, each until it is dismissed, in the look of
+  the first one.
+  - At a chapter's end, above Previous and Next: "Swipe sideways for the next or previous chapter." The first tip no
+    longer mentions swiping, so each tip says one thing at the moment it is useful; whoever dismissed the old first
+    tip doesn't see the swipe tip.
+  - While the chapter on screen is being listened to (recorded or read aloud): "Tap a verse to listen from there."
+    It sits above the text, since the text scrolls along with the audio.
+  - Doing what a tip says also puts it away: a swipe, or a tap that moves the listening to a verse.
+  - The layout audit renders both at 320 dp with 1.3× text in both languages.
 
 **Waiting:**
 

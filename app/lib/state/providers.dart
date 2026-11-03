@@ -94,6 +94,8 @@ class Settings {
     this.recentSearches = const [],
     this.onboarded = true,
     this.readerTipSeen = true,
+    this.swipeTipSeen = true,
+    this.audioTipSeen = true,
     this.reminderOffered = true,
   });
 
@@ -139,6 +141,14 @@ class Settings {
   /// moved from a tap to a long press.
   final bool readerTipSeen;
 
+  /// The reader's tip at a chapter's end (swipe for the next chapter) was
+  /// dismissed, or the reader swiped.
+  final bool swipeTipSeen;
+
+  /// The reader's tip while listening (tap a verse to listen from there) was
+  /// dismissed, or the reader did it.
+  final bool audioTipSeen;
+
   /// The daily reminder was offered after a plan day was read, or chosen in
   /// Settings (on or off): the offer doesn't come back.
   final bool reminderOffered;
@@ -169,6 +179,8 @@ class Settings {
     List<String>? recentSearches,
     bool? onboarded,
     bool? readerTipSeen,
+    bool? swipeTipSeen,
+    bool? audioTipSeen,
     bool? reminderOffered,
   }) => Settings(
     readerTheme: readerTheme ?? this.readerTheme,
@@ -192,6 +204,8 @@ class Settings {
     recentSearches: recentSearches ?? this.recentSearches,
     onboarded: onboarded ?? this.onboarded,
     readerTipSeen: readerTipSeen ?? this.readerTipSeen,
+    swipeTipSeen: swipeTipSeen ?? this.swipeTipSeen,
+    audioTipSeen: audioTipSeen ?? this.audioTipSeen,
     reminderOffered: reminderOffered ?? this.reminderOffered,
   );
 
@@ -217,6 +231,8 @@ class Settings {
     'recent_searches': jsonEncode(recentSearches),
     'onboarded': '$onboarded',
     'reader_tip_seen': '$readerTipSeen',
+    'swipe_tip_seen': '$swipeTipSeen',
+    'audio_tip_seen': '$audioTipSeen',
     'reminder_offered': '$reminderOffered',
   };
 
@@ -250,6 +266,10 @@ class Settings {
       // Anything stored means an install from before the welcome steps existed.
       onboarded: b('onboarded', m.isNotEmpty),
       readerTipSeen: b('reader_tip_seen', false),
+      // The first tip used to mention swiping too: whoever dismissed it has
+      // read that already.
+      swipeTipSeen: b('swipe_tip_seen', b('reader_tip_seen', false)),
+      audioTipSeen: b('audio_tip_seen', false),
       reminderOffered: b('reminder_offered', false),
     );
   }

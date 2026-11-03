@@ -109,6 +109,8 @@ class S {
   /// "Listen to ዮሐንስ 3".
   String listenTo(String chapter) => isAmharic ? '$chapter ያዳምጡ' : 'Listen to $chapter';
   String get readerTip => _('readerTip');
+  String get swipeTip => _('swipeTip');
+  String get audioTip => _('audioTip');
   String get gotIt => _('gotIt');
   String get moreActions => _('moreActions');
   String get holdToSelectHint => _('holdToSelectHint');
@@ -592,7 +594,9 @@ const _am = {
   'beginPlanHint': 'መጽሐፍ ቅዱስን በዓመት፣ አዲስ ኪዳንን በ90 ቀን፣ ወይም ወንጌላትን በ30 ቀን።',
   'beginToday': 'ወደ ዛሬ ይሂዱ',
   'beginTodayHint': 'የዕለቱ ጥቅስና የንባብዎ ቦታ።',
-  'readerTip': 'ለማድመቅ፣ ማስታወሻ ለመጻፍ ወይም ለማጋራት ጥቅሱን ተጭነው ይያዙ። ምናሌዎቹን ለማሳየት ወይም ለመደበቅ አንዴ ይንኩ፤ ለቀጣዩ ምዕራፍ ወደ ጎን ያንሸራቱ።',
+  'readerTip': 'ለማድመቅ፣ ማስታወሻ ለመጻፍ ወይም ለማጋራት ጥቅሱን ተጭነው ይያዙ። ምናሌዎቹን ለማሳየት ወይም ለመደበቅ አንዴ ይንኩ።',
+  'swipeTip': 'ለቀጣዩ ወይም ላለፈው ምዕራፍ ወደ ጎን ያንሸራትቱ።',
+  'audioTip': 'ከአንድ ጥቅስ ጀምሮ ለማዳመጥ ጥቅሱን ይንኩ።',
   'gotIt': 'ገባኝ',
   'readingLook': 'የንባብ ገጽታ',
   'openInReader': 'በንባብ ገጹ ክፈት',
@@ -1120,7 +1124,9 @@ const _en = {
   'beginPlanHint': 'The Bible in a year, the New Testament in 90 days, or the Gospels in 30 days.',
   'beginToday': 'Go to Today',
   'beginTodayHint': 'The verse of the day and where you left off.',
-  'readerTip': 'Press and hold a verse to highlight, note or share it. Tap to show or hide the bars; swipe sideways for the next chapter.',
+  'readerTip': 'Press and hold a verse to highlight, note or share it. Tap to show or hide the bars.',
+  'swipeTip': 'Swipe sideways for the next or previous chapter.',
+  'audioTip': 'Tap a verse to listen from there.',
   'gotIt': 'Got it',
   'readingLook': 'Reading appearance',
   'openInReader': 'Open in reader',

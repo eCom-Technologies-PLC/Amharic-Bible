@@ -1,37 +1,12 @@
-import 'dart:async';
 
 import 'package:amharic_bible/data/content_repository.dart';
-import 'package:amharic_bible/data/speech.dart';
 import 'package:amharic_bible/state/providers.dart';
 import 'package:amharic_bible/state/read_aloud.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'fakes.dart';
 import 'helpers.dart';
-
-class FakeSpeech implements SpeechEngine {
-  FakeSpeech({this.voices = const {'am-ET', 'en-US'}});
-  final Set<String> voices;
-  final spoken = <(String, String)>[];
-  Completer<void>? _current;
-
-  @override
-  Future<bool> hasVoice(String locale) async => voices.contains(locale);
-
-  @override
-  Future<void> speak(String text, String locale) {
-    spoken.add((text, locale));
-    _current = Completer<void>();
-    return _current!.future;
-  }
-
-  void finishVerse() => _current?.complete();
-
-  @override
-  Future<void> stop() async {
-    if (_current != null && !_current!.isCompleted) _current!.complete();
-  }
-}
 
 void main() {
   late ProviderContainer c;

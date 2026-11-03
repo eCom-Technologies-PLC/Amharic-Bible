@@ -10,13 +10,16 @@ import 'package:amharic_bible/features/plans/plan_reminders.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/study/study_widgets.dart';
 import 'package:amharic_bible/state/providers.dart';
+import 'package:amharic_bible/state/read_aloud.dart';
 import 'package:amharic_bible/ui/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'fakes.dart';
 import 'helpers.dart';
 
 const routes = [
@@ -71,6 +74,7 @@ Future<List<String>> render(
   required Device device,
   required Settings settings,
   Future<void> Function(WidgetTester)? interact,
+  List<Override> overrides = const [],
 }) async {
   (rootBundle as CachingAssetBundle).clear();
   late Database content, user;
@@ -105,6 +109,7 @@ Future<List<String>> render(
           initialSettingsProvider.overrideWithValue(settings),
           audioRepositoryProvider.overrideWithValue(AudioRepository(baseUrl: '', storageDir: Directory.systemTemp)),
           routerProvider.overrideWithValue(buildRouter(initialLocation: route)),
+          ...overrides,
         ],
         child: const AmharicBibleApp(),
       ),
@@ -269,12 +274,20 @@ void main() {
           settings: Settings(languageCode: lang, readerTipSeen: false),
           interact: (t) async {
             // On this small screen the header and the one-time tip fill the
-            // first view; scroll to the text before selecting.
-            for (var i = 0; i < 8 && find.byType(ParagraphView).evaluate().isEmpty; i++) {
+            // first view; scroll until the text is in view before selecting
+            // (it is built a little before it scrolls onto the screen).
+            final para = find.byType(ParagraphView).first;
+            bool inView() {
+              if (find.byType(ParagraphView).evaluate().isEmpty) return false;
+              final top = t.getTopLeft(para).dy;
+              return top >= 0 && top < smallLargeText.size.height / 2;
+            }
+
+            for (var i = 0; i < 8 && !inView(); i++) {
               await t.drag(find.byType(Scrollable).first, const Offset(0, -160));
               await t.pumpAndSettle();
             }
-            final para = find.byType(ParagraphView).first;
+            expect(inView(), isTrue);
             await t.longPressAt(t.getTopLeft(para) + const Offset(60, 20));
             await t.pumpAndSettle();
             await t.tap(find.byIcon(Icons.more_horiz));
@@ -299,6 +312,40 @@ void main() {
             final card = find.descendant(of: find.byType(ReminderOffer), matching: find.byType(AppCard));
             expect(card, findsOneWidget);
             await t.ensureVisible(card);
+          },
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets("$lang reader tip at a chapter's end", (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=JHN.3',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, swipeTipSeen: false),
+          interact: (t) async {
+            final tip = find.byIcon(Icons.swipe_outlined);
+            for (var i = 0; i < 40 && tip.evaluate().isEmpty; i++) {
+              await t.drag(find.byType(Scrollable).first, const Offset(0, -300));
+              await _settle(t);
+            }
+            expect(tip, findsOneWidget);
+          },
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang reader tip while listening', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=JHN.3',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, audioTipSeen: false),
+          overrides: [speechEngineProvider.overrideWithValue(FakeSpeech())],
+          interact: (t) async {
+            await t.tap(find.byIcon(Icons.record_voice_over_outlined));
+            await _settle(t);
+            expect(find.byIcon(Icons.headphones_outlined), findsOneWidget);
           },
         );
         expect(errors, isEmpty);
