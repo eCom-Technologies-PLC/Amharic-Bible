@@ -49,7 +49,13 @@ def validate_version(vid: str, books: list[Book], catalog: dict[str, BookInfo],
             seen.add(key)
             text = v.text
             if not text:
-                r.errors.append(f"{ref}: empty verse")
+                # A verse a translation leaves out on purpose keeps its number and
+                # a note saying why ("Some manuscripts add ..."); the reader shows
+                # both. Without a note, an empty verse means the source didn't parse.
+                if any(tok[0] == "n" for tok in v.markup):
+                    r.warnings.append(f"{ref}: left out, with a note")
+                else:
+                    r.errors.append(f"{ref}: empty verse")
             if "\\" in text:
                 r.errors.append(f"{ref}: unparsed USFM marker in text: {text[:60]!r}")
             if unicodedata.normalize("NFC", text) != text:

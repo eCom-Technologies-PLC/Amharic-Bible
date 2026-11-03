@@ -574,10 +574,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               ],
             );
           } else if (i == layout.blocks.length + 1) {
-            child = _ChapterNav(
-              onPrevious: () => _changeChapter(version, c.book, c.chapter, -1),
-              onNext: () => _changeChapter(version, c.book, c.chapter, 1),
-              strings: s,
+            // The way on, then the credit each version asks to be shown with
+            // its text (the Amharic text's terms ask for its full copyright
+            // statement wherever it is used).
+            child = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _ChapterNav(
+                  onPrevious: () => _changeChapter(version, c.book, c.chapter, -1),
+                  onNext: () => _changeChapter(version, c.book, c.chapter, 1),
+                  strings: s,
+                ),
+                AttributionText(version.attribution),
+                if (twoVersions) AttributionText(secondaryVersion.attribution),
+              ],
             );
           } else {
             final block = layout.blocks[i - 1];

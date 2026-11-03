@@ -35,8 +35,15 @@ python pipeline/build_db.py --sources content/sources --out build/content.db
 `--report build/report.json` it also writes a content quality report (books, chapters, verses, words, variants,
 warnings and license status per version; rows per resource) as JSON and Markdown; the **Build full content**
 workflow shows it on the run's summary page.
-**AMH1962 is still `verify`.** Confirm its terms (and the eBible.org source ID) before a release. Then run the
-**Build full content** workflow, which builds `content.db` and a release APK that bundles it.
+**AMH1962 is confirmed for non-commercial use only.** The Bible Society of Ethiopia's terms let a free app use it
+with its full copyright statement (shown on About, at the end of every chapter and on each chapter page); sales,
+advertising or paid features need the Society's written permission first. eBible.org's text is the New Testament
+only: `docs/permissions/bible-society-of-ethiopia.md` is the letter asking the Society to confirm the use and for the
+Old Testament. The **Build full content** workflow builds `content.db` and a release APK that bundles it.
+
+A verse a translation leaves out on purpose, keeping only a note (WEB's Luke 17:36: "Some Greek manuscripts add…"),
+is reported as a warning and kept with its note, which the reader shows under the verse number. An empty verse
+without a note stops the build, since it points to a parsing fault.
 
 The Ge'ez search normalization exists in Python (`pipeline/abible/geez.py`) and Dart (`app/lib/core/geez.dart`).
 Both are tested against `pipeline/tests/normalize_vectors.json`, so the app's queries always match the index.

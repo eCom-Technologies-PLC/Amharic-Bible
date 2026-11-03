@@ -1,5 +1,7 @@
 """Static chapter pages (build_site.py), built from the app's sample database."""
 import json
+import shutil
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -54,15 +56,28 @@ class SiteTest(unittest.TestCase):
         self.assertIn('Sitemap: https://bible.example.org/sitemap.xml', (self.out / 'robots.txt').read_text())
 
     def test_versions_whose_license_needs_checking_are_left_out_unless_allowed(self):
-        counts = build_site.build_site(SAMPLE_DB, self.out)
+        db = self.out / 'unchecked.db'
+        shutil.copyfile(SAMPLE_DB, db)
+        with sqlite3.connect(db) as conn:
+            conn.execute("UPDATE version SET license_status = 'verify' WHERE id = 'AMH1962'")
+        conn.close()  # Windows can't delete the temporary folder while the file is open
+        counts = build_site.build_site(db, self.out)
         self.assertNotIn('AMH1962', counts)
         self.assertFalse((self.out / 'bible' / 'amh1962').exists())
-        counts = build_site.build_site(SAMPLE_DB, self.out, versions=['AMH1962'], allow_unverified=True)
+        counts = build_site.build_site(db, self.out, versions=['AMH1962'], allow_unverified=True)
         self.assertEqual(list(counts), ['AMH1962'])
         amharic = self.page('amh1962', 'jhn', '3')
         self.assertIn('<html lang="am">', amharic)
         self.assertIn('በመተግበሪያው ክፈት', amharic)  # "Open in the app", in Amharic
         self.assertIn('<span>የዮሐንስ ወንጌል</span>ዮሐንስ 3', amharic)
+
+    def test_the_amharic_text_has_pages_with_its_full_copyright_statement(self):
+        # Confirmed for non-commercial use, which needs the full statement.
+        counts = build_site.build_site(SAMPLE_DB, self.out)
+        self.assertIn('AMH1962', counts)
+        page = self.page('amh1962', 'jhn', '3')
+        self.assertIn('Copyright © 1962, 2003 United Bible Societies.', page)
+        self.assertIn('With kind permission of the Bible Society of Ethiopia.', page)
 
     def test_no_sitemap_without_the_sites_address(self):
         build_site.build_site(SAMPLE_DB, self.out)

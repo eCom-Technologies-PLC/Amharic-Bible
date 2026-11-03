@@ -1064,16 +1064,18 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 **Open:**
 
 - **Waiting for the illustrator's logo:** app icon, splash screens, favicon and notification icon.
-- **Content source (found during Phase 1):** eBible's `amh` text is the **New Testament only**. It is © 1962/2003 United
-  Bible Societies, free for non-commercial use with the full copyright notice, and commercial use needs permission
-  from the Bible Society of Ethiopia. Find a full text and settle its terms before release (recorded in
-  `content/versions.json`).
+- **Content source (decided 2026-11-03):** the app keeps the familiar 1962 (1954 E.C.) text and stays free and
+  non-commercial, which its terms allow with the full copyright statement (now on About, at the end of every chapter
+  and on each chapter page); AMH1962 is marked confirmed for that use. eBible's text is the New Testament only, and
+  no current download of the 1962 Old Testament (digitized by the Lapsley/Brooks Foundation) was found, so
+  `docs/permissions/bible-society-of-ethiopia.md` asks the Bible Society of Ethiopia to confirm the use and supply
+  it. Still open: sending that letter, and the Old Testament.
 - **Words of Jesus in red (decided: verse-level now, exact later):** that text has no `\wj` markup, so the pipeline now
   marks a whole verse red wherever WEB marks words of Jesus (`red_letters_from`): 1,986 New Testament verses on the
   real eBible text. A source with its own markup replaces this automatically.
-- **Full WEB text fails validation:** five verses that WEB moves to footnotes (Luke 17:36, Acts 8:37, Acts 15:34,
-  Acts 24:7, Romans 16:25) count as "empty verse" errors, so a full build with the real WEB source stops. Decide how
-  the validator should treat verses a translation deliberately omits.
+- **Verses left out on purpose (decided 2026-11-03):** WEB keeps only a note for Luke 17:36, Acts 8:37, Acts 15:34,
+  Acts 24:7 and Romans 16:25. Validation now reports such a verse as a warning and keeps it, so the reader shows the
+  number with its note; an empty verse without a note still stops the build.
 - **Golden screenshot tests:** they need a decision on where to generate them, because fonts render differently on
   Windows and Linux (CI).
 
@@ -1405,8 +1407,8 @@ explore page lists them to browse instead. Amharic names belong in the content p
 
 **Waiting:**
 
-- The Amharic pages, which matter most for search ("ዮሐንስ 3:16"), are left out until the Amharic text's license is
-  settled (it still says "verify"; see Phase 1).
+- Amharic chapter pages for the Old Testament, once the Bible Society of Ethiopia supplies it (the New Testament's
+  pages are built, with the full copyright statement).
 - A link-preview image for the pages and the app, once the logo exists.
 
 ---

@@ -13,6 +13,7 @@ import build_plans  # noqa: E402
 from abible import usfm  # noqa: E402
 from abible.catalog import alias_key, load_books, split_vkey, vkey  # noqa: E402
 from abible.geez import geez_to_int, index_terms, int_to_geez, normalize  # noqa: E402
+from validate import validate_version  # noqa: E402
 
 VECTORS = json.loads((HERE / "normalize_vectors.json").read_text(encoding="utf-8"))
 FIXTURES = HERE / "fixtures" / "usfm"
@@ -120,6 +121,20 @@ class BuildTest(unittest.TestCase):
             codes = {r[0] for r in db.execute("SELECT code FROM book_alias WHERE alias=?", (alias_key("1Mo"),))}
             self.assertEqual(codes, {"GEN"})
             db.close()  # Windows can't delete the temporary folder while the file is open
+
+    def test_a_verse_left_out_with_a_note_is_a_warning_not_an_error(self):
+        # As WEB has Luke 17:36: the number and a note, no text.
+        catalog = load_books()
+        left_out = usfm.parse(
+            "\\id LUK\n\\c 17\n\\p\n\\v 35 There will be two grinding grain together.\n"
+            "\\v 36 \\f + \\fr 17:36 \\ft Some Greek manuscripts add: “Two will be in the field.”\\f*\n"
+            "\\v 37 They asked him, “Where, Lord?”\n")
+        report = validate_version("WEB", [left_out], catalog, complete=False)
+        self.assertEqual(report.errors, [])
+        self.assertEqual(report.warnings, ["LUK 17:36: left out, with a note"])
+
+        empty = usfm.parse("\\id LUK\n\\c 17\n\\p\n\\v 35 Two grinding.\n\\v 36\n\\v 37 Where?\n")
+        self.assertEqual(validate_version("WEB", [empty], catalog, complete=False).errors, ["LUK 17:36: empty verse"])
 
     def test_unverified_license_is_refused(self):
         with tempfile.TemporaryDirectory() as d:

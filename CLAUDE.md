@@ -112,6 +112,10 @@ All future UI work in this repository must follow this CLAUDE.md section.
   them when it moves between chapters. The day marks itself read once the end of each of its chapters has been on
   screen for `AppMotion.readEndDwell`, with Undo in the snack bar. A verse opened from a link or search
   (`ref=JHN.3.16`) is tinted for `AppMotion.verseFlash` (`VerseDecor.flash`).
+- The Amharic text (AMH1962) is used under the Bible Society of Ethiopia's terms for non-commercial works: the app
+  stays free, with no advertising, sales or paid features, and shows each version's full credit (About, the end of
+  every chapter, the chapter pages). Anything commercial needs the Society's written permission first
+  (`docs/permissions/bible-society-of-ethiopia.md`).
 - Share text through `shareText` (`features/common.dart`): on browsers without a share sheet it copies the text and
   says so, instead of opening an email. Web addresses are clean paths (`usePathUrlStrategy`), so links built in code
   never contain `#`.

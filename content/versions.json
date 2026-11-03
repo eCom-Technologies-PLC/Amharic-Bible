@@ -11,12 +11,13 @@
       "source": {
         "type": "usfm_zip",
         "url": "https://ebible.org/Scriptures/amh_usfm.zip",
-        "_verify": "Checked 2026-11-03: eBible.org's 'amh' is the New Testament only (27 books), (c) 1962, 2003 United Bible Societies, free for non-commercial use with its full copyright statement; commercial use needs written permission from the Bible Society of Ethiopia. It has no \\wj (words of Jesus) markup. Find a full Old and New Testament source and confirm its terms before the first release build."
+        "_verify": "Checked 2026-11-03: eBible.org's 'amh' is the New Testament only (27 books). Its terms (https://ebible.org/amh/copyright.htm): copyright (c) 1962, 2003 United Bible Societies, with kind permission of the Bible Society of Ethiopia; every non-commercial work using it must include the full copyright statement; every commercial use needs the Society's written permission. The complete 1962 Bible was digitized by the Lapsley/Brooks Foundation (1994) under the same permission, but no current download was found: docs/permissions/bible-society-of-ethiopia.md asks the Society for the Old Testament. It has no \\wj (words of Jesus) markup."
       },
       "license": {
-        "status": "verify",
-        "summary": "(c) 1962, 2003 United Bible Societies. Non-commercial use with the full copyright statement; commercial use needs written permission from the Bible Society of Ethiopia. Confirm the terms before release.",
-        "attribution": "መጽሐፍ ቅዱስ 1954 ዓ.ም. — Amharic Bible (1962)."
+        "status": "confirmed",
+        "use": "non-commercial",
+        "summary": "(c) 1962, 2003 United Bible Societies, with kind permission of the Bible Society of Ethiopia. Confirmed for a free, non-commercial app that shows the full copyright statement (About, the end of every chapter, the chapter pages). Any commercial use (sales, ads, paid features) needs the Bible Society of Ethiopia's written permission first. New Testament only until the Society supplies the Old Testament.",
+        "attribution": "መጽሐፍ ቅዱስ 1954 ዓ.ም. — Amharic Bible (1962). Copyright © 1962, 2003 United Bible Societies. With kind permission of the Bible Society of Ethiopia."
       },
       "red_letters_from": "WEB",
       "_red_letters": "The source does not mark the words of Jesus, so build_db.py marks a whole verse red wherever WEB marks words of Jesus in it. A source with its own \\wj markup replaces this automatically.",

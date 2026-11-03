@@ -82,6 +82,14 @@ void main() {
     expect(find.descendant(of: nav, matching: find.text('ዕቅዶች')), findsOneWidget);
   });
 
+  testWidgets('the end of a chapter shows the full copyright statement its text asks for', (tester) async {
+    await pumpApp(tester, initial: '/read?ref=JHN.3');
+    final statement = find.textContaining('Copyright © 1962, 2003 United Bible Societies.');
+    await tester.scrollUntilVisible(statement, 200, scrollable: find.byType(Scrollable).last);
+    expect(statement, findsOneWidget);
+    expect(find.textContaining('With kind permission of the Bible Society of Ethiopia.'), findsOneWidget);
+  });
+
   testWidgets('reader opens John 3, a verse can be selected and highlighted', (tester) async {
     await pumpApp(tester, initial: '/read?ref=JHN.3');
     expect(find.text('ዮሐንስ 3'), findsOneWidget);
