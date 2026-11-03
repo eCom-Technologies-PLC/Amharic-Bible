@@ -129,6 +129,45 @@ class BuildTest(unittest.TestCase):
             self.assertFalse(out.exists())
 
 
+class RedLettersTest(unittest.TestCase):
+    """Texts without words-of-Jesus markup borrow it, by verse, from another version."""
+
+    def setUp(self):
+        self.db = sqlite3.connect(":memory:")
+        self.db.executescript(build_db.SCHEMA)
+        self.db.executemany("INSERT INTO version (id) VALUES (?)", [("AMH",), ("WEB",)])
+        rows = [
+            ("WEB", 43003016, [["t", "For God so loved the world"]]),  # narration in WEB
+            ("WEB", 43003017, [["wj", "For God didn't send his Son"]]),
+            ("AMH", 43003016, [["p"], ["t", "እግዚአብሔር"]]),
+            ("AMH", 43003017, [["p"], ["t", "ዓለም"], ["n", "a note"], ["t", "አልላከውም።"]]),
+        ]
+        self.db.executemany(
+            "INSERT INTO verse (version_id, vkey, markup) VALUES (?,?,?)",
+            [(v, k, json.dumps(m, ensure_ascii=False, separators=(",", ":"))) for v, k, m in rows])
+
+    def tearDown(self):
+        self.db.close()
+
+    def markup(self, vid, k):
+        row = self.db.execute("SELECT markup FROM verse WHERE version_id=? AND vkey=?", (vid, k)).fetchone()
+        return json.loads(row[0])
+
+    def test_whole_verses_turn_red_where_the_reference_marks_words_of_jesus(self):
+        self.assertEqual(build_db.mark_words_of_jesus_by_verse([self.db], "AMH", "WEB"), 1)
+        self.assertEqual(self.markup("AMH", 43003016), [["p"], ["t", "እግዚአብሔር"]])
+        self.assertEqual(self.markup("AMH", 43003017),
+                         [["p"], ["wj", "ዓለም"], ["n", "a note"], ["wj", "አልላከውም።"]])
+
+    def test_a_text_with_its_own_markup_is_left_alone(self):
+        self.db.execute("UPDATE verse SET markup=? WHERE version_id='AMH' AND vkey=43003016", ('[["wj","x"]]',))
+        self.assertIsNone(build_db.mark_words_of_jesus_by_verse([self.db], "AMH", "WEB"))
+        self.assertEqual(self.markup("AMH", 43003017)[1], ["t", "ዓለም"])
+
+    def test_nothing_happens_without_the_reference_version(self):
+        self.assertIsNone(build_db.mark_words_of_jesus_by_verse([self.db], "AMH", "KJV"))
+
+
 class PlansTest(unittest.TestCase):
     def test_split_even(self):
         groups = build_plans.split_even(list(range(10)), 3)

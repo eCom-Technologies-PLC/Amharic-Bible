@@ -11,13 +11,15 @@
       "source": {
         "type": "usfm_zip",
         "url": "https://ebible.org/Scriptures/amh_usfm.zip",
-        "_verify": "Confirm the eBible.org ID for the 1962/1954 E.C. text on https://ebible.org/find/ before the first release build."
+        "_verify": "Checked 2026-11-03: eBible.org's 'amh' is the New Testament only (27 books), (c) 1962, 2003 United Bible Societies, free for non-commercial use with its full copyright statement; commercial use needs written permission from the Bible Society of Ethiopia. It has no \\wj (words of Jesus) markup. Find a full Old and New Testament source and confirm its terms before the first release build."
       },
       "license": {
         "status": "verify",
-        "summary": "Widely distributed as free to copy; confirm the terms on the source page.",
+        "summary": "(c) 1962, 2003 United Bible Societies. Non-commercial use with the full copyright statement; commercial use needs written permission from the Bible Society of Ethiopia. Confirm the terms before release.",
         "attribution": "መጽሐፍ ቅዱስ 1954 ዓ.ም. — Amharic Bible (1962)."
       },
+      "red_letters_from": "WEB",
+      "_red_letters": "The source does not mark the words of Jesus, so build_db.py marks a whole verse red wherever WEB marks words of Jesus in it. A source with its own \\wj markup replaces this automatically.",
       "bundle": true,
       "audio": {
         "provider": "biblebrain",

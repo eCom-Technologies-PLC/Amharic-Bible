@@ -111,6 +111,38 @@ def read_version_dir(path: Path, reg: dict) -> list:
     return [usfm.parse(f.read_text(encoding="utf-8-sig")) for f in files]
 
 
+_WJ = '%["wj",%'  # a markup token for words of Jesus, as json.dumps writes it
+
+
+def mark_words_of_jesus_by_verse(conns: list[sqlite3.Connection], vid: str, ref_vid: str) -> int | None:
+    """For a text whose source doesn't mark the words of Jesus: make every verse
+    red in which version [ref_vid] marks words of Jesus (matched by verse key).
+
+    Whole verses are marked, so a verse that mixes narration and speech turns
+    red entirely. A text with any red-letter markup of its own is left alone,
+    so a properly marked source replaces this automatically. Returns the
+    number of verses marked, or None when it doesn't apply.
+    """
+    def holder(v: str) -> sqlite3.Connection | None:
+        return next((c for c in conns if c.execute("SELECT 1 FROM version WHERE id=?", (v,)).fetchone()), None)
+
+    tdb, rdb = holder(vid), holder(ref_vid)
+    if tdb is None or rdb is None:
+        return None
+    if tdb.execute("SELECT 1 FROM verse WHERE version_id=? AND markup LIKE ? LIMIT 1", (vid, _WJ)).fetchone():
+        return None
+    red = {k for (k,) in rdb.execute("SELECT vkey FROM verse WHERE version_id=? AND markup LIKE ?", (ref_vid, _WJ))}
+    marked = 0
+    for k, markup in tdb.execute("SELECT vkey, markup FROM verse WHERE version_id=?", (vid,)).fetchall():
+        if k not in red:
+            continue
+        tokens = [["wj", *t[1:]] if t[0] == "t" else t for t in json.loads(markup)]
+        tdb.execute("UPDATE verse SET markup=? WHERE version_id=? AND vkey=?",
+                    (json.dumps(tokens, ensure_ascii=False, separators=(",", ":")), vid, k))
+        marked += 1
+    return marked
+
+
 def license_ok(rid: str, reg: dict, allow_unverified: bool) -> bool:
     status = reg["license"]["status"]
     if status != "confirmed" and not allow_unverified:
@@ -362,6 +394,15 @@ def build(sources: Path, out: Path, sample: bool, allow_unverified: bool,
             errors += build_version(target(rid, reg), rid, reg, d, catalog, sample, aliases, issues)
         else:
             errors += build_resource(target(rid, reg), rid, reg, d, catalog)
+
+    # Red letters for texts whose source doesn't mark the words of Jesus.
+    built = {d.name for d in dirs}
+    for vid, reg in versions.items():
+        ref = reg.get("red_letters_from")
+        if ref and vid in built:
+            n = mark_words_of_jesus_by_verse([db, *(pdb for _, pdb, _ in packs)], vid, ref)
+            if n is not None:
+                print(f"[{vid}] no words-of-Jesus markup; {n} verses marked red where {ref} marks them")
 
     for w in check_study_links([db, *(pdb for _, pdb, _ in packs)]):
         print(f"warning: {w}")

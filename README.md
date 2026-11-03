@@ -96,7 +96,9 @@ flutter run --dart-define=AUDIO_PROXY_URL=https://your-proxy.example   # audio i
 Features:
 
 - **Reading:** paragraphs, poetry, headings, footnotes, words of Jesus in red, light/sepia/dark/black themes,
-  serif or sans Ethiopic fonts, Ge'ez numerals.
+  serif or sans Ethiopic fonts, Ge'ez numerals. A text whose source doesn't mark the words of Jesus can borrow them
+  by verse from another version (`red_letters_from` in `content/versions.json`; AMH1962 uses WEB, so verses that mix
+  narration and speech turn red as a whole until a source with its own `\wj` markup is used).
 - **Side by side:** any two versions (e.g. Amharic + English), in columns on tablets and interleaved on phones.
 - **Personal study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16"),
   exact phrases in quotes ("so loved", «ዓለምን ወደደ»), and a switch to search every version at once.

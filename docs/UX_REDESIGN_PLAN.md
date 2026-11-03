@@ -1066,8 +1066,14 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 - **Waiting for the illustrator's logo:** app icon, splash screens, favicon and notification icon.
 - **Content source (found during Phase 1):** eBible's `amh` text is the **New Testament only**. It is © 1962/2003 United
   Bible Societies, free for non-commercial use with the full copyright notice, and commercial use needs permission
-  from the Bible Society of Ethiopia. It **has no `\wj` markup**, so the words of Jesus won't show in red with it.
-  Settle the Amharic source and red-letter approach before release.
+  from the Bible Society of Ethiopia. Find a full text and settle its terms before release (recorded in
+  `content/versions.json`).
+- **Words of Jesus in red (decided: verse-level now, exact later):** that text has no `\wj` markup, so the pipeline now
+  marks a whole verse red wherever WEB marks words of Jesus (`red_letters_from`): 1,986 New Testament verses on the
+  real eBible text. A source with its own markup replaces this automatically.
+- **Full WEB text fails validation:** five verses that WEB moves to footnotes (Luke 17:36, Acts 8:37, Acts 15:34,
+  Acts 24:7, Romans 16:25) count as "empty verse" errors, so a full build with the real WEB source stops. Decide how
+  the validator should treat verses a translation deliberately omits.
 - **Golden screenshot tests:** they need a decision on where to generate them, because fonts render differently on
   Windows and Linux (CI).
 
