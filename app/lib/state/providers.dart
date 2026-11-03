@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:sqflite/sqflite.dart';
 import '../domain/preferences.dart';
 import '../ui/tokens/tokens.dart';
 import '../core/vkey.dart';
+import '../core/web/web_storage.dart';
 import '../data/audio_repository.dart';
 import '../data/content_repository.dart';
 import '../data/error_reports.dart';
@@ -409,6 +411,25 @@ final weekRhythmProvider = FutureProvider<List<bool>>((ref) async {
 });
 
 /// Providers that read the user database, refreshed after it changes.
+/// Whether the browser offers to install the web app (Me then shows "Install
+/// the app"). Always false outside the web, where apps come from the store.
+class InstallOffer extends Notifier<bool> {
+  @override
+  bool build() {
+    if (!kIsWeb) return false;
+    onInstallChange(() => state = installAvailable());
+    return installAvailable();
+  }
+
+  /// Shows the browser's install dialog.
+  Future<void> install() async {
+    await promptInstall();
+    state = installAvailable();
+  }
+}
+
+final installOfferProvider = NotifierProvider<InstallOffer, bool>(InstallOffer.new);
+
 /// The reader's notes that include a verse (verse study's "My notes").
 final verseNotesProvider = FutureProvider.family<List<Note>, int>(
   (ref, vkey) => ref.watch(userRepositoryProvider).notesInRange(vkey, vkey),

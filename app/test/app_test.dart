@@ -20,6 +20,7 @@ import 'package:amharic_bible/state/account.dart';
 import 'package:amharic_bible/state/providers.dart';
 import 'package:amharic_bible/ui/tokens/share_card_tokens.dart';
 import 'package:amharic_bible/ui/ui.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind, kSecondaryMouseButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -830,6 +831,54 @@ void main() {
     expect(flashes(), contains(43003016));
     await tester.pump(AppMotion.verseFlash);
     expect(flashes().whereType<int>(), isEmpty);
+  });
+
+  testWidgets('with a mouse, the verse under it is tinted, and a right-click offers the verse actions', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=JHN.3',
+    );
+    final para = find.byType(ParagraphView).first;
+    final verse = tester.getTopLeft(para) + const Offset(80, 30);
+    bool tinted() {
+      bool any(InlineSpan s) => s is TextSpan && (s.style?.backgroundColor != null || (s.children ?? []).any(any));
+      return tester
+          .widgetList<RichText>(find.descendant(of: para, matching: find.byType(RichText)))
+          .any((r) => any(r.text));
+    }
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    expect(tinted(), isFalse);
+    await mouse.moveTo(verse);
+    await tester.pumpAndSettle();
+    expect(tinted(), isTrue);
+    await mouse.moveTo(Offset.zero);
+    await tester.pumpAndSettle();
+    expect(tinted(), isFalse);
+
+    await tester.tapAt(verse, buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(find.byType(SelectionBar), findsOneWidget); // the verse is selected
+    final menu = find.byType(PopupMenuItem<int>);
+    for (final action in ['Bookmark', 'Note', 'Share', 'Copy', 'Study', 'Compare', 'Image', 'Listen']) {
+      expect(find.descendant(of: menu, matching: find.text(action)), findsOneWidget);
+    }
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String?;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    await tester.tap(find.descendant(of: menu, matching: find.text('Copy')));
+    await tester.pumpAndSettle();
+    await tester.pump(); // the copy finishes after the menu has closed
+    await tester.pumpAndSettle();
+    expect(copied, contains('ዮሐንስ 3')); // the verse, with its reference
+    expect(find.text('Copied'), findsOneWidget);
+    expect(find.byType(SelectionBar), findsNothing);
   });
 
   testWidgets('a search link runs its query', (tester) async {

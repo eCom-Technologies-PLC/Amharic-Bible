@@ -7,3 +7,10 @@ Future<void> requestPersistentStorage() async {}
 
 /// Phones always have a system share sheet.
 bool webCanShare() => true;
+
+/// Apps are installed from the store.
+bool installAvailable() => false;
+
+Future<bool> promptInstall() async => false;
+
+void onInstallChange(void Function() onChange) {}

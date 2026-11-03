@@ -1168,11 +1168,22 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
   tasks (writing a note, making an image, choosing a book, the welcome steps) still cover the window, and phones are
   unchanged. A screen keeps its state when a phone turns sideways.
 
+**Done (web polish, after Phase 5):**
+
+- **Greek and Hebrew fonts bundled:** Noto Serif cut down to Greek (95 KB instead of 712 KB, polytonic accents
+  included) and Noto Serif Hebrew (30 KB, with every point and accent), as fallbacks in every text style. On a cold
+  first visit the original-language text shows at once, where it showed boxes for over two seconds while the
+  browser fetched a font, and it works offline. Checked against every Greek and Hebrew character in the content.
+- **Hover and right-click on verses:** the verse under the mouse is lightly tinted; a right-click selects it and opens
+  the verse actions as a menu at the pointer (bookmark, note, share, copy, study, compare, image, listen), the same
+  list as the selection bar's (`verseActions`). The browser's own menu is held back only over verses.
+- **Install prompt:** when the browser offers to install the app (Chrome, Edge, Android), Me shows "Install the app";
+  it goes away once installed. The manifest gained an `id`, `scope`, `lang`, shortcuts (Read, Search, Plans), the
+  page's color for the splash, and no longer locks the installed app to portrait.
+
 **Left for Phase 4:**
 
-- Popovers instead of bottom sheets on desktop; hover states and right-click.
-- Bundled Hebrew and Greek fonts (offline, the fallback fonts work only if the browser fetched them while online), and
-  the install prompt.
+- Popovers instead of bottom sheets on desktop.
 - WebAssembly evaluation and deferred loading.
 - A two-column Today, and app bars aligned with the centered content on desktop.
 - Faster repeat visits: a file list generated at build time would let the worker start the app from its copy without

@@ -502,6 +502,8 @@ class S {
   String planCompleteShare(String plan) =>
       isAmharic ? 'የንባብ ዕቅዱን «$plan» ጨረስኩ። — $appName' : 'I finished the reading plan “$plan”. — $appName';
   String get chooseAnotherPlan => _('chooseAnotherPlan');
+  String get installApp => _('installApp');
+  String get installAppHint => _('installAppHint');
   String get showOnMap => _('showOnMap');
   String get mapOpenFailed => _('mapOpenFailed');
 
@@ -1043,6 +1045,8 @@ const _am = {
   'planCalendar': 'የዕቅዱ ቀናት',
   'planComplete': 'ዕቅዱ ተጠናቋል',
   'chooseAnotherPlan': 'ሌላ ዕቅድ ይምረጡ',
+  'installApp': 'መተግበሪያውን ጫን',
+  'installAppHint': 'ከመነሻ ገጽዎ በቀጥታ ይክፈቱት፤ ያለ ኢንተርኔትም ይሰራል።',
   'showOnMap': 'በካርታ ላይ አሳይ',
   'mapOpenFailed': 'ካርታውን መክፈት አልተቻለም',
   'era.beginnings': 'ፍጥረትና የጥንቱ ዓለም',
@@ -1566,6 +1570,8 @@ const _en = {
   'planCalendar': 'All days',
   'planComplete': 'Plan complete',
   'chooseAnotherPlan': 'Choose another plan',
+  'installApp': 'Install the app',
+  'installAppHint': 'Open it from your home screen or desktop; it works offline too.',
   'showOnMap': 'Show on a map',
   'mapOpenFailed': "Couldn't open the map",
   'era.beginnings': 'Beginnings',

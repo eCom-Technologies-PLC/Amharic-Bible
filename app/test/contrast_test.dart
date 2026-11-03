@@ -28,6 +28,18 @@ void main() {
       final scheme = theme.colorScheme;
       final card = theme.cardTheme.color!;
 
+      test('every text style falls back to the bundled Greek and Hebrew fonts', () {
+        for (final style in [
+          theme.textTheme.bodyMedium!,
+          theme.textTheme.titleLarge!,
+          reading.verse,
+          reading.verseNumber,
+          reading.heading,
+        ]) {
+          expect(style.fontFamilyFallback, containsAll(AppFonts.originalLanguages));
+        }
+      });
+
       final verseBackgrounds = {
         'paper': colors.paper,
         for (final h in HighlightColor.values) '${h.name} highlight': colors.highlight(h),

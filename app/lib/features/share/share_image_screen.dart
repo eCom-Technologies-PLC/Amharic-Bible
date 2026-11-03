@@ -253,6 +253,7 @@ class VerseCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: fontFamily,
+                      fontFamilyFallback: AppFonts.originalLanguages,
                       fontSize: ShareCardTokens.verseSize(text.length) * textScale,
                       height: ShareCardTokens.lineHeight,
                       color: color,

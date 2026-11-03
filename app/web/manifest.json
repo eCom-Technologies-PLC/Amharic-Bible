@@ -1,12 +1,15 @@
 {
+    "id": "amharic-bible",
     "name": "መጽሐፍ ቅዱስ · Amharic Bible",
     "short_name": "መጽሐፍ ቅዱስ",
+    "description": "Read and listen to the Amharic Bible, with Ge'ez-aware search and study tools.",
+    "lang": "am",
+    "dir": "ltr",
     "start_url": ".",
+    "scope": ".",
     "display": "standalone",
-    "background_color": "#1E6B4E",
-    "theme_color": "#1E6B4E",
-    "description": "Amharic Bible with audio and Ge'ez-aware search.",
-    "orientation": "portrait-primary",
+    "background_color": "#F5F3EE",
+    "theme_color": "#F5F3EE",
     "prefer_related_applications": false,
     "icons": [
         {
@@ -30,6 +33,23 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "ንባብ · Read",
+            "short_name": "ንባብ",
+            "url": "./read"
+        },
+        {
+            "name": "ፍለጋ · Search",
+            "short_name": "ፍለጋ",
+            "url": "./search"
+        },
+        {
+            "name": "ዕቅዶች · Plans",
+            "short_name": "ዕቅዶች",
+            "url": "./plans"
         }
     ]
 }

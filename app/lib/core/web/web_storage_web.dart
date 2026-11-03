@@ -28,3 +28,26 @@ Future<void> requestPersistentStorage() async {
     // Unsupported or refused: storage stays "best effort"; sync is the backup.
   }
 }
+
+/// The browser's offer to install the app (Chrome, Edge, Android), kept by
+/// web/index.html as `window.abInstallPrompt`; null when there is none.
+JSObject? _installOffer() => web.window.getProperty<JSAny?>('abInstallPrompt'.toJS) as JSObject?;
+
+bool installAvailable() => _installOffer() != null;
+
+/// Shows the browser's install dialog; true when the reader installs.
+Future<bool> promptInstall() async {
+  final offer = _installOffer();
+  if (offer == null) return false;
+  offer.callMethod('prompt'.toJS);
+  try {
+    final choice = await offer.getProperty<JSPromise<JSObject>>('userChoice'.toJS).toDart;
+    return choice.getProperty<JSString?>('outcome'.toJS)?.toDart == 'accepted';
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Calls [onChange] when the browser's install offer comes or goes.
+void onInstallChange(void Function() onChange) =>
+    web.window.addEventListener('ab-installable', ((web.Event _) => onChange()).toJS);

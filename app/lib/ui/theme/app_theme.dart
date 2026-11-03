@@ -11,8 +11,14 @@ const _seed = Color(0xFF1E6B4E);
 
 /// Type scale (Noto Sans Ethiopic). Ge'ez needs taller lines than Latin text.
 TextTheme _textTheme(Color color) {
-  TextStyle s(double size, double height, [FontWeight weight = FontWeight.w400]) =>
-      TextStyle(fontFamily: AppFonts.sans, fontSize: size, height: height, fontWeight: weight, color: color);
+  TextStyle s(double size, double height, [FontWeight weight = FontWeight.w400]) => TextStyle(
+    fontFamily: AppFonts.sans,
+    fontFamilyFallback: AppFonts.originalLanguages,
+    fontSize: size,
+    height: height,
+    fontWeight: weight,
+    color: color,
+  );
   return TextTheme(
     displayLarge: s(40, 1.25),
     displayMedium: s(36, 1.25),
@@ -155,6 +161,7 @@ ThemeData buildAppTheme({
     colorScheme: scheme,
     scaffoldBackgroundColor: scheme.surface,
     fontFamily: AppFonts.sans,
+    fontFamilyFallback: AppFonts.originalLanguages,
     textTheme: text,
     visualDensity: VisualDensity.standard,
     materialTapTargetSize: MaterialTapTargetSize.padded,

@@ -221,7 +221,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   bool _holdToSelect = false;
 
   /// The chapter on screen, for gesture handlers.
-  ({BibleVersion version, Book book, int chapter, ChapterLayout layout})? _shown;
+  ({BibleVersion version, Book book, int chapter, ChapterLayout layout, List<Verse> verses})? _shown;
 
   void _onTapVerse(int k) {
     if (!_holdToSelect || _selected.isNotEmpty) return _toggleVerse(k);
@@ -239,6 +239,51 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       }
     }
     ref.read(immersiveProvider.notifier).toggle();
+  }
+
+  /// A right-click on a verse (a mouse): select it, unless it is already part
+  /// of the selection, and offer the verse actions at the pointer.
+  Future<void> _onVerseMenu(int k, Offset position) async {
+    final shown = _shown;
+    if (shown == null) return;
+    if (!_selected.contains(k)) {
+      setState(
+        () => _selected
+          ..clear()
+          ..add(k),
+      );
+    }
+    final actions = verseActions(
+      context,
+      ref,
+      version: shown.version,
+      book: shown.book,
+      chapter: shown.chapter,
+      selected: _selected.toList()..sort(),
+      verses: shown.verses,
+      onDone: () {
+        if (mounted) setState(_selected.clear);
+      },
+    );
+    final overlay = Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final choice = await showMenu<int>(
+      context: context,
+      position: RelativeRect.fromRect(overlay.globalToLocal(position) & Size.zero, Offset.zero & overlay.size),
+      items: [
+        for (final (i, a) in actions.indexed)
+          PopupMenuItem(
+            value: i,
+            child: Row(
+              children: [
+                Icon(a.icon),
+                const SizedBox(width: AppSpacing.md),
+                Flexible(child: Text(a.label, maxLines: 1, overflow: TextOverflow.ellipsis)),
+              ],
+            ),
+          ),
+      ],
+    );
+    if (choice != null && mounted) await actions[choice].run();
   }
 
   void _onLongPressVerse(int k) {
@@ -416,7 +461,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         : secondary != null
         ? parallelLayout(c, secondary)
         : layoutChapter(c);
-    _shown = (version: version, book: c.book, chapter: c.chapter, layout: layout);
+    _shown = (version: version, book: c.book, chapter: c.chapter, layout: layout, verses: c.verses);
     final onHold = _holdToSelect ? _onLongPressVerse : null;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -515,6 +560,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 onTapVerse: _onTapVerse,
                 onTapFootnote: _showFootnote,
                 onLongPressVerse: onHold,
+                onVerseMenu: _onVerseMenu,
               ),
               PairBlock() => _PairView(
                 block: block,
@@ -524,6 +570,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 onTapVerse: _onTapVerse,
                 onTapFootnote: _showFootnote,
                 onLongPressVerse: onHold,
+                onVerseMenu: _onVerseMenu,
               ),
               InterlinearBlock() => _InterlinearView(
                 block: block,
@@ -533,6 +580,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 onTapVerse: _onTapVerse,
                 onTapFootnote: _showFootnote,
                 onLongPressVerse: onHold,
+                onVerseMenu: _onVerseMenu,
               ),
             };
           }
@@ -756,6 +804,7 @@ class _PairView extends StatelessWidget {
     required this.onTapVerse,
     required this.onTapFootnote,
     this.onLongPressVerse,
+    this.onVerseMenu,
   });
 
   final PairBlock block;
@@ -765,6 +814,7 @@ class _PairView extends StatelessWidget {
   final ValueChanged<int> onTapVerse;
   final ValueChanged<String> onTapFootnote;
   final ValueChanged<int>? onLongPressVerse;
+  final VerseMenuCallback? onVerseMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -778,6 +828,7 @@ class _PairView extends StatelessWidget {
           onTapVerse: onTapVerse,
           onTapFootnote: onTapFootnote,
           onLongPressVerse: onLongPressVerse,
+          onVerseMenu: onVerseMenu,
         );
         final second = block.secondary;
         final secondary = second == null
@@ -789,6 +840,7 @@ class _PairView extends StatelessWidget {
                 onTapVerse: onTapVerse,
                 onTapFootnote: onTapFootnote,
                 onLongPressVerse: onLongPressVerse,
+                onVerseMenu: onVerseMenu,
               );
         if (wide) {
           return Row(
@@ -840,6 +892,7 @@ class _InterlinearView extends StatelessWidget {
     required this.onTapVerse,
     required this.onTapFootnote,
     this.onLongPressVerse,
+    this.onVerseMenu,
   });
 
   final InterlinearBlock block;
@@ -849,6 +902,7 @@ class _InterlinearView extends StatelessWidget {
   final ValueChanged<int> onTapVerse;
   final ValueChanged<String> onTapFootnote;
   final ValueChanged<int>? onLongPressVerse;
+  final VerseMenuCallback? onVerseMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -866,6 +920,7 @@ class _InterlinearView extends StatelessWidget {
             onTapVerse: onTapVerse,
             onTapFootnote: onTapFootnote,
             onLongPressVerse: onLongPressVerse,
+            onVerseMenu: onVerseMenu,
           )
         else
           Align(
@@ -875,6 +930,7 @@ class _InterlinearView extends StatelessWidget {
               child: InkWell(
                 onTap: () => onTapVerse(block.vkey),
                 onLongPress: onHold == null ? null : () => onHold(block.vkey),
+                onSecondaryTapUp: onVerseMenu == null ? null : (d) => onVerseMenu!(block.vkey, d.globalPosition),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: AppDimens.touchTarget, minWidth: AppDimens.touchTarget),

@@ -85,6 +85,10 @@ All future UI work in this repository must follow this CLAUDE.md section.
 - Reader gestures: on phones, press and hold selects a verse, and a tap adds to a selection, jumps the audio to the
   verse, or shows and hides the bars (`immersiveProvider`; the shell hides its navigation bar with it). On the web and
   with a screen reader, a tap selects. `ParagraphView.onLongPressVerse` carries the hold; keep both paths working.
+  With a mouse, the verse under it is tinted and a right-click (`onVerseMenu`) opens the verse actions; the selection
+  bar and that menu share one list, `verseActions` (`selection_bar.dart`), so an action is added in one place.
+- Text styles fall back to the bundled Greek and Hebrew fonts (`AppFonts.originalLanguages`); a new `TextStyle`
+  that sets `fontFamily` outside the theme (share cards) adds that fallback too.
 - Reading-plan links open the reader with `plan` and `day` query parameters, which show the plan bar; the reader keeps
   them when it moves between chapters. The day marks itself read once the end of each of its chapters has been on
   screen for `AppMotion.readEndDwell`, with Undo in the snack bar. A verse opened from a link or search

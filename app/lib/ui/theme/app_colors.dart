@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/preferences.dart';
+import '../tokens/tokens.dart';
 
 /// App-specific semantic colors, beyond the Material [ColorScheme].
 ///
@@ -226,7 +227,13 @@ class ReadingStyles extends ThemeExtension<ReadingStyles> {
     required double fontSize,
     required double lineHeight,
   }) {
-    final verse = TextStyle(fontFamily: fontFamily, fontSize: fontSize, height: lineHeight, color: scheme.onSurface);
+    final verse = TextStyle(
+      fontFamily: fontFamily,
+      fontFamilyFallback: AppFonts.originalLanguages,
+      fontSize: fontSize,
+      height: lineHeight,
+      color: scheme.onSurface,
+    );
     return ReadingStyles(
       verse: verse,
       verseSecondary: verse.copyWith(fontSize: fontSize * 0.92, color: scheme.onSurfaceVariant),
@@ -234,6 +241,7 @@ class ReadingStyles extends ThemeExtension<ReadingStyles> {
       footnoteMarker: verse.copyWith(fontSize: fontSize * 0.7, color: scheme.primary, fontWeight: FontWeight.w700),
       heading: TextStyle(
         fontFamily: fontFamily,
+        fontFamilyFallback: AppFonts.originalLanguages,
         fontSize: fontSize * 0.95,
         height: 1.4,
         fontWeight: FontWeight.w700,
@@ -241,6 +249,7 @@ class ReadingStyles extends ThemeExtension<ReadingStyles> {
       ),
       descriptiveTitle: TextStyle(
         fontFamily: fontFamily,
+        fontFamilyFallback: AppFonts.originalLanguages,
         fontSize: fontSize * 0.8,
         height: 1.5,
         letterSpacing: fontSize * 0.02,

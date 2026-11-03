@@ -42,6 +42,13 @@ class MeScreen extends ConsumerWidget {
             ),
           ),
           SectionHeader(s.appSection),
+          if (ref.watch(installOfferProvider))
+            AppListTile(
+              leadingIcon: Icons.install_mobile,
+              title: s.installApp,
+              subtitle: s.installAppHint,
+              onTap: () => ref.read(installOfferProvider.notifier).install(),
+            ),
           // The web streams everything: no offline downloads.
           if (!kIsWeb) tile(Icons.download_outlined, s.downloads, '/me/downloads'),
           tile(Icons.settings_outlined, s.settings, '/me/settings'),

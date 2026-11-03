@@ -185,6 +185,9 @@ How it differs from the mobile app:
 - **Not on the web:** offline audio downloads and study-pack downloads (audio streams instead), and the daily
   reminder (browsers cannot schedule notifications while the page is closed). The menu items are hidden.
 - **Sharing:** verse images and the data export use the browser's share sheet, or download the file.
+- **Mouse and install:** hovering tints a verse and a right-click opens its actions; browsers that can install
+  the app (Chrome, Edge, Android) get "Install the app" on Me. Greek and Hebrew fonts are bundled, so the original
+  texts show at once and offline.
 - **Wide windows:** a navigation rail from 600 px and a labeled sidebar from 1200 px replace the bottom bar, and
   stay beside the screens opened from the tabs (verse study, words, Ask, the player); from 1360 px the reader shows
   the verse study beside the text. Ctrl+K (⌘K) opens "Go to".
@@ -254,7 +257,7 @@ service role can read the table (Supabase dashboard → Table editor).
 
 ## Licenses
 
-Fonts: Noto Serif/Sans Ethiopic, SIL Open Font License (`app/assets/fonts/OFL.txt`). Bible texts: see
+Fonts: Noto Serif/Sans Ethiopic, Noto Serif (a Greek subset) and Noto Serif Hebrew, SIL Open Font License (`app/assets/fonts/OFL.txt`). Bible texts: see
 `content/versions.json`. Study resources: see `content/resources.json`. Each attribution is shown in the app
 under About → Sources and Study sources. The Strong's and Theographic data are ShareAlike: changes to that data
 must be shared under the same license.

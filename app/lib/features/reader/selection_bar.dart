@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,8 +14,122 @@ import '../common.dart';
 import '../study/study_widgets.dart' show isRtlLanguage;
 import 'reader_screen.dart' show audioErrorText, hasRecordedAudio, startReadAloud;
 
-/// Actions for the selected verses: highlight, bookmark, note, study,
-/// compare, copy, share, listen.
+/// One thing to do with the selected verses.
+typedef VerseAction = ({IconData icon, String label, Future<void> Function() run});
+
+/// The verse actions, shared by the selection bar (the first four on the bar,
+/// the rest under More) and the right-click menu on the web: bookmark, note,
+/// share, copy, then study, compare, image and listen. Each calls [onDone]
+/// when finished, which clears the selection.
+List<VerseAction> verseActions(
+  BuildContext context,
+  WidgetRef ref, {
+  required BibleVersion version,
+  required Book book,
+  required int chapter,
+  required List<int> selected,
+  required List<Verse> verses,
+  required VoidCallback onDone,
+}) {
+  final s = S.of(context);
+  final repo = ref.read(userRepositoryProvider);
+  final reference = formatReference(book, chapter, selected.map((k) => k % 1000), amharic: s.isAmharic);
+  // The verses and their reference, as shared and copied.
+  String quoted() {
+    final byKey = {for (final v in verses) v.vkey: v};
+    final text = [for (final k in selected) byKey[k]?.text].whereType<String>().join(' ');
+    final cited = formatReference(book, chapter, [
+      for (final k in selected) byKey[k]?.number ?? 0,
+    ], amharic: version.language == 'amh');
+    return '$text\n— $cited (${version.abbrev})';
+  }
+
+  return [
+    (
+      icon: Icons.bookmark_add_outlined,
+      label: s.bookmark,
+      run: () async {
+        final added = await repo.toggleBookmarks(selected);
+        invalidateUserData(ref);
+        if (context.mounted) showAppSnack(context, added ? s.bookmarkAdded : s.bookmarkRemoved);
+        onDone();
+      },
+    ),
+    (
+      icon: Icons.edit_note,
+      label: s.note,
+      run: () async {
+        final marks = ref.read(chapterMarksProvider((book: book.num, chapter: chapter))).value;
+        final existing = marks?.notes.where((n) => n.vkeyStart <= selected.first && n.vkeyEnd >= selected.first);
+        final id = existing?.isNotEmpty ?? false ? existing!.first.id : null;
+        unawaited(
+          context.push(
+            Uri(
+              path: '/note',
+              queryParameters: {'start': '${selected.first}', 'end': '${selected.last}', 'id': ?id},
+            ).toString(),
+          ),
+        );
+        onDone();
+      },
+    ),
+    (
+      icon: Icons.share_outlined,
+      label: s.share,
+      run: () async {
+        await shareText(context, quoted());
+        onDone();
+      },
+    ),
+    (
+      icon: Icons.copy_outlined,
+      label: s.copy,
+      run: () async {
+        await Clipboard.setData(ClipboardData(text: quoted()));
+        if (context.mounted) showAppSnack(context, s.copied);
+        onDone();
+      },
+    ),
+    (
+      icon: Icons.school_outlined,
+      label: s.study,
+      run: () async {
+        unawaited(context.push('/study?v=${selected.first}'));
+        onDone();
+      },
+    ),
+    (icon: Icons.compare_arrows, label: s.compare, run: () => showCompareSheet(context, selected, reference)),
+    (
+      icon: Icons.image_outlined,
+      label: s.image,
+      run: () async {
+        unawaited(context.push('/share-image?keys=${selected.join(',')}'));
+        onDone();
+      },
+    ),
+    (
+      icon: Icons.headphones_outlined,
+      label: s.listen,
+      run: () async {
+        if (!hasRecordedAudio(ref, version)) {
+          await startReadAloud(context, ref, version, book, chapter, fromVerse: selected.first % 1000);
+          onDone();
+          return;
+        }
+        final controller = ref.read(audioControllerProvider.notifier);
+        await controller.playChapter(version, book, chapter, fromVerse: selected.first % 1000);
+        final err = ref.read(audioControllerProvider).error;
+        if (err != null && context.mounted) showAppSnack(context, audioErrorText(s, err));
+        onDone();
+      },
+    ),
+  ];
+}
+
+/// How many of [verseActions] the bar shows; the rest are under More.
+const _onBar = 4;
+
+/// Actions for the selected verses: highlight, then [verseActions].
 class SelectionBar extends ConsumerWidget {
   const SelectionBar({
     super.key,
@@ -32,54 +148,24 @@ class SelectionBar extends ConsumerWidget {
   final List<Verse> verses;
   final VoidCallback onDone;
 
-  String _shareText() {
-    final byKey = {for (final v in verses) v.vkey: v};
-    final text = [for (final k in selected) byKey[k]?.text].whereType<String>().join(' ');
-    final reference = formatReference(book, chapter, [
-      for (final k in selected) byKey[k]?.number ?? 0,
-    ], amharic: version.language == 'amh');
-    return '$text\n— $reference (${version.abbrev})';
-  }
-
   /// The less frequent actions, in a sheet, so the bar stays one short row.
-  void _showMore(BuildContext context, WidgetRef ref, S s) {
-    final reference = formatReference(book, chapter, selected.map((k) => k % 1000), amharic: s.isAmharic);
-    Widget action(BuildContext sheet, IconData icon, String label, VoidCallback run) => AppListTile(
-      leadingIcon: icon,
-      title: label,
-      onTap: () {
-        Navigator.of(sheet).pop();
-        run();
-      },
-    );
+  void _showMore(BuildContext context, S s, Iterable<VerseAction> more) {
     showAppBottomSheet<void>(
       context: context,
-      title: reference,
+      title: formatReference(book, chapter, selected.map((k) => k % 1000), amharic: s.isAmharic),
       builder: (sheet) => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          action(sheet, Icons.school_outlined, s.study, () {
-            context.push('/study?v=${selected.first}');
-            onDone();
-          }),
-          action(sheet, Icons.compare_arrows, s.compare, () => showCompareSheet(context, selected, reference)),
-          action(sheet, Icons.image_outlined, s.image, () {
-            context.push('/share-image?keys=${selected.join(',')}');
-            onDone();
-          }),
-          action(sheet, Icons.headphones_outlined, s.listen, () async {
-            if (!hasRecordedAudio(ref, version)) {
-              await startReadAloud(context, ref, version, book, chapter, fromVerse: selected.first % 1000);
-              onDone();
-              return;
-            }
-            final controller = ref.read(audioControllerProvider.notifier);
-            await controller.playChapter(version, book, chapter, fromVerse: selected.first % 1000);
-            final err = ref.read(audioControllerProvider).error;
-            if (err != null && context.mounted) showAppSnack(context, audioErrorText(s, err));
-            onDone();
-          }),
+          for (final a in more)
+            AppListTile(
+              leadingIcon: a.icon,
+              title: a.label,
+              onTap: () {
+                Navigator.of(sheet).pop();
+                a.run();
+              },
+            ),
         ],
       ),
     );
@@ -91,6 +177,16 @@ class SelectionBar extends ConsumerWidget {
     final repo = ref.read(userRepositoryProvider);
     final marks = ref.watch(chapterMarksProvider((book: book.num, chapter: chapter))).value;
     final anyHighlighted = selected.any((k) => marks?.highlights.containsKey(k) ?? false);
+    final actions = verseActions(
+      context,
+      ref,
+      version: version,
+      book: book,
+      chapter: chapter,
+      selected: selected,
+      verses: verses,
+      onDone: onDone,
+    );
 
     return Material(
       elevation: AppElevation.bar,
@@ -147,54 +243,12 @@ class SelectionBar extends ConsumerWidget {
                 alignment: WrapAlignment.spaceAround,
                 runSpacing: AppSpacing.xs,
                 children: [
-                  LabeledIconButton(
-                    icon: Icons.bookmark_add_outlined,
-                    label: s.bookmark,
-                    onPressed: () async {
-                      final added = await repo.toggleBookmarks(selected);
-                      invalidateUserData(ref);
-                      if (context.mounted) showAppSnack(context, added ? s.bookmarkAdded : s.bookmarkRemoved);
-                      onDone();
-                    },
-                  ),
-                  LabeledIconButton(
-                    icon: Icons.edit_note,
-                    label: s.note,
-                    onPressed: () {
-                      final existing = marks?.notes.where(
-                        (n) => n.vkeyStart <= selected.first && n.vkeyEnd >= selected.first,
-                      );
-                      final id = existing?.isNotEmpty ?? false ? existing!.first.id : null;
-                      context.push(
-                        Uri(
-                          path: '/note',
-                          queryParameters: {'start': '${selected.first}', 'end': '${selected.last}', 'id': ?id},
-                        ).toString(),
-                      );
-                      onDone();
-                    },
-                  ),
-                  LabeledIconButton(
-                    icon: Icons.share_outlined,
-                    label: s.share,
-                    onPressed: () async {
-                      await shareText(context, _shareText());
-                      onDone();
-                    },
-                  ),
-                  LabeledIconButton(
-                    icon: Icons.copy_outlined,
-                    label: s.copy,
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: _shareText()));
-                      if (context.mounted) showAppSnack(context, s.copied);
-                      onDone();
-                    },
-                  ),
+                  for (final a in actions.take(_onBar))
+                    LabeledIconButton(icon: a.icon, label: a.label, onPressed: a.run),
                   LabeledIconButton(
                     icon: Icons.more_horiz,
                     label: s.moreActions,
-                    onPressed: () => _showMore(context, ref, s),
+                    onPressed: () => _showMore(context, s, actions.skip(_onBar)),
                   ),
                 ],
               ),

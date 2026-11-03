@@ -56,3 +56,12 @@ flutter:
     - family: NotoSansEthiopic
       fonts:
         - asset: assets/fonts/NotoSansEthiopic.ttf
+    # Greek (polytonic, a subset of Noto Serif) and Hebrew (with points and
+    # accents): fallbacks for the original-language texts, so the web needs no
+    # font downloads and works offline. AppFonts.originalLanguages.
+    - family: NotoSerifGreek
+      fonts:
+        - asset: assets/fonts/NotoSerifGreek.ttf
+    - family: NotoSerifHebrew
+      fonts:
+        - asset: assets/fonts/NotoSerifHebrew.ttf

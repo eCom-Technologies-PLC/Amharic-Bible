@@ -145,6 +145,17 @@
     </p>
   </noscript>
   <script>
+    // Installing the app (Chrome, Edge, Android): keep the browser's offer so Me
+    // can show "Install the app" when, and only when, it is available.
+    window.addEventListener('beforeinstallprompt', function (event) {
+      event.preventDefault();
+      window.abInstallPrompt = event;
+      window.dispatchEvent(new Event('ab-installable'));
+    });
+    window.addEventListener('appinstalled', function () {
+      window.abInstallPrompt = null;
+      window.dispatchEvent(new Event('ab-installable'));
+    });
     // Keep a copy of the app so it opens offline after the first visit (web/sw.js).
     if ('serviceWorker' in navigator) {
       var firstVisit = !navigator.serviceWorker.controller;

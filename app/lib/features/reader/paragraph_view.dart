@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show BrowserContextMenu;
 
 import '../../core/geez.dart';
 import '../../core/strings.dart';
@@ -66,6 +68,9 @@ class ReaderOptions {
 
 /// One paragraph or poetry line, rendered as a single RichText so text flows
 /// naturally. Each verse is tappable.
+/// Opens the verse actions at a pointer position (a right-click).
+typedef VerseMenuCallback = void Function(int vkey, Offset position);
+
 class ParagraphView extends StatefulWidget {
   const ParagraphView({
     super.key,
@@ -75,6 +80,7 @@ class ParagraphView extends StatefulWidget {
     required this.onTapVerse,
     required this.onTapFootnote,
     this.onLongPressVerse,
+    this.onVerseMenu,
   });
 
   final ParaBlock block;
@@ -86,6 +92,9 @@ class ParagraphView extends StatefulWidget {
   /// Pressing and holding a verse (selects it on phones).
   final ValueChanged<int>? onLongPressVerse;
 
+  /// A right-click on a verse (a mouse): the verse actions as a menu.
+  final VerseMenuCallback? onVerseMenu;
+
   @override
   State<ParagraphView> createState() => _ParagraphViewState();
 }
@@ -95,12 +104,35 @@ class _ParagraphViewState extends State<ParagraphView> {
   Timer? _hold;
   bool _held = false;
 
+  /// The verse under the mouse, lightly tinted to show it can be chosen.
+  int? _hovered;
+
+  void _hover(int? k) {
+    if (_hovered == k || !mounted) return;
+    setState(() => _hovered = k);
+    // Over a verse, the right button opens the verse actions instead of the
+    // browser's menu; anywhere else the browser's menu stays.
+    if (kIsWeb && widget.onVerseMenu != null) {
+      k == null ? BrowserContextMenu.enableContextMenu() : BrowserContextMenu.disableContextMenu();
+    }
+  }
+
   /// One recognizer per verse (or footnote). A text span takes a single
   /// recognizer, so a press held for [kLongPressTimeout] is timed here: it
   /// fires [onLongPress] and the tap that ends it is ignored.
-  TapGestureRecognizer _recognizer(Object key, VoidCallback onTap, [VoidCallback? onLongPress]) {
+  TapGestureRecognizer _recognizer(
+    Object key,
+    VoidCallback onTap, [
+    VoidCallback? onLongPress,
+    ValueChanged<Offset>? onMenu,
+  ]) {
     final r = _recognizers[key] ??= TapGestureRecognizer();
     r
+      ..onSecondaryTapUp = onMenu == null
+          ? null
+          : (d) {
+              onMenu(d.globalPosition);
+            }
       ..onTapDown = onLongPress == null
           ? null
           : (_) {
@@ -127,6 +159,7 @@ class _ParagraphViewState extends State<ParagraphView> {
 
   @override
   void dispose() {
+    if (kIsWeb && _hovered != null && widget.onVerseMenu != null) BrowserContextMenu.enableContextMenu();
     _hold?.cancel();
     for (final r in _recognizers.values) {
       r.dispose();
@@ -153,6 +186,7 @@ class _ParagraphViewState extends State<ParagraphView> {
       Color? bg = hl != null ? context.appColors.highlight(hl) : (selected ? context.appColors.selection : null);
       if (d.flash == k) bg = context.appColors.selection;
       if (d.playing == k) bg = context.appColors.playing;
+      if (bg == null && _hovered == k) bg = context.appColors.selection.withValues(alpha: AppOpacity.medium);
       final style = base.copyWith(
         backgroundColor: bg,
         decoration: selected ? TextDecoration.underline : null,
@@ -161,7 +195,15 @@ class _ParagraphViewState extends State<ParagraphView> {
         decorationThickness: AppDimens.selectionUnderline,
       );
       final onHold = widget.onLongPressVerse;
-      final tap = _recognizer(k, () => widget.onTapVerse(k), onHold == null ? null : () => onHold(k));
+      final onMenu = widget.onVerseMenu;
+      final tap = _recognizer(
+        k,
+        () => widget.onTapVerse(k),
+        onHold == null ? null : () => onHold(k),
+        onMenu == null ? null : (at) => onMenu(k, at),
+      );
+      void enter(PointerEnterEvent _) => _hover(k);
+      void exit(PointerExitEvent _) => _hover(null);
       switch (seg.kind) {
         case 'num':
           if (!first) spans.add(TextSpan(text: ' ', style: base));
@@ -172,6 +214,8 @@ class _ParagraphViewState extends State<ParagraphView> {
                 text: '${n != null && o.geezNumerals ? intToGeez(n) : seg.text}\u2009',
                 style: reading.verseNumber.copyWith(backgroundColor: bg),
                 recognizer: tap,
+                onEnter: enter,
+                onExit: exit,
                 semanticsLabel: S.of(context).verseLabel(o.bookName, vkeyChapter(k), seg.text),
               ),
             );
@@ -207,10 +251,12 @@ class _ParagraphViewState extends State<ParagraphView> {
               text: seg.text,
               style: o.redLetters ? style.copyWith(color: context.appColors.wordsOfJesus) : style,
               recognizer: tap,
+              onEnter: enter,
+              onExit: exit,
             ),
           );
         default:
-          spans.add(TextSpan(text: seg.text, style: style, recognizer: tap));
+          spans.add(TextSpan(text: seg.text, style: style, recognizer: tap, onEnter: enter, onExit: exit));
       }
       first = false;
     }

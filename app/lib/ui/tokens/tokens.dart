@@ -186,6 +186,11 @@ abstract final class AppFonts {
   static const serif = 'NotoSerifEthiopic';
   static const sans = 'NotoSansEthiopic';
 
+  /// Bundled fallbacks for the original-language texts (Greek, Hebrew), in
+  /// every text style: the web would otherwise download fonts for them on first
+  /// use (boxes until then, and none offline).
+  static const originalLanguages = ['NotoSerifGreek', 'NotoSerifHebrew'];
+
   /// Reading sizes the user can choose (Ge'ez needs larger sizes than Latin).
   static const readingSizes = [15.0, 17.0, 19.0, 21.0, 24.0, 28.0];
   static const defaultReadingSizeIndex = 2;
