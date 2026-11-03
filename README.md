@@ -131,7 +131,8 @@ Features:
   and teachers give assignments (passage, task, due date) that members mark done. Members see each other's chosen
   display names, never emails.
 - **Habits:** an optional daily reading reminder at any time of day, and an opt-in reading streak (Settings →
-  Reminders and habits).
+  Reminders and habits). With a reading plan under way, the reminder names the plan's next reading ("Day 12: John
+  3-4") and a tap opens it in the reader with the plan's bar; otherwise it opens Today.
 - **Read aloud:** versions without recorded audio are read with the phone's text-to-speech voice.
 - **Downloads:** Wi-Fi only by default; interrupted audio and study-pack downloads resume.
 - **Recently read:** the last chapters you opened, on Home.
@@ -158,7 +159,7 @@ Features:
   reading position across devices. Export your data as JSON, or delete your account, from inside the app.
 - Verse of the day, an Amharic or English UI, and the Ethiopian calendar.
 
-The app uses the 66-book canon only. Still to come: notification reminders for plans.
+The app uses the 66-book canon only.
 
 ### Web app
 

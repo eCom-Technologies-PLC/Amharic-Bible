@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:amharic_bible/app.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
-import 'package:amharic_bible/data/reminders.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/domain/streaks.dart';
 import 'package:amharic_bible/state/providers.dart';
@@ -14,25 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'fakes.dart';
 import 'helpers.dart';
-
-class FakeReminders implements ReminderScheduler {
-  FakeReminders({this.allowed = true});
-  final bool allowed;
-  int? scheduled;
-  String? body;
-
-  @override
-  Future<bool> scheduleDaily(int minutes, {required String title, required String body}) async {
-    if (!allowed) return false;
-    scheduled = minutes;
-    this.body = body;
-    return true;
-  }
-
-  @override
-  Future<void> cancel() async => scheduled = null;
-}
 
 void main() {
   group('streaks', () {
@@ -111,11 +93,16 @@ void main() {
     await tester.pumpAndSettle(); // lay out the scrolled list before tapping
     await tester.tap(find.text('Daily reading reminder'));
     await tester.pumpAndSettle();
+    // Readers learn what a plan adds to it.
+    expect(find.textContaining("names the plan's next reading"), findsOneWidget);
     // The wheel starts at 07:00.
     await tester.tap(find.text('Remind me'));
     await tester.pumpAndSettle();
-    expect(reminders.scheduled, 420);
-    expect(reminders.body, "Time for today's Bible reading.");
+    expect(reminders.permissionRequests, 1);
+    // No plan under way: the general reminder, which opens Today.
+    expect(reminders.scheduled?.minutes, 420);
+    expect(reminders.scheduled?.body, "Time for today's Bible reading.");
+    expect(reminders.scheduled?.route, '/home');
     expect(container.read(settingsProvider).reminderMinutes, 420);
     // Any minute, not just whole hours: turn the minutes on, slowly.
     await tester.tap(find.text('Daily reading reminder'));
@@ -129,8 +116,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Remind me'));
     await tester.pumpAndSettle();
-    expect(reminders.scheduled! ~/ 60, 7);
-    expect(reminders.scheduled! % 60, greaterThan(0));
+    expect(reminders.scheduled!.minutes ~/ 60, 7);
+    expect(reminders.scheduled!.minutes % 60, greaterThan(0));
     await tester.tap(find.text('Daily reading reminder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Turn off'));
@@ -140,7 +127,8 @@ void main() {
   });
 
   testWidgets('a refused permission leaves the reminder off and says why', (tester) async {
-    final container = await pumpSettings(tester, FakeReminders(allowed: false));
+    final reminders = FakeReminders(allowed: false);
+    final container = await pumpSettings(tester, reminders);
     await tester.scrollUntilVisible(find.text('Daily reading reminder'), 200);
     await tester.pumpAndSettle(); // lay out the scrolled list before tapping
     await tester.tap(find.text('Daily reading reminder'));
@@ -148,6 +136,7 @@ void main() {
     await tester.tap(find.text('Remind me'));
     await tester.pumpAndSettle();
     expect(container.read(settingsProvider).reminderMinutes, isNull);
+    expect(reminders.scheduled, isNull);
     expect(find.textContaining('Notifications are blocked'), findsOneWidget);
   });
 }

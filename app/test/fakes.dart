@@ -1,8 +1,46 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:amharic_bible/data/reminders.dart';
 import 'package:amharic_bible/data/sync/account_service.dart';
 import 'package:amharic_bible/data/sync/sync_engine.dart';
+
+/// Records the reminder the app keeps scheduled; [tap] stands for the reader
+/// tapping a reminder while the app runs.
+class FakeReminders implements ReminderScheduler {
+  FakeReminders({this.allowed = true, this.launch});
+
+  /// Whether the reader allows notifications.
+  final bool allowed;
+
+  /// The address of the reminder that started the app.
+  final String? launch;
+
+  /// What is scheduled now (nothing when null).
+  ReminderSchedule? scheduled;
+  var permissionRequests = 0;
+  final _opened = StreamController<String>.broadcast();
+
+  void tap(String route) => _opened.add(route);
+
+  @override
+  Future<bool> requestPermission() async {
+    permissionRequests++;
+    return allowed;
+  }
+
+  @override
+  Future<bool> schedule(ReminderSchedule? schedule) async {
+    scheduled = allowed ? schedule : null;
+    return allowed || schedule == null;
+  }
+
+  @override
+  Stream<String> get opened => _opened.stream;
+
+  @override
+  Future<String?> launchRoute() async => launch;
+}
 
 /// In-memory stand-in for the Supabase table + push_records() function, with
 /// the same rules: newest updated_at wins, every accepted change gets a new

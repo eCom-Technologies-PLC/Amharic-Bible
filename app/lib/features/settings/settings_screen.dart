@@ -155,7 +155,8 @@ class SettingsScreen extends ConsumerWidget {
 const _defaultReminder = 7 * 60;
 
 /// The daily reminder: a time to the minute on a wheel, then "Remind me"; or
-/// "Turn off" when one is set.
+/// "Turn off" when one is set. The app keeps the notification scheduled from
+/// the setting (`reminderScheduleProvider`), naming a plan's next reading.
 Future<void> _chooseReminder(BuildContext context, WidgetRef ref) async {
   final s = S.of(context);
   final settings = ref.read(settingsProvider);
@@ -171,6 +172,8 @@ Future<void> _chooseReminder(BuildContext context, WidgetRef ref) async {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(s.reminderPlanHint, style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant)),
+          const SizedBox(height: AppSpacing.sm),
           SizedBox(
             height: scale.scale(AppDimens.timeWheel),
             child: CupertinoDatePicker(
@@ -197,14 +200,9 @@ Future<void> _chooseReminder(BuildContext context, WidgetRef ref) async {
     },
   );
   if (choice == null || !context.mounted) return;
-  final scheduler = ref.read(reminderSchedulerProvider);
   if (choice < 0) {
-    await scheduler.cancel();
     await notifier.update((x) => x.copyWith(reminderMinutes: () => null));
-    return;
-  }
-  final ok = await scheduler.scheduleDaily(choice, title: s.appName, body: s.reminderBody);
-  if (ok) {
+  } else if (await ref.read(reminderSchedulerProvider).requestPermission()) {
     await notifier.update((x) => x.copyWith(reminderMinutes: () => choice));
   } else if (context.mounted) {
     showAppSnack(context, s.notificationsBlocked);

@@ -18,6 +18,7 @@ import 'features/library/library_screen.dart';
 import 'features/library/note_editor_screen.dart';
 import 'features/onboarding/welcome_screen.dart';
 import 'features/plans/plan_detail_screen.dart';
+import 'features/plans/plan_reminders.dart';
 import 'features/plans/plans_screen.dart';
 import 'features/reader/book_picker_screen.dart';
 import 'features/reader/reader_screen.dart';
@@ -202,10 +203,30 @@ GoRouter buildRouter({String initialLocation = '/home'}) {
 }
 
 /// A fresh install opens on the welcome steps; links (a shared verse on the
-/// web, a deep link on a phone) still open where they point.
+/// web, a deep link on a phone) and a tapped reminder still open where they
+/// point.
 final routerProvider = Provider<GoRouter>(
-  (ref) => buildRouter(initialLocation: ref.read(settingsProvider).onboarded ? '/home' : '/welcome'),
+  (ref) => buildRouter(
+    initialLocation: ref.read(launchRouteProvider) ?? (ref.read(settingsProvider).onboarded ? '/home' : '/welcome'),
+  ),
 );
+
+/// Keeps the daily reminder scheduled as the settings and plans change, and
+/// opens a reminder's reading when it is tapped while the app runs.
+final _remindersProvider = Provider<void>((ref) {
+  final scheduler = ref.watch(reminderSchedulerProvider);
+  ref.listen(reminderScheduleProvider, (_, next) {
+    if (next case AsyncData(:final value)) scheduler.schedule(value);
+  }, fireImmediately: true);
+  final taps = scheduler.opened.listen((route) {
+    final router = ref.read(routerProvider);
+    // Going elsewhere would close a note without asking and lose its typing:
+    // the app comes back to the note instead.
+    if (router.state.fullPath == '/note') return;
+    router.go(route);
+  });
+  ref.onDispose(taps.cancel);
+});
 
 class AmharicBibleApp extends ConsumerWidget {
   const AmharicBibleApp({super.key});
@@ -214,6 +235,7 @@ class AmharicBibleApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Keep the sync controller alive so it reacts to sign-in and edits.
     ref.listen(syncControllerProvider, (_, _) {});
+    ref.listen(_remindersProvider, (_, _) {});
     // Browsers may clear site data under storage pressure; once the reader has
     // saved something, ask to keep it.
     if (kIsWeb) ref.listen(userDataWrittenProvider, (_, _) => requestPersistentStorage());

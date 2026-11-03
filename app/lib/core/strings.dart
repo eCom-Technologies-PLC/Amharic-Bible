@@ -318,6 +318,7 @@ class S {
   String get off => _('off');
   String get reminderBody => _('reminderBody');
   String get notificationsBlocked => _('notificationsBlocked');
+  String get reminderPlanHint => _('reminderPlanHint');
   String get readingStreak => _('readingStreak');
   String get readingStreakHint => _('readingStreakHint');
   String get streakStart => _('streakStart');
@@ -455,6 +456,10 @@ class S {
   String day(int n) => isAmharic ? 'ቀን $n' : 'Day $n';
   String dayOf(int n, int total) => isAmharic ? 'ቀን $n ከ$total' : 'Day $n of $total';
   String dayDone(int n) => isAmharic ? 'የቀን $n ንባብ ተጠናቋል' : 'Day $n done';
+
+  /// A reading reminder's text: the plan, the day and its readings.
+  String planReminder(String plan, int n, String readings) =>
+      isAmharic ? '$plan · ${day(n)}፦ $readings' : '$plan · ${day(n)}: $readings';
 
   /// A day in a plan's day strip, for screen readers.
   String dayCell(int n, {required bool done}) =>
@@ -771,6 +776,7 @@ const _am = {
   'dailyReminder': 'የዕለት ንባብ ማስታወሻ',
   'reminderBody': 'የዛሬው የመጽሐፍ ቅዱስ ንባብ ጊዜ ደርሷል።',
   'notificationsBlocked': 'ማሳወቂያዎች ተከልክለዋል። በስልክዎ ቅንብሮች ውስጥ ይፍቀዱ።',
+  'reminderPlanHint': 'የጀመሩት የንባብ ዕቅድ ካለ፣ ማስታወሻው የዕቅዱን ቀጣይ ንባብ ይናገራል፤ ሲነኩትም ንባቡን ይከፍታል።',
   'readingStreak': 'የንባብ ተከታታይ ቀናት',
   'readingStreakHint': 'በተከታታይ ያነበቡባቸውን ቀናት በመነሻ ገጽ አሳይ',
   'streakStart': 'ዛሬ አንብበው ይጀምሩ።',
@@ -1297,6 +1303,7 @@ const _en = {
   'off': 'Off',
   'reminderBody': 'Time for today\'s Bible reading.',
   'notificationsBlocked': 'Notifications are blocked. Allow them in your phone\'s settings.',
+  'reminderPlanHint': 'With a reading plan under way, it names the plan\'s next reading, and a tap opens it.',
   'readingStreak': 'Reading streak',
   'readingStreakHint': 'Show how many days in a row you have read, on Home',
   'streakStart': 'Read today to start a streak.',

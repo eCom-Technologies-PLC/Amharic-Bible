@@ -7,9 +7,8 @@
 ## Implementation status
 
 Phase 1 (MVP) and phase 2 are implemented in `app/`, `pipeline/`, `server/audio-proxy/` and `server/supabase/`.
-Phase 2 covers accounts and sync, reading plans, share-as-image and side-by-side reading. Plan reminder
-notifications are not built yet. Where the code
-differs from this document, the code is current:
+Phase 2 covers accounts and sync, reading plans (the daily reminder names a plan's next reading and opens it),
+share-as-image and side-by-side reading. Where the code differs from this document, the code is current:
 
 - **License registry** is `content/versions.json` (JSON, so the pipeline needs only the Python standard library),
   not `LICENSES.yaml`.

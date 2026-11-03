@@ -60,6 +60,7 @@ Future<void> main() async {
   final packs = PackStore(Directory(p.join(support, 'packs')));
   final sources = await attachPacks(contentDb, await packs.installed());
   final ReminderScheduler reminders = kIsWeb ? NoReminders() : await LocalNotificationReminders.init();
+  final launchRoute = await reminders.launchRoute();
   final errors = ErrorReporter(
     enabled: settings.errorReports,
     send: AppConfig.accountsConfigured ? supabaseErrorSender(Supabase.instance.client) : null,
@@ -83,6 +84,7 @@ Future<void> main() async {
         packStoreProvider.overrideWithValue(packs),
         initialContentSourcesProvider.overrideWithValue(sources),
         reminderSchedulerProvider.overrideWithValue(reminders),
+        launchRouteProvider.overrideWithValue(launchRoute),
         networkInfoProvider.overrideWithValue(ConnectivityNetwork()),
         errorReporterProvider.overrideWithValue(errors),
         speechEngineProvider.overrideWithValue(DeviceSpeech()),

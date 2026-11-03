@@ -38,6 +38,9 @@ final networkInfoProvider = Provider<NetworkInfo>((ref) => const UnknownNetwork(
 /// Daily reminder notifications; main() overrides this with the real plugin.
 final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) => NoReminders());
 
+/// The address of the reminder whose tap started the app; main() overrides it.
+final launchRouteProvider = Provider<String?>((ref) => null);
+
 /// Where downloaded study packs live; overridden in main() and in tests.
 final packStoreProvider = Provider<PackStore>((ref) => throw UnimplementedError());
 

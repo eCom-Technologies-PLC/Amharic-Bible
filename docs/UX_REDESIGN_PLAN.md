@@ -682,7 +682,8 @@ Priority: **P0** first release of the redesign · **P1** next · **P2** later.
   - A clear "Today" button.
   - A completion celebration and a shareable card.
 - **Auto-complete a day** once its readings are opened and read to the end (approved).
-- **Plan reminders** (P2, not built yet): offer one after the first completed day.
+- **Plan reminders** (built in Phase 6): the daily reminder names the plan's next reading and opens it. Still to
+  come: offering a reminder after the first completed day.
 
 ### 7.8 Me and Library · P1
 
@@ -861,7 +862,7 @@ Priority: **P0** first release of the redesign · **P1** next · **P2** later.
   - Pull to refresh where data can be synced (Groups, sync status).
 - **Later (P2):**
   - A verse-of-the-day home-screen widget, as YouVersion has.
-  - Plan reminder notifications.
+  - Plan reminder notifications (built in Phase 6).
   - A "continue listening" media notification that deep-links into the reader.
 - **Low-end budget:**
   - Keep illustrations as vectors and photos optional.
@@ -1404,8 +1405,22 @@ explore page lists them to browse instead. Amharic names belong in the content p
 
   Found while checking: a takeover that starts while the app is loading can leave the app stuck on its loading
   screen, so the page says "go" only while it is still holding the app back.
+- **Plan reminders (Android and iOS):** with a reading plan under way, the daily reminder names the plan's next
+  reading ("Today's reading · The Gospels in 30 days · Day 12: John 3-4") instead of the general text.
+  - A tap opens that reading in the reader with the plan's bar, whether the app was running or the tap started it.
+  - It names the first day not yet read, as Today does, so a day missed is still the one it names. Marking a day read
+    moves it on; when the plan is finished, the general reminder (which opens Today) comes back.
+  - It is one notification repeating at the reader's time. The app replaces it whenever the plan, the language, the
+    numerals or the version change, from the setting (`reminderScheduleProvider`), so Settings only asks for
+    permission and stores the time.
+  - The sheet explains what a plan adds. iOS now sets the notification delegate the plugin needs to receive taps.
+  - Tested with a fake scheduler: what it says in both languages, moving on as days are read, and opening the reading
+    from a tap and from a start.
 
 **Waiting:**
+
+- A check of the reminders on a real Android phone and iPhone: the text, a tap while the app is open, in the
+  background and closed, and after a restart of the phone.
 
 - Amharic chapter pages for the Old Testament, once the Bible Society of Ethiopia supplies it (the New Testament's
   pages are built, with the full copyright statement).
