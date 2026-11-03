@@ -9,13 +9,15 @@
         "type": "files",
         "files": {
           "hebrew.js": "https://raw.githubusercontent.com/openscriptures/strongs/master/hebrew/strongs-hebrew-dictionary.js",
-          "greek.js": "https://raw.githubusercontent.com/openscriptures/strongs/master/greek/strongs-greek-dictionary.js"
+          "greek.js": "https://raw.githubusercontent.com/openscriptures/strongs/master/greek/strongs-greek-dictionary.js",
+          "TBESG.txt": "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/master/Lexicons/TBESG%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Greek%20-%20STEPBible.org%20CC%20BY.txt",
+          "TBESH.txt": "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/master/Lexicons/TBESH%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Hebrew%20-%20STEPBible.org%20CC%20BY.txt"
         }
       },
       "license": {
         "status": "confirmed",
-        "summary": "James Strong (1890, public domain); JSON edition CC BY-SA, Open Scriptures.",
-        "attribution": "Strong's Exhaustive Concordance dictionaries (James Strong, 1890), JSON edition by Open Scriptures (CC BY-SA)."
+        "summary": "James Strong (1890, public domain); JSON edition CC BY-SA, Open Scriptures. Interlinear glosses from the STEPBible brief lexicons TBESG/TBESH (Tyndale House, Cambridge), CC BY 4.0.",
+        "attribution": "Strong's Exhaustive Concordance dictionaries (James Strong, 1890), JSON edition by Open Scriptures (CC BY-SA). English glosses: STEP Bible, www.STEPBible.org (CC BY 4.0)."
       },
       "bundle": false
     },

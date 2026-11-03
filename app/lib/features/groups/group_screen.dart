@@ -28,6 +28,20 @@ Future<void> _change(BuildContext context, WidgetRef ref, String groupId, Future
   }
 }
 
+/// Deletes a message or assignment for everyone, after confirming.
+Future<void> _deletePost(BuildContext context, WidgetRef ref, String groupId, String postId) async {
+  final s = S.of(context);
+  final ok = await showConfirmDialog(
+    context: context,
+    title: s.deletePostConfirm,
+    message: s.deletePostMessage,
+    confirmLabel: s.delete,
+    cancelLabel: s.cancel,
+    destructive: true,
+  );
+  if (ok && context.mounted) await _change(context, ref, groupId, (g) => g.deletePost(postId));
+}
+
 String _passage(List<Book> books, int start, int? end, bool amharic) =>
     formatKeys(books, [for (var k = start; k <= (end ?? start) && k - start < 200; k++) k], amharic: amharic);
 
@@ -170,7 +184,7 @@ class _DiscussionState extends ConsumerState<_Discussion> {
                           ? IconButton(
                               tooltip: s.delete,
                               icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _change(context, ref, d.group.id, (g) => g.deletePost(p.id)),
+                              onPressed: () => _deletePost(context, ref, d.group.id, p.id),
                             )
                           : null,
                     );
@@ -218,7 +232,7 @@ class _Assignments extends ConsumerWidget {
                 ? IconButton(
                     tooltip: s.delete,
                     icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _change(context, ref, d.group.id, (g) => g.deletePost(p.id)),
+                    onPressed: () => _deletePost(context, ref, d.group.id, p.id),
                   )
                 : null,
             actions: [

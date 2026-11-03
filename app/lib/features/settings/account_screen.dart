@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -40,7 +41,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Future<void> _run(Future<void> Function() action) async {
-    final invalidCode = S.of(context).invalidCode;
+    final s = S.of(context);
     setState(() {
       _busy = true;
       _error = null;
@@ -48,9 +49,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     try {
       await action();
     } on InvalidCode {
-      _error = invalidCode;
-    } catch (e) {
-      _error = '$e';
+      _error = s.invalidCode;
+    } catch (e, st) {
+      // Readers get a friendly message; the details go to the (opt-in) error reports.
+      debugPrint('account: $e');
+      unawaited(ref.read(errorReporterProvider).report(e, st));
+      _error = s.somethingWentWrong;
     } finally {
       if (mounted) setState(() => _busy = false);
     }

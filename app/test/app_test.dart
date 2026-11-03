@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'fakes.dart';
@@ -80,8 +81,8 @@ void main() {
     expect(find.byType(SelectionBar), findsOneWidget);
     expect(find.textContaining('ዮሐንስ 3፥16'), findsOneWidget);
 
-    // Highlight yellow (first swatch).
-    await tester.tap(find.bySemanticsLabel('አድምቅ yellow'));
+    // Highlight yellow (first swatch), named in Amharic.
+    await tester.tap(find.bySemanticsLabel('ቢጫ አድምቅ'));
     await tester.pumpAndSettle();
     expect(find.byType(SelectionBar), findsNothing);
     final hl = await UserRepository(userDb).allHighlights();
@@ -253,11 +254,19 @@ void main() {
     expect(find.text('John 3:16'), findsWidgets);
     expect(find.text('Original text'), findsOneWidget);
     expect(find.byType(InterlinearWords), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Textual variants'), 200);
-    expect(find.text('Nestle-Aland'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Commentary'), 200);
-    expect(find.text('Jesus and Nicodemus'), findsOneWidget);
-    expect(find.textContaining('Augustine of Hippo'), findsOneWidget);
+    // Scroll to each item (in page order) and lay it out before checking it,
+    // so the test doesn't depend on how tall the sections above happen to be.
+    Future<void> scrollTo(Finder f) async {
+      await tester.scrollUntilVisible(f, 200);
+      await tester.pumpAndSettle();
+      expect(f, findsOneWidget);
+    }
+
+    await scrollTo(find.text('Textual variants'));
+    await scrollTo(find.text('Nestle-Aland'));
+    await scrollTo(find.text('Jesus and Nicodemus'));
+    await scrollTo(find.text('Commentary'));
+    await scrollTo(find.textContaining('Augustine of Hippo'));
     expect(find.text('Not Scripture'), findsOneWidget);
   });
 
@@ -296,7 +305,7 @@ void main() {
     );
     expect(find.byType(InterlinearWords), findsWidgets);
     expect(find.text('בְּרֵאשִׁ֖ית'), findsOneWidget);
-    expect(find.text('beginning'), findsOneWidget);
+    expect(find.text('first'), findsOneWidget); // gloss from the STEPBible brief lexicon
   });
 
   testWidgets('search finds words by Strong\'s number and people by name', (tester) async {
@@ -327,12 +336,45 @@ void main() {
       tester,
       settings: const Settings(languageCode: 'en', versionId: 'WEB', lastRef: BibleRef('JHN', 3, 16)),
     );
-    await tester.scrollUntilVisible(find.text('Recently read'), 200);
+    // Scroll to the row itself: the verse of the day above it changes length
+    // from day to day, so the section header alone can leave it below the fold.
+    await tester.scrollUntilVisible(find.text('Psalms 23'), 200);
+    await tester.pumpAndSettle(); // lay out the scrolled list before tapping
+    expect(find.text('Recently read'), findsOneWidget);
     expect(find.text('Psalms 23'), findsOneWidget);
     expect(find.text('John 3'), findsOneWidget); // only in the Continue card
     await tester.tap(find.text('Psalms 23'));
     await tester.pumpAndSettle();
     expect(find.byType(ParagraphView), findsWidgets);
+  });
+
+  testWidgets('changing chapter moves the reader and its address', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=PSA.23',
+    );
+    expect(find.text('መዝሙር 23'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Next chapter'), 200);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Next chapter'));
+    await tester.pumpAndSettle();
+    // The sample's next chapter after Psalm 23 is John 3.
+    expect(find.text('ዮሐንስ 3'), findsOneWidget);
+    final router = GoRouter.of(tester.element(find.byType(ParagraphView).first));
+    expect(router.routerDelegate.currentConfiguration.uri.toString(), '/read?ref=JHN.3');
+  });
+
+  testWidgets('a link to a missing page shows a way home', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/no-such-page',
+    );
+    expect(find.textContaining("This page wasn't found"), findsOneWidget);
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(find.text('Verse of the day'), findsOneWidget);
   });
 
   testWidgets('Compare shows the selected verse in every version', (tester) async {

@@ -76,6 +76,9 @@ CREATE TABLE lexicon (
   id TEXT PRIMARY KEY, lang TEXT, lemma TEXT, translit TEXT, pron TEXT,
   definition TEXT, derivation TEXT, usage TEXT, resource_id TEXT
 );
+-- Short English glosses for interlinear lines (STEPBible brief lexicons), by
+-- Strong's number and, for Hebrew words with several senses, by sense ("H7363b").
+CREATE TABLE gloss (id TEXT PRIMARY KEY, gloss TEXT, resource_id TEXT);
 CREATE TABLE xref (vkey INTEGER, to_start INTEGER, to_end INTEGER, votes INTEGER);
 CREATE INDEX xref_idx ON xref (vkey);
 CREATE TABLE entity (
@@ -206,7 +209,11 @@ def build_resource(db, rid, reg, rdir, catalog) -> int:
         db.executemany("INSERT OR REPLACE INTO lexicon VALUES (?,?,?,?,?,?,?,?,?)",
                        [(e.id, e.lang, e.lemma, e.translit, e.pron, e.definition, e.derivation, e.usage, rid)
                         for e in rows])
-        print(f"[{rid}] {len(rows)} lexicon entries")
+        glosses: dict[str, str] = {}
+        for f in sorted(rdir.glob("TBES*.txt")):
+            glosses.update(study.load_step_glosses(f.read_text(encoding="utf-8")))
+        db.executemany("INSERT OR REPLACE INTO gloss VALUES (?,?,?)", [(k, g, rid) for k, g in glosses.items()])
+        print(f"[{rid}] {len(rows)} lexicon entries, {len(glosses)} glosses")
     elif kind == "crossrefs":
         rows = []
         for f in sorted(rdir.glob("*.txt")):

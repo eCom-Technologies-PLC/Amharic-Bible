@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../../domain/preferences.dart';
 
 /// App-specific semantic colors, beyond the Material [ColorScheme].
+///
+/// There is one set per reading theme (light, sepia, dark, black), because
+/// highlights and red letters must stay readable on each theme's paper.
+/// `test/contrast_test.dart` checks every combination against WCAG AA.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
@@ -15,6 +19,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.info,
     required this.infoContainer,
     required this.onInfoContainer,
+    required this.paper,
+    required this.playing,
+    required this.selection,
     required this.wordsOfJesus,
     required this.highlights,
   });
@@ -29,32 +36,79 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color infoContainer;
   final Color onInfoContainer;
 
-  /// Red-letter text.
+  /// Background of the reading page. In the light themes it is lighter than
+  /// the page behind other screens, so scripture sits on clean paper while
+  /// cards elsewhere stand out from their page.
+  final Color paper;
+
+  /// Background of the verse being read aloud (an indigo tint, so red letters
+  /// never sit on green).
+  final Color playing;
+
+  /// Background of selected verses that have no highlight.
+  final Color selection;
+
+  /// Red-letter text (words of Jesus).
   final Color wordsOfJesus;
 
-  /// Highlight backgrounds; each keeps at least 4.5:1 contrast with the
-  /// theme's text color.
+  /// Highlight backgrounds; text, red letters and verse numbers keep at least
+  /// 4.5:1 contrast on each, and each stays visible against [paper].
   final Map<HighlightColor, Color> highlights;
 
   Color highlight(HighlightColor c) => highlights[c]!;
+
+  /// The set for a resolved reading theme ([ReaderTheme.system] resolves to
+  /// light or dark before this is called).
+  static AppColors of(ReaderTheme theme) => switch (theme) {
+    ReaderTheme.sepia => sepia,
+    ReaderTheme.dark => dark,
+    ReaderTheme.black => black,
+    ReaderTheme.light || ReaderTheme.system => light,
+  };
 
   static const light = AppColors(
     success: Color(0xFF2E7D32),
     successContainer: Color(0xFFD4EDD6),
     onSuccessContainer: Color(0xFF0D3B12),
-    warning: Color(0xFF9A5B00),
-    warningContainer: Color(0xFFFFE3BF),
-    onWarningContainer: Color(0xFF3D2300),
-    info: Color(0xFF1565C0),
-    infoContainer: Color(0xFFD6E6FA),
-    onInfoContainer: Color(0xFF0A2A52),
-    wordsOfJesus: Color(0xFFB3261E),
+    warning: Color(0xFF855A14),
+    warningContainer: Color(0xFFF6E3BD),
+    onWarningContainer: Color(0xFF2B1A00),
+    info: Color(0xFF2F4E8C),
+    infoContainer: Color(0xFFDDE4F3),
+    onInfoContainer: Color(0xFF0E1F44),
+    paper: Color(0xFFFDFCF9),
+    playing: Color(0xFFDDE4F3),
+    selection: Color(0xFFECE6D8),
+    wordsOfJesus: Color(0xFFA8261E),
     highlights: {
-      HighlightColor.yellow: Color(0xFFFFF1A8),
-      HighlightColor.green: Color(0xFFCDEFD3),
-      HighlightColor.blue: Color(0xFFCFE4FA),
-      HighlightColor.pink: Color(0xFFF9D3E4),
-      HighlightColor.orange: Color(0xFFFFDDBF),
+      HighlightColor.yellow: Color(0xFFFBE58C),
+      HighlightColor.green: Color(0xFFC9E9D0),
+      HighlightColor.blue: Color(0xFFCCDEF7),
+      HighlightColor.pink: Color(0xFFF8D1E1),
+      HighlightColor.orange: Color(0xFFFBD6B3),
+    },
+  );
+
+  static const sepia = AppColors(
+    success: Color(0xFF276B2B),
+    successContainer: Color(0xFFD5E6C6),
+    onSuccessContainer: Color(0xFF0D3B12),
+    warning: Color(0xFF7E5412),
+    warningContainer: Color(0xFFEED9AE),
+    onWarningContainer: Color(0xFF2B1A00),
+    info: Color(0xFF2F4E8C),
+    infoContainer: Color(0xFFDCD8E7),
+    onInfoContainer: Color(0xFF0E1F44),
+    paper: Color(0xFFF6EEDC),
+    playing: Color(0xFFDCD8E7),
+    selection: Color(0xFFE5D7BB),
+    wordsOfJesus: Color(0xFF9C271D),
+    highlights: {
+      HighlightColor.yellow: Color(0xFFF1D774),
+      HighlightColor.green: Color(0xFFC5DCB5),
+      HighlightColor.blue: Color(0xFFCAD8E6),
+      HighlightColor.pink: Color(0xFFEDCAD0),
+      HighlightColor.orange: Color(0xFFF0C89F),
     },
   );
 
@@ -62,19 +116,45 @@ class AppColors extends ThemeExtension<AppColors> {
     success: Color(0xFF81C784),
     successContainer: Color(0xFF1F4D2C),
     onSuccessContainer: Color(0xFFD4EDD6),
-    warning: Color(0xFFFFB74D),
-    warningContainer: Color(0xFF5A3A00),
-    onWarningContainer: Color(0xFFFFE3BF),
-    info: Color(0xFF90CAF9),
-    infoContainer: Color(0xFF1B3D5E),
-    onInfoContainer: Color(0xFFD6E6FA),
-    wordsOfJesus: Color(0xFFFF8A80),
+    warning: Color(0xFFE8C07B),
+    warningContainer: Color(0xFF5D4200),
+    onWarningContainer: Color(0xFFFFDEA6),
+    info: Color(0xFFA9BFE6),
+    infoContainer: Color(0xFF263350),
+    onInfoContainer: Color(0xFFDDE4F3),
+    paper: Color(0xFF131614),
+    playing: Color(0xFF263350),
+    selection: Color(0xFF2C322F),
+    wordsOfJesus: Color(0xFFFF9D93),
     highlights: {
-      HighlightColor.yellow: Color(0xFF5C5110),
-      HighlightColor.green: Color(0xFF1F4D2C),
-      HighlightColor.blue: Color(0xFF1B3D5E),
-      HighlightColor.pink: Color(0xFF5E2240),
-      HighlightColor.orange: Color(0xFF633714),
+      HighlightColor.yellow: Color(0xFF4A4216),
+      HighlightColor.green: Color(0xFF1F4630),
+      HighlightColor.blue: Color(0xFF1D3957),
+      HighlightColor.pink: Color(0xFF532139),
+      HighlightColor.orange: Color(0xFF55331A),
+    },
+  );
+
+  static const black = AppColors(
+    success: Color(0xFF81C784),
+    successContainer: Color(0xFF1F4D2C),
+    onSuccessContainer: Color(0xFFD4EDD6),
+    warning: Color(0xFFE8C07B),
+    warningContainer: Color(0xFF5D4200),
+    onWarningContainer: Color(0xFFFFDEA6),
+    info: Color(0xFFA9BFE6),
+    infoContainer: Color(0xFF222D47),
+    onInfoContainer: Color(0xFFDDE4F3),
+    paper: Colors.black,
+    playing: Color(0xFF222D47),
+    selection: Color(0xFF262626),
+    wordsOfJesus: Color(0xFFFF9D93),
+    highlights: {
+      HighlightColor.yellow: Color(0xFF4A4216),
+      HighlightColor.green: Color(0xFF1F4630),
+      HighlightColor.blue: Color(0xFF1D3957),
+      HighlightColor.pink: Color(0xFF532139),
+      HighlightColor.orange: Color(0xFF55331A),
     },
   );
 
@@ -95,6 +175,9 @@ class AppColors extends ThemeExtension<AppColors> {
       info: l(info, other.info),
       infoContainer: l(infoContainer, other.infoContainer),
       onInfoContainer: l(onInfoContainer, other.onInfoContainer),
+      paper: l(paper, other.paper),
+      playing: l(playing, other.playing),
+      selection: l(selection, other.selection),
       wordsOfJesus: l(wordsOfJesus, other.wordsOfJesus),
       highlights: {for (final c in HighlightColor.values) c: l(highlight(c), other.highlight(c))},
     );
@@ -130,7 +213,8 @@ class ReadingStyles extends ThemeExtension<ReadingStyles> {
   /// Section headings (\s).
   final TextStyle heading;
 
-  /// Psalm titles (\d).
+  /// Psalm titles (\d). Ethiopic has no italic, so they are set smaller, a
+  /// little spaced out and in the secondary text color instead.
   final TextStyle descriptiveTitle;
 
   /// Inline icons (bookmark/note markers) scale with the text.
@@ -159,7 +243,7 @@ class ReadingStyles extends ThemeExtension<ReadingStyles> {
         fontFamily: fontFamily,
         fontSize: fontSize * 0.8,
         height: 1.5,
-        fontStyle: FontStyle.italic,
+        letterSpacing: fontSize * 0.02,
         color: scheme.onSurfaceVariant,
       ),
     );

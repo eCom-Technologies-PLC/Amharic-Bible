@@ -48,7 +48,7 @@ Search also ignores Hebrew vowel points, Greek accents and Latin diacritics, so 
 |---|---|---|
 | `WLC` | Hebrew Old Testament (Westminster Leningrad Codex) with Open Scriptures lemmas and morphology, Hebrew and Aramaic, mapped to KJV verse numbers; qere readings kept as variants | Text public domain; morphology CC BY 4.0 |
 | `RP2018` | Greek New Testament (Robinson-Pierpont 2018) with Strong's numbers, parsing, and where NA27/28, ECM and Byzantine manuscripts differ | Public domain |
-| `STRONGS` | Strong's Hebrew and Greek dictionaries | CC BY-SA (Open Scriptures) |
+| `STRONGS` | Strong's Hebrew and Greek dictionaries, plus short English glosses for interlinear lines (STEPBible brief lexicons TBESG/TBESH, by Hebrew word sense where the text marks one) | CC BY-SA (Open Scriptures); glosses CC BY 4.0 (STEPBible.org) |
 | `OBXREF` | Cross-references | CC BY (OpenBible.info) |
 | `THEOGRAPHIC` | People, places and events linked to verses; Easton's Bible Dictionary | CC BY-SA 4.0; Easton's public domain |
 | `HCF` | Church-father and historical commentary (authors up to 1700) | **`verify`**: mixes public-domain excerpts with fair-use excerpts of modern translations; review before release |
@@ -150,7 +150,8 @@ How it differs from the mobile app:
 
 - **Storage:** SQLite runs in the browser as WebAssembly (`sqflite_common_ffi_web`; `web/sqlite3.wasm` and
   `web/sqflite_sw.js`) and keeps the content and user databases in IndexedDB. Clearing site data erases
-  unsynced highlights and notes, so suggest that web readers sign in to sync.
+  unsynced highlights and notes, so suggest that web readers sign in to sync. After the first local change the app
+  asks the browser for persistent storage, so the data isn't cleared when the device runs low on space.
   After upgrading `sqflite_common_ffi_web`, run `dart run sqflite_common_ffi_web:setup` in `app/` to refresh
   those two files.
 - **Not on the web:** offline audio downloads and study-pack downloads (audio streams instead), and the daily

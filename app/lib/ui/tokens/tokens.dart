@@ -130,6 +130,9 @@ abstract final class AppMotion {
   static const debounce = Duration(milliseconds: 300);
   static const snackBar = Duration(seconds: 2);
 
+  /// A snack bar offering "Undo" stays up long enough to reach the button.
+  static const undoSnackBar = Duration(seconds: 5);
+
   /// Audio follow-along does not auto-scroll this soon after the user scrolls.
   static const userScrollGrace = Duration(seconds: 5);
 

@@ -15,6 +15,12 @@ class EthiopianDate {
     'ሚያዝያ', 'ግንቦት', 'ሰኔ', 'ሐምሌ', 'ነሐሴ', 'ጳጉሜን', //
   ];
 
+  /// The same months transliterated, for the English UI.
+  static const monthNamesEn = [
+    'Meskerem', 'Tikimt', 'Hidar', 'Tahsas', 'Tir', 'Yekatit', 'Megabit',
+    'Miyazya', 'Ginbot', 'Sene', 'Hamle', 'Nehase', 'Pagume', //
+  ];
+
   factory EthiopianDate.fromGregorian(DateTime date) {
     final jdn = _gregorianToJdn(date.year, date.month, date.day);
     final r = (jdn - _epoch) % 1461;
@@ -28,8 +34,9 @@ class EthiopianDate {
     return _jdnToGregorian(jdn);
   }
 
-  /// e.g. "መስከረም 22, 2019 ዓ.ም."
-  String format() => '${monthNamesAm[month - 1]} $day, $year ዓ.ም.';
+  /// e.g. "መስከረም 22, 2019 ዓ.ም.", or "Meskerem 22, 2019 EC" in English.
+  String format({bool amharic = true}) =>
+      amharic ? '${monthNamesAm[month - 1]} $day, $year ዓ.ም.' : '${monthNamesEn[month - 1]} $day, $year EC';
 
   @override
   bool operator ==(Object other) =>

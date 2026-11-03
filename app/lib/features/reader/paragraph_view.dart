@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/geez.dart';
+import '../../core/strings.dart';
+import '../../core/vkey.dart';
 import '../../ui/ui.dart';
 import 'chapter_layout.dart';
 
@@ -29,6 +31,7 @@ class ReaderOptions {
     required this.showNumbers,
     required this.redLetters,
     required this.geezNumerals,
+    required this.bookName,
     this.secondary = false,
     this.rtl = false,
   });
@@ -36,6 +39,10 @@ class ReaderOptions {
   final bool showNumbers;
   final bool redLetters;
   final bool geezNumerals;
+
+  /// Book name in the UI language, so screen readers announce a verse number
+  /// as its full reference ("ዮሐንስ ምዕራፍ 3 ቁጥር 16").
+  final String bookName;
 
   /// The second version in side-by-side reading (softer text style).
   final bool secondary;
@@ -47,6 +54,7 @@ class ReaderOptions {
     showNumbers: showNumbers,
     redLetters: redLetters,
     geezNumerals: geezNumerals,
+    bookName: bookName,
     secondary: true,
     rtl: rtl,
   );
@@ -102,9 +110,11 @@ class _ParagraphViewState extends State<ParagraphView> {
     for (final seg in widget.block.segs) {
       final k = seg.vkey;
       final hl = d.highlights[k];
-      Color? bg = hl != null ? context.appColors.highlight(hl) : null;
-      if (d.playing == k) bg = scheme.primaryContainer;
       final selected = d.selected.contains(k);
+      // A highlight keeps its color while selected (the underline marks the
+      // selection); plain selected verses get a soft tint so they stand out.
+      Color? bg = hl != null ? context.appColors.highlight(hl) : (selected ? context.appColors.selection : null);
+      if (d.playing == k) bg = context.appColors.playing;
       final style = base.copyWith(
         backgroundColor: bg,
         decoration: selected ? TextDecoration.underline : null,
@@ -123,7 +133,7 @@ class _ParagraphViewState extends State<ParagraphView> {
                 text: '${n != null && o.geezNumerals ? intToGeez(n) : seg.text}\u2009',
                 style: reading.verseNumber.copyWith(backgroundColor: bg),
                 recognizer: tap,
-                semanticsLabel: 'ቁጥር ${seg.text}',
+                semanticsLabel: S.of(context).verseLabel(o.bookName, vkeyChapter(k), seg.text),
               ),
             );
           }

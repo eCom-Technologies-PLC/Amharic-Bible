@@ -24,9 +24,11 @@ class Word {
   final String? lemma;
   final String? morph; // "HR/Ncfsa" (OSHB) or "N-NSM" (Robinson)
 
-  /// Short English gloss from the lexicon (first rendering), when known.
+  /// Short English gloss for an interlinear line, when known.
   final String? gloss;
 
+  /// [r] may carry a `gloss` (from the gloss table); without one, the gloss
+  /// falls back to the lexicon's first rendering ([shortGloss]).
   factory Word.fromRow(Map<String, Object?> r) => Word(
     versionId: r['version_id'] as String,
     vkey: r['vkey'] as int,
@@ -35,11 +37,24 @@ class Word {
     strongs: r['strongs'] as String?,
     lemma: r['lemma'] as String?,
     morph: r['morph'] as String?,
-    gloss: shortGloss(r['usage'] as String?, r['definition'] as String?),
+    gloss: r['gloss'] as String? ?? shortGloss(r['usage'] as String?, r['definition'] as String?),
   );
 }
 
-/// First rendering of a lexicon entry, trimmed for an interlinear line:
+/// The Hebrew word sense a lemma names, for sense-specific glosses: strongs
+/// "H7363" with lemma "7363 b" -> "H7363b" (to hover, not be weak). Null when
+/// the lemma names no sense (Greek lemmas, or "b/7225").
+String? senseId(String? strongs, String? lemma) {
+  if (strongs == null || lemma == null) return null;
+  final m = RegExp(r'(\d+)\s*([a-z])\b').firstMatch(lemma);
+  if (m == null || '${strongs[0]}${int.parse(m.group(1)!)}' != strongs) return null;
+  return '$strongs${m.group(2)}';
+}
+
+/// Fallback when no gloss table is available (older content): the lexicon's
+/// first rendering, trimmed for an interlinear line. Strong's lists renderings
+/// alphabetically, so this can be wrong ("exceeding" for θεός); the gloss
+/// table exists to replace it.
 /// "beginning, chief(-est), first(-fruits..." -> "beginning".
 String? shortGloss(String? usage, String? definition) {
   for (final src in [usage, definition]) {

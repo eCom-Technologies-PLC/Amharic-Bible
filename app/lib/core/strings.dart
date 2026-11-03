@@ -2,8 +2,9 @@ import 'package:flutter/widgets.dart';
 
 /// UI strings in Amharic (default) and English.
 ///
-/// Kept as plain Dart so a missing translation is a compile error; add a
-/// language by adding another [S] constant and listing it in [S.forLocale].
+/// Kept as plain Dart; `test/strings_test.dart` fails when a key is missing in
+/// either language. Add a language by adding another [S] constant and listing
+/// it in [S.forLocale].
 class S {
   const S._(this.locale, this._m);
 
@@ -51,6 +52,32 @@ class S {
   String get save => _('save');
   String get delete => _('delete');
   String get cancel => _('cancel');
+  String get undo => _('undo');
+  String get library => _('library');
+  String get discardChanges => _('discardChanges');
+  String get discardChangesMessage => _('discardChangesMessage');
+  String get discard => _('discard');
+  String get keepEditing => _('keepEditing');
+  String get deleteNoteConfirm => _('deleteNoteConfirm');
+  String get deleteNoteMessage => _('deleteNoteMessage');
+  String get deletePostConfirm => _('deletePostConfirm');
+  String get deletePostMessage => _('deletePostMessage');
+  String get removeAudioMessage => _('removeAudioMessage');
+  String get somethingWentWrong => _('somethingWentWrong');
+  String get emptyTimeline => _('emptyTimeline');
+  String get play => _('play');
+  String get pause => _('pause');
+  String get stopAudio => _('stopAudio');
+  String get back10 => _('back10');
+  String get forward10 => _('forward10');
+  String get smallerText => _('smallerText');
+  String get largerText => _('largerText');
+  String get spacingCompact => _('spacingCompact');
+  String get spacingNormal => _('spacingNormal');
+  String get spacingRelaxed => _('spacingRelaxed');
+  String get shapeSquare => _('shapeSquare');
+  String get shapeStory => _('shapeStory');
+  String get pageNotFound => _('pageNotFound');
   String get noteHint => _('noteHint');
   String get searchHint => _('searchHint');
   String get noResults => _('noResults');
@@ -240,7 +267,7 @@ class S {
   String get wifiOnlyHint => _('wifiOnlyHint');
   String get needWifi => _('needWifi');
   String streakDays(int n) => isAmharic ? '$n ቀን በተከታታይ' : (n == 1 ? '1 day in a row' : '$n days in a row');
-  String streakBest(int n) => isAmharic ? 'ረጅሙ፦ $n ቀናት' : 'Longest: $n days';
+  String streakBest(int n) => isAmharic ? 'ረጅሙ፦ ${days(n)}' : 'Longest: ${days(n)}';
 
   String get readAloud => _('readAloud');
   String get stopReading => _('stopReading');
@@ -330,19 +357,74 @@ class S {
       y < 0 ? (isAmharic ? 'ከክርስቶስ ልደት በፊት ${-y}' : '${-y} BC') : (isAmharic ? 'ከክርስቶስ ልደት በኋላ $y' : 'AD $y');
 
   String minutes(int n) => isAmharic ? '$n ደቂቃ' : '$n min';
-  String results(int n) => isAmharic ? '$n ውጤቶች' : (n == 1 ? '1 result' : '$n results');
+  String results(int n) => isAmharic ? (n == 1 ? '1 ውጤት' : '$n ውጤቶች') : (n == 1 ? '1 result' : '$n results');
+
+  /// Search stops at [n] results; say so instead of implying there are no more.
+  String firstResults(int n) => isAmharic ? 'የመጀመሪያዎቹ $n ውጤቶች' : 'First $n results';
   String selected(int n) => isAmharic ? '$n ተመርጠዋል' : '$n selected';
   String day(int n) => isAmharic ? 'ቀን $n' : 'Day $n';
   String dayOf(int n, int total) => isAmharic ? 'ቀን $n ከ$total' : 'Day $n of $total';
   String dayRange(int a, int b) => isAmharic ? 'ቀን $a–$b' : 'Days $a–$b';
-  String days(int n) => isAmharic ? '$n ቀናት' : '$n days';
-  String behind(int n) => isAmharic ? '$n ቀናት ወደኋላ' : '$n days behind';
+  String days(int n) => isAmharic ? (n == 1 ? '1 ቀን' : '$n ቀናት') : (n == 1 ? '1 day' : '$n days');
+  String behind(int n) => isAmharic ? '${days(n)} ወደኋላ' : '${days(n)} behind';
   String signedInAs(String email) => isAmharic ? 'በ$email ገብተዋል' : 'Signed in as $email';
   String chapterOf(String book, int c) => isAmharic ? '$book ምዕራፍ $c' : '$book $c';
+
+  /// Screen-reader label for a verse number: "ዮሐንስ ምዕራፍ 3 ቁጥር 16".
+  String verseLabel(String book, int chapter, String verse) =>
+      isAmharic ? '$book ምዕራፍ $chapter ቁጥር $verse' : '$book chapter $chapter, verse $verse';
+
+  /// A highlight color's name ("yellow" → "ቢጫ").
+  String colorName(String key) => _('color.$key');
+
+  /// "Highlight yellow", for the swatch buttons.
+  String highlightIn(String colorKey) =>
+      isAmharic ? '${colorName(colorKey)} አድምቅ' : '$highlight ${colorName(colorKey).toLowerCase()}';
+
+  /// Keys with no Amharic or no English text (an empty list means every string
+  /// is translated; see test/strings_test.dart).
+  @visibleForTesting
+  static List<String> get untranslatedKeys => [
+    for (final k in _en.keys)
+      if (!_am.containsKey(k)) 'am: $k',
+    for (final k in _am.keys)
+      if (!_en.containsKey(k)) 'en: $k',
+  ];
 }
 
 const _am = {
   'appName': 'መጽሐፍ ቅዱስ',
+  'undo': 'ቀልብስ',
+  'library': 'ቤተ መጻሕፍት',
+  'discardChanges': 'ለውጦቹ ሳይቀመጡ ይውጡ?',
+  'discardChangesMessage': 'በዚህ ማስታወሻ ላይ ያደረጉት ለውጥ ገና አልተቀመጠም።',
+  'discard': 'ሳታስቀምጥ ውጣ',
+  'keepEditing': 'ማረም ቀጥል',
+  'deleteNoteConfirm': 'ይህ ማስታወሻ ይሰረዝ?',
+  'deleteNoteMessage': 'የተሰረዘ ማስታወሻ መመለስ አይቻልም።',
+  'deletePostConfirm': 'ይህ መልእክት ይሰረዝ?',
+  'deletePostMessage': 'ለቡድኑ አባላት ሁሉ ይሰረዛል።',
+  'removeAudioMessage': 'የወረደው ድምፅ ከዚህ መሣሪያ ይወገዳል። በኋላ እንደገና ማውረድ ይችላሉ።',
+  'somethingWentWrong': 'ችግር ተፈጥሯል። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።',
+  'emptyTimeline': 'የዘመን ሰሌዳው ገና የለም። ክስተቶቹ ከጥናት ጥቅሎቹ ጋር ይመጣሉ።',
+  'play': 'አጫውት',
+  'pause': 'ለአፍታ አቁም',
+  'stopAudio': 'ድምፁን አቁም',
+  'back10': '10 ሰከንድ ወደኋላ',
+  'forward10': '10 ሰከንድ ወደፊት',
+  'smallerText': 'ፊደሉን አሳንስ',
+  'largerText': 'ፊደሉን አሳድግ',
+  'spacingCompact': 'ጠባብ',
+  'spacingNormal': 'መካከለኛ',
+  'spacingRelaxed': 'ሰፊ',
+  'shapeSquare': 'ካሬ',
+  'shapeStory': 'ቁመታዊ',
+  'pageNotFound': 'ይህ ገጽ አልተገኘም። አድራሻው ተቀይሮ ወይም ተሳስቶ ሊሆን ይችላል።',
+  'color.yellow': 'ቢጫ',
+  'color.green': 'አረንጓዴ',
+  'color.blue': 'ሰማያዊ',
+  'color.pink': 'ሮዝ',
+  'color.orange': 'ብርቱካናማ',
   'home': 'ቤት',
   'read': 'ንባብ',
   'search': 'ፍለጋ',
@@ -720,6 +802,37 @@ const _am = {
 
 const _en = {
   'appName': 'Amharic Bible',
+  'undo': 'Undo',
+  'library': 'Library',
+  'discardChanges': 'Discard changes?',
+  'discardChangesMessage': "Your changes to this note haven't been saved.",
+  'discard': 'Discard',
+  'keepEditing': 'Keep editing',
+  'deleteNoteConfirm': 'Delete this note?',
+  'deleteNoteMessage': "A deleted note can't be brought back.",
+  'deletePostConfirm': 'Delete this message?',
+  'deletePostMessage': 'It will be removed for everyone in the group.',
+  'removeAudioMessage': 'The downloaded audio will be removed from this device. You can download it again later.',
+  'somethingWentWrong': 'Something went wrong. Check your connection and try again.',
+  'emptyTimeline': 'No timeline yet. The events come with the study packs.',
+  'play': 'Play',
+  'pause': 'Pause',
+  'stopAudio': 'Stop audio',
+  'back10': 'Back 10 seconds',
+  'forward10': 'Forward 10 seconds',
+  'smallerText': 'Smaller text',
+  'largerText': 'Larger text',
+  'spacingCompact': 'Compact',
+  'spacingNormal': 'Normal',
+  'spacingRelaxed': 'Relaxed',
+  'shapeSquare': 'Square',
+  'shapeStory': 'Story',
+  'pageNotFound': "This page wasn't found. The address may have changed or have a typo.",
+  'color.yellow': 'Yellow',
+  'color.green': 'Green',
+  'color.blue': 'Blue',
+  'color.pink': 'Pink',
+  'color.orange': 'Orange',
   'home': 'Home',
   'read': 'Read',
   'search': 'Search',

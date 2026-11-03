@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/strings.dart';
+import 'core/web/web_storage.dart';
+import 'features/common.dart';
 import 'ui/ui.dart';
 import 'domain/models.dart';
 import 'features/audio/player_widgets.dart';
@@ -36,6 +39,8 @@ final _rootKey = GlobalKey<NavigatorState>();
 GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
   navigatorKey: _rootKey,
   initialLocation: initialLocation,
+  // A mistyped or outdated link gets a friendly page, not the router's own.
+  errorBuilder: (_, _) => const NotFoundScreen(),
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => AppShell(shell: shell),
@@ -127,6 +132,9 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
     GoRoute(
       path: '/note',
       parentNavigatorKey: _rootKey,
+      // A note needs the verse it belongs to; without one, open the notes list.
+      redirect: (_, state) =>
+          int.tryParse(state.uri.queryParameters['start'] ?? '') == null ? '/me/library?tab=2' : null,
       builder: (_, state) {
         final q = state.uri.queryParameters;
         return NoteEditorScreen(
@@ -148,10 +156,13 @@ class AmharicBibleApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Keep the sync controller alive so it reacts to sign-in and edits.
     ref.listen(syncControllerProvider, (_, _) {});
+    // Browsers may clear site data under storage pressure; once the reader has
+    // saved something, ask to keep it.
+    if (kIsWeb) ref.listen(userDataWrittenProvider, (_, _) => requestPersistentStorage());
     final settings = ref.watch(settingsProvider);
     final brightness = MediaQuery.platformBrightnessOf(context);
     return MaterialApp.router(
-      title: 'መጽሐፍ ቅዱስ',
+      onGenerateTitle: (context) => S.of(context).appName,
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(
         mode: settings.readerTheme,

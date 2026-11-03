@@ -79,7 +79,7 @@ class SelectionBar extends ConsumerWidget {
                   children: [
                     for (final c in HighlightColor.values)
                       SwatchButton(
-                        semanticLabel: '${s.highlight} ${c.name}',
+                        semanticLabel: s.highlightIn(c.name),
                         color: context.appColors.highlight(c),
                         onTap: () async {
                           await repo.setHighlight(selected, c);

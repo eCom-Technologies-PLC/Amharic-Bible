@@ -72,6 +72,44 @@ def load_strongs(js_text: str) -> list[LexEntry]:
     return out
 
 
+# ----------------------------------------------------------------- glosses
+
+# Extended Strong's number in the brief lexicons: "G0846", "H7225", "H1254a".
+_ESTRONG = re.compile(r"^([GH])(\d{1,4})([a-z]?)$")
+
+
+def load_step_glosses(tsv_text: str) -> dict[str, str]:
+    """STEPBible brief lexicons (TBESG, TBESH) -> short English glosses.
+
+    Strong's own KJV renderings are listed alphabetically, so their first one
+    is often wrong as a gloss (θεός -> "exceeding"); these glosses are written
+    for interlinears. Keys are Strong's numbers as the texts store them
+    ("G2316", "H7225") and, for Hebrew words split into senses, the sense
+    ("H7363a" be weak, "H7363b" to hover). A gloss written "first: beginning"
+    (basic meaning: this sense) keeps the basic meaning. A plain number gets
+    the first gloss that is not a proper name or part of one, so H7462 is
+    "to pasture" rather than the place name listed first.
+    """
+    senses: dict[str, str] = {}
+    best: dict[str, tuple[int, str]] = {}  # number -> (rank, gloss); rank 0 = ordinary word, 1 = name
+    for line in tsv_text.splitlines():
+        cols = line.split("\t")
+        if len(cols) < 7:
+            continue
+        m = _ESTRONG.match(cols[0].strip())
+        gloss = nfc(cols[6].split(":", 1)[0].strip())
+        if not m or not gloss:
+            continue
+        number, sense = f"{m.group(1)}{int(m.group(2))}", m.group(3)
+        if sense:
+            senses.setdefault(number + sense, gloss)
+        name = cols[5].startswith("N:") or gloss.startswith("(") or "a Part of" in cols[1]
+        rank = 1 if name else 0
+        if number not in best or rank < best[number][0]:
+            best[number] = (rank, gloss)
+    return {**{n: g for n, (_, g) in best.items()}, **senses}
+
+
 # ----------------------------------------------------------------- cross-references
 
 

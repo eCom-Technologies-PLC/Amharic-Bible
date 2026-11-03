@@ -119,7 +119,7 @@ class SettingsScreen extends ConsumerWidget {
           SwitchListTile(
             secondary: const Icon(Icons.calendar_today_outlined),
             title: Text(s.ethiopianCalendar),
-            subtitle: Text(EthiopianDate.fromGregorian(DateTime.now()).format()),
+            subtitle: Text(EthiopianDate.fromGregorian(DateTime.now()).format(amharic: s.isAmharic)),
             value: settings.ethiopianCalendar,
             onChanged: (v) => notifier.update((x) => x.copyWith(ethiopianCalendar: v)),
           ),

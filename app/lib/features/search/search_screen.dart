@@ -210,7 +210,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         if (i == 1) return _StudyResults(matches: _study);
         if (i == 2) {
           if (hits.isEmpty) return const SizedBox.shrink();
-          return SectionHeader(s.results(hits.length), first: _study.isEmpty);
+          // A full page of results means the search stopped there; say so.
+          final capped = !_allVersions && hits.length >= ContentRepository.searchLimit;
+          return SectionHeader(capped ? s.firstResults(hits.length) : s.results(hits.length), first: _study.isEmpty);
         }
         final h = hits[i - 3];
         final hitRef = formatReference(h.book, vkeyChapter(h.vkey), [vkeyVerse(h.vkey)], amharic: s.isAmharic);

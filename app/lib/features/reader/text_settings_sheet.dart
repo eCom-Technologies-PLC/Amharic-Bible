@@ -38,7 +38,7 @@ class TextSettingsSheet extends ConsumerWidget {
           child: Row(
             children: [
               IconButton.outlined(
-                tooltip: '−',
+                tooltip: s.smallerText,
                 onPressed: settings.fontSizeIndex > 0
                     ? () => notifier.update((x) => x.copyWith(fontSizeIndex: x.fontSizeIndex - 1))
                     : null,
@@ -48,7 +48,7 @@ class TextSettingsSheet extends ConsumerWidget {
                 child: Text('ሀ Aa', textAlign: TextAlign.center, style: context.reading.verse),
               ),
               IconButton.outlined(
-                tooltip: '+',
+                tooltip: s.largerText,
                 onPressed: settings.fontSizeIndex < maxSize
                     ? () => notifier.update((x) => x.copyWith(fontSizeIndex: x.fontSizeIndex + 1))
                     : null,
@@ -65,6 +65,8 @@ class TextSettingsSheet extends ConsumerWidget {
                 ButtonSegment(
                   value: h,
                   icon: Icon([Icons.density_small, Icons.density_medium, Icons.density_large][i]),
+                  // Icon-only segments still need a name for screen readers.
+                  tooltip: [s.spacingCompact, s.spacingNormal, s.spacingRelaxed][i],
                 ),
             ],
             selected: {settings.lineHeight},

@@ -82,11 +82,22 @@ Future<T?> showAppBottomSheet<T>({
   ),
 );
 
-/// Brief confirmation message at the bottom of the screen.
-void showAppSnack(BuildContext context, String message) {
+/// Brief confirmation message at the bottom of the screen. With [actionLabel]
+/// and [onAction] it offers one action, typically "Undo" after a removal, and
+/// stays up longer so there is time to use it.
+void showAppSnack(BuildContext context, String message, {String? actionLabel, VoidCallback? onAction}) {
+  final action = actionLabel != null && onAction != null
+      ? SnackBarAction(label: actionLabel, onPressed: onAction)
+      : null;
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message), duration: AppMotion.snackBar));
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: action,
+        duration: action != null ? AppMotion.undoSnackBar : AppMotion.snackBar,
+      ),
+    );
 }
 
 /// One choice in [showOptionPicker].

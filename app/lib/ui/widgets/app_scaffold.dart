@@ -1,5 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/strings.dart';
+import '../theme/app_colors.dart';
 import '../tokens/tokens.dart';
 
 /// The standard screen: app bar → body → optional bottom action area.
@@ -19,6 +24,8 @@ class AppScaffold extends StatelessWidget {
     this.bottomBar,
     this.padded = false,
     this.showAppBar = true,
+    this.reading = false,
+    this.pageTitle,
   });
 
   final String? title;
@@ -33,12 +40,28 @@ class AppScaffold extends StatelessWidget {
   final bool padded;
   final bool showAppBar;
 
+  /// The reading page: the screen and its app bar use the theme's paper
+  /// color ([AppColors.paper]) instead of the page color.
+  final bool reading;
+
+  /// Names the browser tab on the web ("ዮሐንስ 3 · መጽሐፍ ቅዱስ"); defaults to
+  /// [title]. Screens with a [titleWidget] pass it themselves.
+  final String? pageTitle;
+
   @override
   Widget build(BuildContext context) {
+    final scaffold = _scaffold(context);
+    return kIsWeb ? _BrowserTitle(title: pageTitle ?? title, child: scaffold) : scaffold;
+  }
+
+  Widget _scaffold(BuildContext context) {
+    final paper = reading ? context.appColors.paper : null;
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      backgroundColor: paper,
       appBar: showAppBar
           ? AppBar(
+              backgroundColor: paper,
               leading: leading,
               title: titleWidget ?? (title != null ? Text(title!, maxLines: 1, overflow: TextOverflow.ellipsis) : null),
               actions: [
@@ -56,6 +79,75 @@ class AppScaffold extends StatelessWidget {
       bottomNavigationBar: bottomBar,
     );
   }
+}
+
+/// Sets the browser tab title while this screen is the one being shown.
+///
+/// Every built screen has one of these (tabs kept alive in the shell, screens
+/// under a pushed route), so each compares its own location with the
+/// router's current one and only the visible screen names the tab. It runs
+/// again on every navigation, so going back restores the right title.
+class _BrowserTitle extends StatefulWidget {
+  const _BrowserTitle({required this.title, required this.child});
+
+  final String? title;
+  final Widget child;
+
+  @override
+  State<_BrowserTitle> createState() => _BrowserTitleState();
+}
+
+class _BrowserTitleState extends State<_BrowserTitle> {
+  GoRouter? _router;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.maybeOf(context);
+    if (router != _router) {
+      _router?.routerDelegate.removeListener(_apply);
+      _router = router;
+      router?.routerDelegate.addListener(_apply);
+    }
+    _apply();
+  }
+
+  @override
+  void didUpdateWidget(_BrowserTitle old) {
+    super.didUpdateWidget(old);
+    if (old.title != widget.title) _apply();
+  }
+
+  @override
+  void dispose() {
+    _router?.routerDelegate.removeListener(_apply);
+    super.dispose();
+  }
+
+  void _apply() {
+    if (!mounted) return;
+    final router = _router;
+    if (router != null) {
+      Uri? mine;
+      try {
+        mine = GoRouterState.of(context).uri;
+      } on GoError {
+        // No route state: the router's error page, which is the current page.
+      }
+      if (mine != null && mine != router.routerDelegate.currentConfiguration.uri) return;
+    }
+    final app = S.of(context).appName;
+    final t = widget.title;
+    SystemChrome.setApplicationSwitcherDescription(
+      ApplicationSwitcherDescription(
+        label: t == null || t.isEmpty || t == app ? app : '$t · $app',
+        primaryColor: Theme.of(context).colorScheme.primary.toARGB32(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// Scrollable screen content with the standard padding and vertical rhythm.

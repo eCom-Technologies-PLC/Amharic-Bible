@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
 import '../../domain/study.dart';
+import '../../state/packs.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
 import 'study_widgets.dart';
@@ -24,7 +25,14 @@ class TimelineScreen extends ConsumerWidget {
         value: ref.watch(_eventsProvider),
         onRetry: () => ref.invalidate(_eventsProvider),
         data: (events) => events.isEmpty
-            ? EmptyState(message: s.noStudyData, icon: Icons.timeline)
+            ? EmptyState(
+                message: s.emptyTimeline,
+                icon: Icons.timeline,
+                // The events come with the study packs, downloaded on phones.
+                action: ref.watch(packsConfiguredProvider)
+                    ? AppButton.secondary(label: s.getStudyPacks, onPressed: () => context.push('/me/downloads'))
+                    : null,
+              )
             : AppListView(
                 children: [
                   Gutter(

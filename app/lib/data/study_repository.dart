@@ -67,11 +67,41 @@ class StudyRepository {
   }
 
   Future<List<Word>> _withGlosses(List<Map<String, Object?>> rows) async {
-    final lex = await _lexiconRows([for (final r in rows) ?r['strongs'] as String?]);
+    final ids = [for (final r in rows) ?r['strongs'] as String?];
+    String? sense(Map<String, Object?> r) => senseId(r['strongs'] as String?, r['lemma'] as String?);
+    final lex = await _lexiconRows(ids);
+    final glosses = await _glosses({...ids, for (final r in rows) ?sense(r)});
     return [
       for (final r in rows)
-        Word.fromRow({...r, 'usage': lex[r['strongs']]?['usage'], 'definition': lex[r['strongs']]?['definition']}),
+        Word.fromRow({
+          ...r,
+          'usage': lex[r['strongs']]?['usage'],
+          'definition': lex[r['strongs']]?['definition'],
+          // The word's own sense first ("H7363b"), then the number's usual gloss.
+          'gloss': glosses[sense(r)] ?? glosses[r['strongs']],
+        }),
     ];
+  }
+
+  /// Interlinear glosses by Strong's number or sense id. Content built before
+  /// the gloss table existed has none, and the lexicon fallback is used.
+  Future<Map<String, String>> _glosses(Set<String> ids) async {
+    final list = ids.toList();
+    final out = <String, String>{};
+    for (var i = 0; i < list.length; i += 500) {
+      final chunk = list.sublist(i, i + 500 > list.length ? list.length : i + 500);
+      final marks = List.filled(chunk.length, '?').join(',');
+      for (final s in sources.forTable('gloss')) {
+        try {
+          for (final r in await db.rawQuery('SELECT id, gloss FROM $s.gloss WHERE id IN ($marks)', chunk)) {
+            out.putIfAbsent(r['id'] as String, () => r['gloss'] as String);
+          }
+        } on DatabaseException {
+          // No gloss table in this database.
+        }
+      }
+    }
+    return out;
   }
 
   /// Words of [versionId] for verse keys in [lo]..[hi], grouped by verse.

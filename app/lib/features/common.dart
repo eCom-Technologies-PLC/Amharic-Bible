@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../core/ethiopian_calendar.dart';
@@ -53,8 +54,25 @@ String formatTimeOfDay(int minutes) =>
 String formatNumber(int n, Settings s) => s.geezNumerals ? intToGeez(n) : '$n';
 
 String formatDate(DateTime d, Settings s, S strings) {
-  if (s.ethiopianCalendar) return EthiopianDate.fromGregorian(d.toLocal()).format();
+  if (s.ethiopianCalendar) return EthiopianDate.fromGregorian(d.toLocal()).format(amharic: strings.isAmharic);
   return DateFormat.yMMMd(strings.locale.languageCode).format(d.toLocal());
+}
+
+/// Shown for a link that matches no screen (a typo, or an old address).
+class NotFoundScreen extends StatelessWidget {
+  const NotFoundScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return AppScaffold(
+      body: EmptyState(
+        message: s.pageNotFound,
+        icon: Icons.explore_off_outlined,
+        action: AppButton(label: s.home, icon: Icons.home_outlined, onPressed: () => context.go('/home')),
+      ),
+    );
+  }
 }
 
 /// Banner shown when the bundled content is sample text only.
@@ -65,19 +83,19 @@ class SampleBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sample = ref.watch(isSampleProvider).value ?? false;
     if (!sample) return const SizedBox.shrink();
-    final scheme = context.colors;
+    final colors = context.appColors;
     return Material(
-      color: scheme.tertiaryContainer,
+      color: colors.infoContainer,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen, vertical: AppSpacing.sm),
         child: Row(
           children: [
-            Icon(Icons.info_outline, size: AppIconSize.sm, color: scheme.onTertiaryContainer),
+            Icon(Icons.info_outline, size: AppIconSize.sm, color: colors.onInfoContainer),
             const SizedBox(width: AppSpacing.iconGap),
             Expanded(
               child: Text(
                 S.of(context).sampleBanner,
-                style: context.text.bodySmall?.copyWith(color: scheme.onTertiaryContainer),
+                style: context.text.bodySmall?.copyWith(color: colors.onInfoContainer),
               ),
             ),
           ],

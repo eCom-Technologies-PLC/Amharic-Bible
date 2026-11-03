@@ -68,7 +68,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   Future<void> _changeChapter(BibleVersion version, Book book, int chapter, int dir) async {
     final target = await ref.read(contentRepositoryProvider).neighbourChapter(version.id, book, chapter, dir);
-    if (target != null && mounted) _goTo(BibleRef(target.$1.code, target.$2));
+    if (target == null || !mounted) return;
+    // Through the router, so the address follows the chapter: on the web,
+    // Back, refresh and copied links then land on the chapter being read.
+    // The new target arrives in didUpdateWidget, which moves the reader.
+    context.go('/read?ref=${BibleRef(target.$1.code, target.$2).encode()}');
   }
 
   void _toggleVerse(int k) {
@@ -92,6 +96,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     return switch ((versionAsync, start)) {
       (AsyncData(value: final version), AsyncData(value: final r)) => _buildReader(context, s, version, r),
       (AsyncError(), _) || (_, AsyncError()) => AppScaffold(
+        reading: true,
         body: ErrorState(
           onRetry: () {
             ref.invalidate(currentVersionProvider);
@@ -99,7 +104,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           },
         ),
       ),
-      _ => const AppScaffold(body: LoadingState()),
+      _ => const AppScaffold(reading: true, body: LoadingState()),
     };
   }
 
@@ -108,7 +113,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final content = chapterAsync.value;
     final book = content?.book;
 
-    return AppScaffold(
+    final scaffold = AppScaffold(
+      reading: true,
+      pageTitle: book != null ? '${book.shortName} ${r.chapter}' : null,
       titleWidget: _ChapterTitle(
         label: book != null ? '${book.shortName} ${formatNumber(r.chapter, ref.watch(settingsProvider))}' : r.bookCode,
         onTap: () => context.push('/books'),
@@ -151,6 +158,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           ),
         ],
       ),
+    );
+
+    // Back clears a verse selection before it leaves the reader.
+    return PopScope(
+      canPop: _selected.isEmpty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(_selected.clear);
+      },
+      child: scaffold,
     );
   }
 
@@ -228,6 +244,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       showNumbers: settings.verseNumbers,
       redLetters: settings.redLetters,
       geezNumerals: settings.geezNumerals,
+      bookName: c.book.shortName,
       rtl: isRtlLanguage(version.language),
     );
     final decor = VerseDecor(

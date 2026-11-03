@@ -25,5 +25,7 @@ void main() {
 
   test('format', () {
     expect(const EthiopianDate(2019, 1, 22).format(), 'መስከረም 22, 2019 ዓ.ም.');
+    // The English UI gets transliterated month names, not Amharic script.
+    expect(const EthiopianDate(2019, 2, 24).format(amharic: false), 'Tikimt 24, 2019 EC');
   });
 }

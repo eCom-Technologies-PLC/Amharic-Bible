@@ -40,7 +40,7 @@ All future UI work in this repository must follow this CLAUDE.md section.
 | `app/lib/ui/tokens/tokens.dart` | `AppSpacing`, `AppRadius`, `AppElevation`, `AppOpacity`, `AppIconSize`, `AppDimens`, `AppMotion`, `AppFonts`, `context.isCompact` |
 | `app/lib/ui/tokens/share_card_tokens.dart` | Share-image card palette and sizes (documented exception, below) |
 | `app/lib/ui/theme/app_theme.dart` | `buildAppTheme(...)`: TextTheme + every component theme, for the light / sepia / dark / black reading themes |
-| `app/lib/ui/theme/app_colors.dart` | ThemeExtensions `AppColors` (success/warning/info + containers, highlight colors, red letters) and `ReadingStyles` (scripture styles that follow the user's text-size/font/line-spacing settings); `context.colors`, `context.text`, `context.appColors`, `context.reading`, `context.scriptureSnippet`, `context.scriptureFeature` |
+| `app/lib/ui/theme/app_colors.dart` | ThemeExtensions `AppColors`, one set per reading theme (success/warning/info + containers, the reader's `paper`, the `playing` and `selection` verse tints, highlight colors, red letters) and `ReadingStyles` (scripture styles that follow the user's text-size/font/line-spacing settings); `context.colors`, `context.text`, `context.appColors`, `context.reading`, `context.scriptureSnippet`, `context.scriptureFeature` |
 | `app/lib/ui/widgets/` | Shared widgets (inventory below) |
 | `app/lib/core/strings.dart` | All UI text, Amharic + English. No literal user-facing strings in widgets |
 
@@ -60,17 +60,25 @@ All future UI work in this repository must follow this CLAUDE.md section.
 
 **Shared widgets** (`app/lib/ui/widgets/`)
 
-- Structure: `AppScaffold`, `AppListView`, `Gutter` (screen padding), `SectionHeader`, `LabeledGroup`, `BottomActionBar`.
+- Structure: `AppScaffold` (`reading: true` puts the reader on the theme's paper color; `pageTitle` names the browser
+  tab on the web, default `title`), `AppListView`, `Gutter` (screen padding), `SectionHeader`, `LabeledGroup`,
+  `BottomActionBar`.
 - Actions: `AppButton` (`.secondary/.outline/.ghost/.destructive`; `size`, `icon`, `iconAtEnd`, `loading`, `expand`, `tight`), `LabeledIconButton`, `SwatchButton`. Icon-only actions use `IconButton` (themed to 48dp) with a `tooltip`.
 - Forms & filters: `AppTextField`, `AppSearchField`, `FilterBar` / `FilterOption`.
 - Data: `AppCard` (eyebrow → content → actions), `AppListTile`, `StatusBadge` (`BadgeTone`), `ProgressRing`.
 - States: `AsyncView` (loading/error/data for any `AsyncValue`), `EmptyState`, `LoadingState`, `ErrorState` (friendly text + retry; never show exception text to readers), `InlineSpinner`.
-- Overlays: `showAppDialog`, `showConfirmDialog`, `showAppBottomSheet`, `showOptionPicker` / `PickerOption`, `showAppSnack`.
+- Overlays: `showAppDialog`, `showConfirmDialog`, `showAppBottomSheet`, `showOptionPicker` / `PickerOption`,
+  `showAppSnack` (optional `actionLabel` / `onAction`, e.g. Undo).
   (These functions are this project's `AppDialog` / `AppBottomSheet`.)
 
 **Rules specific to this app**
 
 - Dialogs only confirm destructive or blocking actions (delete account, stop/restart a plan, download progress). Choices, pickers and details (versions, language, speed, sleep timer, footnotes, text settings) use bottom sheets via `showOptionPicker` / `showAppBottomSheet`.
+- Removing something the reader made: offer Undo (`showAppSnack` with an action) when it can be restored, otherwise
+  confirm with `showConfirmDialog(destructive: true)`. Back never silently discards typing (`PopScope`).
+- Colors are defined only in `app_theme.dart` (a `ColorScheme` per reading theme) and `AppColors`.
+  `test/contrast_test.dart` checks scripture, red letters and verse numbers against every highlight, the playing and
+  selection tints in all four themes; keep it passing when changing colors.
 - Never put dropdowns or segmented buttons in a `ListTile` trailing slot — use an `AppListTile` with the current value as subtitle that opens `showOptionPicker` (this crashed on narrow screens).
 - Scripture text always uses `context.reading` styles (or `context.scriptureSnippet` / `scriptureFeature` outside the reader), never `TextStyle(fontSize: ...)`.
 - One loading pattern: centered spinner (`LoadingState`); `InlineSpinner` inside buttons and rows.
@@ -86,4 +94,5 @@ All future UI work in this repository must follow this CLAUDE.md section.
 
 **Layout gate**
 
-`app/test/layout_audit_test.dart` renders every route at 320 dp with 1.3× text in all four reading themes and both languages, plus phone and tablet sizes and key interactive states (verse selected, text settings sheet, option picker), and fails on any overflow or layout error. Add new routes to its `routes` list.
+`app/test/layout_audit_test.dart` renders every route at 320 dp with 1.3× text in all four reading themes and both languages, plus phone and tablet sizes and key interactive states (verse selected, text settings sheet, option picker), and fails on any overflow or layout error. Add new routes to its `routes` list. `app/test/strings_test.dart` fails
+when a string is missing in either language.

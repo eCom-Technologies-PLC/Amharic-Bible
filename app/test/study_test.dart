@@ -142,10 +142,21 @@ void main() {
       final first = gen[1001001]!.first;
       expect(first.text, 'בְּרֵאשִׁ֖ית');
       expect(first.strongs, 'H7225');
-      expect(first.gloss, 'beginning');
+      expect(first.gloss, 'first'); // STEPBible "first: beginning", basic meaning kept
+      // The word's own sense: Gen 1:2 hovering (H7363b), not "be weak" (H7363a).
+      expect(gen[1001002]!.firstWhere((w) => w.strongs == 'H7363').gloss, 'to hover');
       final at = await repo.wordsAt(43001001);
       expect(at.keys, ['RP2018']);
       expect(at['RP2018']![4].text, 'λόγος');
+      // Not Strong's alphabetical first rendering ("exceeding").
+      expect(at['RP2018']!.firstWhere((w) => w.strongs == 'G2316').gloss, 'God');
+    });
+
+    test('a lemma names the Hebrew sense its gloss comes from', () {
+      expect(senseId('H7363', '7363 b'), 'H7363b');
+      expect(senseId('H2416', 'd/2416 c'), 'H2416c');
+      expect(senseId('H7225', 'b/7225'), isNull);
+      expect(senseId('G3056', 'λογος'), isNull);
     });
 
     test('lexicon, occurrences and search', () async {

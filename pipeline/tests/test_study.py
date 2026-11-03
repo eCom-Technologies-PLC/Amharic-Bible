@@ -92,6 +92,18 @@ class ResourceTest(unittest.TestCase):
         self.assertEqual(rows["H7225"].lang, "heb")
         self.assertEqual(rows["H3026"].lang, "arc")  # "(Aramaic)" in the derivation
 
+    def test_step_glosses(self):
+        he = study.load_step_glosses(read(FIXTURES / "STRONGS" / "TBESH.txt"))
+        self.assertEqual(he["H430"], "God")
+        self.assertEqual(he["H7225"], "first")  # "first: beginning" keeps the basic meaning
+        self.assertEqual(he["H7363a"], "be weak")
+        self.assertEqual(he["H7363b"], "to hover")  # Gen 1:2 uses this sense
+        self.assertEqual(he["H7462"], "to pasture")  # not the place name listed first
+        self.assertEqual(he["H3837"], "Laban")  # only names: the first one
+        gr = study.load_step_glosses(read(FIXTURES / "STRONGS" / "TBESG.txt"))
+        # Strong's KJV renderings would give "exceeding", "adorning" and "adventure".
+        self.assertEqual((gr["G2316"], gr["G2889"], gr["G1325"]), ("God", "world", "to give"))
+
     def test_cross_references(self):
         rows = study.load_openbible_xrefs(read(FIXTURES / "OBXREF" / "cross_references.txt"), load_books())
         self.assertIn((1001001, 43001001, 43001003, 304), rows)
@@ -137,6 +149,7 @@ class BuildTest(unittest.TestCase):
             self.assertEqual(db.execute("SELECT coverage FROM version WHERE id='WLC'").fetchone()[0], "OT")
             self.assertEqual(db.execute("SELECT COUNT(*) FROM word WHERE strongs='G3056'").fetchone()[0], 3)
             self.assertIn("first", db.execute("SELECT definition FROM lexicon WHERE id='H7225'").fetchone()[0])
+            self.assertEqual(db.execute("SELECT gloss FROM gloss WHERE id='H7363b'").fetchone()[0], "to hover")
             self.assertIn((43001001, 43001003), set(db.execute("SELECT to_start, to_end FROM xref WHERE vkey=1001001")))
             self.assertIn("event:1", {r[0] for r in db.execute("SELECT entity_id FROM entity_verse WHERE vkey=1001001")})
             self.assertEqual(db.execute("SELECT author FROM commentary WHERE vkey_start <= 43003016 "
@@ -154,6 +167,7 @@ class BuildTest(unittest.TestCase):
             main.close()
             pack = sqlite3.connect(Path(d) / "packs" / "STRONGS.db")
             self.assertGreater(pack.execute("SELECT COUNT(*) FROM lexicon").fetchone()[0], 100)
+            self.assertEqual(pack.execute("SELECT gloss FROM gloss WHERE id='G2316'").fetchone()[0], "God")
             self.assertEqual(pack.execute("SELECT value FROM meta WHERE key='pack'").fetchone()[0], "STRONGS")
             pack.close()
 

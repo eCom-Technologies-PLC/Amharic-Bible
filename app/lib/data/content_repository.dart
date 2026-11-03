@@ -188,6 +188,9 @@ class ContentRepository {
     return out;
   }
 
+  /// Most results one search returns.
+  static const searchLimit = 200;
+
   /// Full-text search. Every query word must match (as a prefix) after Ge'ez
   /// normalization; results are in canonical order.
   Future<List<SearchHit>> search(
@@ -195,7 +198,7 @@ class ContentRepository {
     String query, {
     TestamentFilter testament = TestamentFilter.all,
     String? bookCode,
-    int limit = 200,
+    int limit = searchLimit,
   }) async {
     final match = ftsQuery(query);
     if (match == null) return [];

@@ -44,7 +44,7 @@ class MiniPlayer extends ConsumerWidget {
               child: Row(
                 children: [
                   IconButton(
-                    tooltip: s.listen,
+                    tooltip: a.playing ? s.pause : s.play,
                     icon: a.status == AudioStatus.loading
                         ? const InlineSpinner()
                         : Icon(a.playing ? Icons.pause : Icons.play_arrow),
@@ -63,7 +63,7 @@ class MiniPlayer extends ConsumerWidget {
                     '${_fmt(a.position)} · ${a.speed}×',
                     style: context.text.labelSmall?.copyWith(color: context.colors.onSurfaceVariant),
                   ),
-                  IconButton(tooltip: s.clear, icon: const Icon(Icons.close), onPressed: c.stop),
+                  IconButton(tooltip: s.stopAudio, icon: const Icon(Icons.close), onPressed: c.stop),
                 ],
               ),
             ),
@@ -164,19 +164,19 @@ class PlayerScreen extends ConsumerWidget {
                         onPressed: c.previous,
                       ),
                       IconButton(
-                        tooltip: '−10s',
+                        tooltip: s.back10,
                         iconSize: AppIconSize.lg,
                         icon: const Icon(Icons.replay_10),
                         onPressed: () => c.skip(const Duration(seconds: -10)),
                       ),
                       IconButton.filled(
-                        tooltip: s.listen,
+                        tooltip: a.playing ? s.pause : s.play,
                         iconSize: AppIconSize.xl,
                         icon: Icon(a.playing ? Icons.pause : Icons.play_arrow),
                         onPressed: a.status == AudioStatus.ready ? c.togglePlay : null,
                       ),
                       IconButton(
-                        tooltip: '+10s',
+                        tooltip: s.forward10,
                         iconSize: AppIconSize.lg,
                         icon: const Icon(Icons.forward_10),
                         onPressed: () => c.skip(const Duration(seconds: 10)),

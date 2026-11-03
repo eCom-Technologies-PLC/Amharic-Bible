@@ -24,7 +24,7 @@ class LibraryScreen extends ConsumerWidget {
       length: 3,
       initialIndex: initialTab.clamp(0, 2),
       child: AppScaffold(
-        title: s.me,
+        title: s.library,
         bottom: TabBar(
           tabs: [
             Tab(text: s.highlights),
@@ -133,7 +133,11 @@ class _HighlightsTabState extends ConsumerState<_HighlightsTab> {
               options: [
                 FilterOption(null, s.all),
                 for (final c in HighlightColor.values)
-                  FilterOption(c, '${all.where((h) => h.color == c).length}', avatar: _ColorDot(c)),
+                  FilterOption(
+                    c,
+                    '${s.colorName(c.name)} ${all.where((h) => h.color == c).length}',
+                    avatar: _ColorDot(c),
+                  ),
               ],
             ),
             Expanded(
@@ -174,8 +178,23 @@ class _BookmarksTab extends ConsumerWidget {
               tooltip: s.delete,
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
-                await ref.read(userRepositoryProvider).deleteBookmark(items[i].id);
+                final repo = ref.read(userRepositoryProvider);
+                // "Undo" can be tapped after this screen is gone, so it
+                // refreshes through the container rather than this widget.
+                final container = ProviderScope.containerOf(context, listen: false);
+                final removed = items[i];
+                await repo.deleteBookmark(removed.id);
                 invalidateUserData(ref);
+                if (!context.mounted) return;
+                showAppSnack(
+                  context,
+                  s.bookmarkRemoved,
+                  actionLabel: s.undo,
+                  onAction: () async {
+                    await repo.toggleBookmarks([removed.vkey]);
+                    invalidateUserDataIn(container);
+                  },
+                );
               },
             ),
           ),

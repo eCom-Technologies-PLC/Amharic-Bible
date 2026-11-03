@@ -4,7 +4,9 @@ import '../../domain/preferences.dart';
 import '../tokens/tokens.dart';
 import 'app_colors.dart';
 
-// Accent drawn from Ethiopian manuscript art: a deep green.
+// Brand colors drawn from Ethiopian manuscript art (docs/UX_REDESIGN_PLAN.md
+// §5.2): manuscript green (primary), ochre (secondary) and rubric red
+// (tertiary), on warm parchment neutrals. test/contrast_test.dart checks them.
 const _seed = Color(0xFF1E6B4E);
 
 /// Type scale (Noto Sans Ethiopic). Ge'ez needs taller lines than Latin text.
@@ -33,26 +35,96 @@ TextTheme _textTheme(Color color) {
 ReaderTheme resolveReaderTheme(ReaderTheme mode, Brightness platform) =>
     mode == ReaderTheme.system ? (platform == Brightness.dark ? ReaderTheme.dark : ReaderTheme.light) : mode;
 
+/// Brand accents for light pages: green, ochre and rubric red.
+ColorScheme _lightAccents(ColorScheme s) => s.copyWith(
+  primary: _seed,
+  onPrimary: Colors.white,
+  secondary: const Color(0xFF855A14),
+  onSecondary: Colors.white,
+  secondaryContainer: const Color(0xFFF6E3BD),
+  onSecondaryContainer: const Color(0xFF2B1A00),
+  tertiary: const Color(0xFF9B2F23),
+  onTertiary: Colors.white,
+  tertiaryContainer: const Color(0xFFFADAD3),
+  onTertiaryContainer: const Color(0xFF3E0702),
+);
+
+/// The same accents, lightened for dark pages.
+ColorScheme _darkAccents(ColorScheme s) => s.copyWith(
+  primary: const Color(0xFF8ED5B3),
+  onPrimary: const Color(0xFF003823),
+  secondary: const Color(0xFFE8C07B),
+  onSecondary: const Color(0xFF422C00),
+  secondaryContainer: const Color(0xFF5D4200),
+  onSecondaryContainer: const Color(0xFFFFDEA6),
+  tertiary: const Color(0xFFFFB4A6),
+  onTertiary: const Color(0xFF5F150B),
+  tertiaryContainer: const Color(0xFF7D2B1F),
+  onTertiaryContainer: const Color(0xFFFFDAD3),
+);
+
+/// Color scheme for a resolved reading theme. `surface` is the page behind
+/// most screens; cards sit on `surfaceContainerLowest` in the light themes and
+/// on `surfaceContainer` in the dark ones, a clear step away from the page.
+/// The reader uses [AppColors.paper] instead of `surface`.
 ColorScheme _scheme(ReaderTheme t) {
   final dark = t == ReaderTheme.dark || t == ReaderTheme.black;
-  final base = ColorScheme.fromSeed(seedColor: _seed, brightness: dark ? Brightness.dark : Brightness.light);
+  final seeded = ColorScheme.fromSeed(seedColor: _seed, brightness: dark ? Brightness.dark : Brightness.light);
+  final base = dark ? _darkAccents(seeded) : _lightAccents(seeded);
   return switch (t) {
     ReaderTheme.sepia => base.copyWith(
-      surface: const Color(0xFFF6EEDC),
+      primary: const Color(0xFF195A41),
+      secondary: const Color(0xFF7E5412),
+      secondaryContainer: const Color(0xFFEED9AE),
+      tertiary: const Color(0xFF953024),
+      tertiaryContainer: const Color(0xFFF3D3C7),
+      surface: const Color(0xFFEEE5CF),
       onSurface: const Color(0xFF3B2F20),
       onSurfaceVariant: const Color(0xFF5C4B36),
-      surfaceContainerLow: const Color(0xFFF1E7D2),
-      surfaceContainer: const Color(0xFFEFE4CC),
-      surfaceContainerHigh: const Color(0xFFEADDC2),
-      surfaceContainerHighest: const Color(0xFFE6D8B9),
+      surfaceContainerLowest: const Color(0xFFFBF6EA),
+      surfaceContainerLow: const Color(0xFFEAE0C8),
+      surfaceContainer: const Color(0xFFE6DBC2),
+      surfaceContainerHigh: const Color(0xFFE1D5B9),
+      surfaceContainerHighest: const Color(0xFFDCCFB1),
+      outline: const Color(0xFF8C7A61),
+      outlineVariant: const Color(0xFFD5C7AA),
     ),
     ReaderTheme.black => base.copyWith(
       surface: Colors.black,
-      surfaceContainerLow: const Color(0xFF0E0E0E),
-      surfaceContainer: const Color(0xFF141414),
+      onSurface: const Color(0xFFE2E4E0),
+      onSurfaceVariant: const Color(0xFFBFC6BF),
+      surfaceContainerLowest: Colors.black,
+      surfaceContainerLow: const Color(0xFF0A0A0A),
+      surfaceContainer: const Color(0xFF121212),
+      surfaceContainerHigh: const Color(0xFF1C1C1C),
+      surfaceContainerHighest: const Color(0xFF262626),
+      outline: const Color(0xFF8A8A8A),
+      outlineVariant: const Color(0xFF3A3A3A),
     ),
-    ReaderTheme.dark => base.copyWith(surface: const Color(0xFF151816)),
-    _ => base.copyWith(surface: const Color(0xFFFCFCFA)),
+    ReaderTheme.dark => base.copyWith(
+      surface: const Color(0xFF131614),
+      onSurface: const Color(0xFFE2E4E0),
+      onSurfaceVariant: const Color(0xFFBFC6BF),
+      surfaceContainerLowest: const Color(0xFF0E110F),
+      surfaceContainerLow: const Color(0xFF171B19),
+      surfaceContainer: const Color(0xFF1D2220),
+      surfaceContainerHigh: const Color(0xFF272C2A),
+      surfaceContainerHighest: const Color(0xFF323735),
+      outline: const Color(0xFF899189),
+      outlineVariant: const Color(0xFF3F4641),
+    ),
+    ReaderTheme.light || ReaderTheme.system => base.copyWith(
+      surface: const Color(0xFFF5F3EE),
+      onSurface: const Color(0xFF1B1C19),
+      onSurfaceVariant: const Color(0xFF4B4A43),
+      surfaceContainerLowest: Colors.white,
+      surfaceContainerLow: const Color(0xFFF0EEE7),
+      surfaceContainer: const Color(0xFFECE9E1),
+      surfaceContainerHigh: const Color(0xFFE6E3DA),
+      surfaceContainerHighest: const Color(0xFFE0DCD2),
+      outline: const Color(0xFF7B776D),
+      outlineVariant: const Color(0xFFCDC8BC),
+    ),
   };
 }
 
@@ -81,7 +153,7 @@ ThemeData buildAppTheme({
     visualDensity: VisualDensity.standard,
     materialTapTargetSize: MaterialTapTargetSize.padded,
     extensions: [
-      dark ? AppColors.dark : AppColors.light,
+      AppColors.of(resolved),
       ReadingStyles.build(
         scheme: scheme,
         fontFamily: serif ? AppFonts.serif : AppFonts.sans,
@@ -94,7 +166,10 @@ ThemeData buildAppTheme({
       builders: {for (final platform in TargetPlatform.values) platform: const FadeForwardsPageTransitionsBuilder()},
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: scheme.surface,
+      // Tinted while content scrolls under it, so the bar separates from the list.
+      backgroundColor: WidgetStateColor.resolveWith(
+        (states) => states.contains(WidgetState.scrolledUnder) ? scheme.surfaceContainer : scheme.surface,
+      ),
       foregroundColor: scheme.onSurface,
       elevation: AppElevation.flat,
       scrolledUnderElevation: AppElevation.flat,
@@ -157,8 +232,12 @@ ThemeData buildAppTheme({
       helperStyle: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
     ),
     cardTheme: CardThemeData(
-      elevation: AppElevation.flat,
-      color: scheme.surfaceContainerLow,
+      // White (or cream) cards on the warm page in the light themes; lifted
+      // tones in the dark ones.
+      elevation: AppElevation.card,
+      color: dark ? scheme.surfaceContainer : scheme.surfaceContainerLowest,
+      shadowColor: scheme.shadow.withValues(alpha: AppOpacity.medium),
+      surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -183,6 +262,7 @@ ThemeData buildAppTheme({
     ),
     dividerTheme: DividerThemeData(color: scheme.outlineVariant, thickness: 1, space: 1),
     dialogTheme: DialogThemeData(
+      backgroundColor: dark ? scheme.surfaceContainerHigh : scheme.surfaceContainerLowest,
       elevation: AppElevation.dialog,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
       titleTextStyle: text.titleLarge,
@@ -225,6 +305,13 @@ ThemeData buildAppTheme({
       linearTrackColor: scheme.surfaceContainerHighest,
       circularTrackColor: scheme.surfaceContainerHighest,
     ),
-    tooltipTheme: TooltipThemeData(textStyle: text.bodySmall?.copyWith(color: scheme.onInverseSurface)),
+    tooltipTheme: TooltipThemeData(
+      textStyle: text.bodySmall?.copyWith(color: scheme.onInverseSurface),
+      decoration: BoxDecoration(color: scheme.inverseSurface, borderRadius: BorderRadius.circular(AppRadius.sm)),
+    ),
+    scrollbarTheme: ScrollbarThemeData(
+      radius: const Radius.circular(AppRadius.sm),
+      thumbColor: WidgetStatePropertyAll(scheme.onSurfaceVariant.withValues(alpha: AppOpacity.medium)),
+    ),
   );
 }

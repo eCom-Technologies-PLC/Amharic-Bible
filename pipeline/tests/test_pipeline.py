@@ -119,6 +119,7 @@ class BuildTest(unittest.TestCase):
             self.assertIn(1001002, {r[0] for r in db.execute(q, (normalize("wüst"),))})
             codes = {r[0] for r in db.execute("SELECT code FROM book_alias WHERE alias=?", (alias_key("1Mo"),))}
             self.assertEqual(codes, {"GEN"})
+            db.close()  # Windows can't delete the temporary folder while the file is open
 
     def test_unverified_license_is_refused(self):
         with tempfile.TemporaryDirectory() as d:

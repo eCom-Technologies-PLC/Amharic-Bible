@@ -142,9 +142,17 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
                   runSpacing: AppSpacing.sm,
                   children: [
                     SegmentedButton<CardShape>(
-                      segments: const [
-                        ButtonSegment(value: CardShape.square, icon: Icon(Icons.crop_square)),
-                        ButtonSegment(value: CardShape.story, icon: Icon(Icons.crop_portrait)),
+                      segments: [
+                        ButtonSegment(
+                          value: CardShape.square,
+                          icon: const Icon(Icons.crop_square),
+                          tooltip: s.shapeSquare,
+                        ),
+                        ButtonSegment(
+                          value: CardShape.story,
+                          icon: const Icon(Icons.crop_portrait),
+                          tooltip: s.shapeStory,
+                        ),
                       ],
                       selected: {_shape},
                       onSelectionChanged: (v) => setState(() => _shape = v.first),

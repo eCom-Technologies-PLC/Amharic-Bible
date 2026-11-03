@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 import 'package:sqflite/sqflite.dart';
 
 import '../domain/preferences.dart';
@@ -362,27 +363,40 @@ final streakProvider = FutureProvider<Streak>((ref) async {
   return streakFrom(days, ref.watch(clockProvider)());
 });
 
+/// Providers that read the user database, refreshed after it changes.
+final List<ProviderOrFamily> _userDataProviders = [
+  planProgressProvider,
+  activePlansProvider,
+  chapterMarksProvider,
+  highlightsListProvider,
+  bookmarksListProvider,
+  notesListProvider,
+];
+
 /// Refresh every screen showing user data (after a sync pulled changes).
 void refreshUserData(Ref ref) {
   ref.read(settingsProvider.notifier).reloadSynced();
-  ref.invalidate(planProgressProvider);
-  ref.invalidate(activePlansProvider);
-  ref.invalidate(chapterMarksProvider);
-  ref.invalidate(highlightsListProvider);
-  ref.invalidate(bookmarksListProvider);
-  ref.invalidate(notesListProvider);
+  for (final p in _userDataProviders) {
+    ref.invalidate(p);
+  }
 }
 
 /// Call after any write to user data: refreshes open screens and schedules a
 /// sync when signed in.
 void invalidateUserData(WidgetRef ref) {
   ref.read(userDataWrittenProvider.notifier).bump();
-  ref.invalidate(planProgressProvider);
-  ref.invalidate(activePlansProvider);
-  ref.invalidate(chapterMarksProvider);
-  ref.invalidate(highlightsListProvider);
-  ref.invalidate(bookmarksListProvider);
-  ref.invalidate(notesListProvider);
+  for (final p in _userDataProviders) {
+    ref.invalidate(p);
+  }
+}
+
+/// [invalidateUserData] for callbacks that can outlive the widget that set
+/// them up, such as a snack bar's "Undo".
+void invalidateUserDataIn(ProviderContainer container) {
+  container.read(userDataWrittenProvider.notifier).bump();
+  for (final p in _userDataProviders) {
+    container.invalidate(p);
+  }
 }
 
 /// Counter bumped on every local write; the sync controller listens to it.

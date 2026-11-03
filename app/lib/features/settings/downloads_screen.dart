@@ -211,6 +211,15 @@ class _Audio extends ConsumerWidget {
                     tooltip: s.delete,
                     icon: const Icon(Icons.delete_outline),
                     onPressed: () async {
+                      final ok = await showConfirmDialog(
+                        context: context,
+                        title: names[r.book] ?? r.book,
+                        message: s.removeAudioMessage,
+                        confirmLabel: s.delete,
+                        cancelLabel: s.cancel,
+                        destructive: true,
+                      );
+                      if (!ok) return;
                       await ref.read(audioRepositoryProvider).deleteDownloads(r.fileset, r.book);
                       ref.invalidate(downloadsProvider);
                     },

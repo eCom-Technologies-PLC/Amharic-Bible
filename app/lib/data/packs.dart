@@ -14,7 +14,7 @@ const supportedSchemaVersion = 2;
 const supportedManifestFormat = 1;
 
 /// Study tables a resource pack can fill.
-const _resourceTables = ['lexicon', 'xref', 'entity', 'entity_verse', 'dictionary', 'commentary'];
+const _resourceTables = ['lexicon', 'gloss', 'xref', 'entity', 'entity_verse', 'dictionary', 'commentary'];
 
 /// Where each piece of content lives: the bundled content DB ("main") or an
 /// attached pack. Repositories ask this which database to query, so a query
@@ -84,8 +84,12 @@ Future<ContentSources> attachPacks(Database db, List<InstalledPack> installed) a
       versions[r['id'] as String] = schema;
     }
     for (final t in _resourceTables) {
-      final has = Sqflite.firstIntValue(await db.rawQuery('SELECT EXISTS(SELECT 1 FROM $schema.$t)')) == 1;
-      if (has) (tables[t] ??= []).add(schema);
+      try {
+        final has = Sqflite.firstIntValue(await db.rawQuery('SELECT EXISTS(SELECT 1 FROM $schema.$t)')) == 1;
+        if (has) (tables[t] ??= []).add(schema);
+      } on DatabaseException {
+        // Packs built before a table was added (e.g. glosses) don't have it.
+      }
     }
   }
   return ContentSources(packs: packs, versionSchemas: versions, tableSchemas: tables);
