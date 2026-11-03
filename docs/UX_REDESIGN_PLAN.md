@@ -1121,11 +1121,20 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
   switches.
 - **Layout audit:** the reader now passes at 2× text in both languages, including with a verse selected.
 
-**Left for Phase 3:**
+- **Audio player:**
+  - A cover with the book and chapter on the parchment gradient.
+  - The verse being read, shown as it plays (when the recording has verse timings).
+  - "Open in reader".
+- **Today:** a play button on Continue reading starts the chapter (the recording, or the phone's voice). This is the
+  lightweight take on "listening mode".
+- **Footnotes:** markers are real buttons, with a larger target and a "Footnote" label for screen readers.
+- **Plan bar:** a plan's reading links carry the plan and day. The reader then shows "plan · Day n of N" with a
+  mark-as-read button, and keeps it while moving between chapters.
 
-- The audio player redesign (follow-along text, artwork, listening mode).
-- Larger footnote markers.
-- The plan context bar in the reader.
+**Left for later:**
+
+- Illustrated covers for the player and the plans (illustrator).
+- Automatically completing a plan day (Phase 5, approved).
 
 **Left for later phases:**
 

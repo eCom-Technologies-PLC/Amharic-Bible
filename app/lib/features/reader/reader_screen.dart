@@ -24,10 +24,14 @@ import 'selection_bar.dart';
 import 'text_settings_sheet.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
-  const ReaderScreen({super.key, this.target});
+  const ReaderScreen({super.key, this.target, this.planId, this.planDay});
 
   /// Passage to open (from a link, search or the book picker).
   final BibleRef? target;
+
+  /// Opened from a reading plan's day: the reader shows the plan's bar.
+  final String? planId;
+  final int? planDay;
 
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
@@ -74,8 +78,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (target == null || !mounted) return;
     // Through the router, so the address follows the chapter: on the web,
     // Back, refresh and copied links then land on the chapter being read.
-    // The new target arrives in didUpdateWidget, which moves the reader.
-    context.go('/read?ref=${BibleRef(target.$1.code, target.$2).encode()}');
+    // The new target arrives in didUpdateWidget, which moves the reader. A
+    // plan's day can span chapters, so its bar comes along.
+    context.go(
+      Uri(
+        path: '/read',
+        queryParameters: {
+          'ref': BibleRef(target.$1.code, target.$2).encode(),
+          'plan': ?widget.planId,
+          if (widget.planDay != null) 'day': '${widget.planDay}',
+        },
+      ).toString(),
+    );
   }
 
   void _toggleVerse(int k) {
@@ -197,6 +211,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       body: Column(
         children: [
           const SampleBanner(),
+          if (widget.planId != null && widget.planDay != null) _PlanBar(planId: widget.planId!, day: widget.planDay!),
           Expanded(
             // Matched inline (not via AsyncView) because _buildChapter uses
             // ref.listen, which must run during this widget's build.
@@ -438,6 +453,58 @@ class _ChapterHeader extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             const OrnamentRule(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when the reader was opened from a plan's day: which plan and day,
+/// and a way to mark the day read without going back to the plan.
+class _PlanBar extends ConsumerWidget {
+  const _PlanBar({required this.planId, required this.day});
+
+  final String planId;
+  final int day;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final progress = ref.watch(planProgressProvider(planId)).value;
+    if (progress == null) return const SizedBox.shrink();
+    final scheme = context.colors;
+    final done = progress.completed.contains(day);
+    final label = '${progress.plan.nameFor(s.locale.languageCode)} · ${s.dayOf(day, progress.plan.length)}';
+    return Material(
+      color: scheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(start: AppSpacing.screen, end: AppSpacing.xs),
+        child: Row(
+          children: [
+            Icon(Icons.event_note_outlined, size: AppIconSize.sm, color: scheme.onSecondaryContainer),
+            const SizedBox(width: AppSpacing.iconGap),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.bodySmall?.copyWith(color: scheme.onSecondaryContainer),
+              ),
+            ),
+            done
+                ? Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Icon(Icons.check_circle, color: scheme.primary, semanticLabel: s.planDayRead),
+                  )
+                : IconButton(
+                    tooltip: s.markAsRead,
+                    icon: Icon(Icons.check_circle_outline, color: scheme.onSecondaryContainer),
+                    onPressed: () async {
+                      await ref.read(userRepositoryProvider).setDayDone(planId, day, true);
+                      invalidateUserData(ref);
+                    },
+                  ),
           ],
         ),
       ),

@@ -10,8 +10,10 @@ import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
+import '../audio/audio_controller.dart';
 import '../common.dart';
 import '../plans/plan_widgets.dart';
+import '../reader/reader_screen.dart' show audioErrorText, hasRecordedAudio, startReadAloud;
 
 /// Curated verse-of-the-day list (verse keys, BBCCCVVV).
 const verseOfTheDayKeys = [
@@ -119,6 +121,14 @@ class HomeScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                // Listeners can start the chapter from here (recorded audio,
+                // or the phone's voice).
+                if (lastBook != null && version != null)
+                  IconButton(
+                    tooltip: s.listenTo('${lastBook.shortName} ${formatNumber(last!.chapter, settings)}'),
+                    icon: Icon(Icons.play_circle_outline, color: context.colors.primary),
+                    onPressed: () => _listen(context, ref, version, lastBook, last.chapter),
+                  ),
                 const Icon(Icons.arrow_forward),
               ],
             ),
@@ -144,6 +154,18 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Plays [chapter]: the recording when the version has one, otherwise the
+/// phone's voice.
+Future<void> _listen(BuildContext context, WidgetRef ref, BibleVersion version, Book book, int chapter) async {
+  if (!hasRecordedAudio(ref, version)) {
+    await startReadAloud(context, ref, version, book, chapter);
+    return;
+  }
+  await ref.read(audioControllerProvider.notifier).playChapter(version, book, chapter);
+  final err = ref.read(audioControllerProvider).error;
+  if (err != null && context.mounted) showAppSnack(context, audioErrorText(S.of(context), err));
 }
 
 /// Invitation to start a plan, while the reader has none.

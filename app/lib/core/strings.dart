@@ -98,6 +98,11 @@ class S {
   String get beginTodayHint => _('beginTodayHint');
 
   String get readingLook => _('readingLook');
+  String get openInReader => _('openInReader');
+  String get planDayRead => _('planDayRead');
+
+  /// "Listen to ዮሐንስ 3".
+  String listenTo(String chapter) => isAmharic ? '$chapter ያዳምጡ' : 'Listen to $chapter';
   String get readerTip => _('readerTip');
   String get gotIt => _('gotIt');
   String get moreActions => _('moreActions');
@@ -489,6 +494,8 @@ const _am = {
   'readerTip': 'ለማድመቅ፣ ማስታወሻ ለመጻፍ ወይም ለማጋራት ጥቅሱን ተጭነው ይያዙ። ምናሌዎቹን ለማሳየት ወይም ለመደበቅ አንዴ ይንኩ፤ ለቀጣዩ ምዕራፍ ወደ ጎን ያንሸራቱ።',
   'gotIt': 'ገባኝ',
   'readingLook': 'የንባብ ገጽታ',
+  'openInReader': 'በንባብ ገጹ ክፈት',
+  'planDayRead': 'የዕለቱ ንባብ ተጠናቋል',
   'moreActions': 'ተጨማሪ',
   'holdToSelectHint': 'ለማድመቅ፣ ለማጋራት ወይም ማስታወሻ ለመጻፍ ጥቅሱን ተጭነው ይያዙ',
   'guest': 'እንግዳ',
@@ -925,6 +932,8 @@ const _en = {
   'readerTip': 'Press and hold a verse to highlight, note or share it. Tap to show or hide the bars; swipe sideways for the next chapter.',
   'gotIt': 'Got it',
   'readingLook': 'Reading appearance',
+  'openInReader': 'Open in reader',
+  'planDayRead': "This day's reading is done",
   'moreActions': 'More',
   'holdToSelectHint': 'Press and hold a verse to highlight, share or add a note',
   'guest': 'Guest',

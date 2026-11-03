@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
 import '../../data/network.dart';
+import '../../domain/models.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../reader/reader_screen.dart' show audioErrorText;
@@ -16,6 +17,88 @@ String _fmt(Duration d) {
   final m = d.inMinutes;
   final sec = d.inSeconds % 60;
   return '$m:${sec.toString().padLeft(2, '0')}';
+}
+
+/// The player's artwork: the book and chapter on the parchment gradient of
+/// the hero card, with an ornament rule (until illustrated covers exist).
+class _Cover extends StatelessWidget {
+  const _Cover({required this.book, required this.chapter});
+
+  final String book;
+  final String chapter;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colors;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: AppDimens.playerCoverMaxWidth),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.hero),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [scheme.secondaryContainer, scheme.primaryContainer],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(book, style: context.text.headlineSmall?.copyWith(color: scheme.onSecondaryContainer)),
+                  Text(
+                    chapter,
+                    style: context.text.displayLarge?.copyWith(
+                      color: scheme.onSecondaryContainer,
+                      fontFamily: AppFonts.serif,
+                    ),
+                  ),
+                  const OrnamentRule(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+final _verseProvider = FutureProvider.family<Verse?, (String, int)>(
+  (ref, k) async => (await ref.watch(contentRepositoryProvider).verses(k.$1, [k.$2])).firstOrNull,
+);
+
+/// The verse being read aloud, following the recording.
+class _NowReading extends ConsumerWidget {
+  const _NowReading({required this.versionId, required this.vkey});
+
+  final String versionId;
+  final int vkey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final verse = ref.watch(_verseProvider((versionId, vkey))).value;
+    if (verse == null) return const SizedBox.shrink();
+    return AnimatedSwitcher(
+      duration: AppMotion.medium,
+      child: Padding(
+        key: ValueKey(vkey),
+        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+        child: Text(
+          verse.text,
+          textAlign: TextAlign.center,
+          maxLines: 5,
+          overflow: TextOverflow.ellipsis,
+          style: context.scriptureSnippet,
+        ),
+      ),
+    );
+  }
 }
 
 /// Persistent player shown above the tab bar while audio is loaded.
@@ -120,12 +203,21 @@ class PlayerScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Spacer(),
-                  Icon(Icons.menu_book, size: AppIconSize.hero, color: context.colors.primary),
+                  Center(
+                    child: _Cover(book: a.book!.shortName, chapter: '${a.chapter}'),
+                  ),
                   const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    '${a.book!.shortName} ${a.chapter}',
-                    textAlign: TextAlign.center,
-                    style: context.text.headlineMedium,
+                  // The verse being read, when the recording has verse timings.
+                  if (a.version != null && a.currentVerse != null)
+                    _NowReading(versionId: a.version!.id, vkey: a.currentVerse!),
+                  Center(
+                    child: AppButton.ghost(
+                      label: s.openInReader,
+                      icon: Icons.menu_book_outlined,
+                      onPressed: () => context.go(
+                        '/read?ref=${BibleRef(a.book!.code, a.chapter!, a.currentVerse != null ? a.currentVerse! % 1000 : null).encode()}',
+                      ),
+                    ),
                   ),
                   if (a.error != null)
                     Padding(

@@ -142,7 +142,6 @@ class _ParagraphViewState extends State<ParagraphView> {
 
     final spans = <InlineSpan>[];
     var first = true;
-    var footnoteIndex = 0;
     for (final seg in widget.block.segs) {
       final k = seg.vkey;
       final hl = d.highlights[k];
@@ -177,12 +176,26 @@ class _ParagraphViewState extends State<ParagraphView> {
           if (d.bookmarks.contains(k)) spans.add(_icon(context, Icons.bookmark));
           if (d.notes.contains(k)) spans.add(_icon(context, Icons.sticky_note_2_outlined));
         case 'n':
-          final idx = footnoteIndex++;
+          // A real button rather than a tappable "*": a larger target, and a
+          // name for screen readers.
+          final note = seg.text;
           spans.add(
-            TextSpan(
-              text: '*',
-              style: reading.footnoteMarker,
-              recognizer: _recognizer('n$k-$idx', () => widget.onTapFootnote(seg.text)),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.top,
+              child: Semantics(
+                button: true,
+                label: S.of(context).footnote,
+                child: ExcludeSemantics(
+                  child: InkResponse(
+                    onTap: () => widget.onTapFootnote(note),
+                    radius: AppSpacing.lg,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                      child: Text('*', style: reading.footnoteMarker),
+                    ),
+                  ),
+                ),
+              ),
             ),
           );
         case 'wj':

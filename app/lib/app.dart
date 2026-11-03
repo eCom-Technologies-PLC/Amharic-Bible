@@ -67,7 +67,14 @@ GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
           routes: [
             GoRoute(
               path: '/read',
-              builder: (_, state) => ReaderScreen(target: BibleRef.decode(state.uri.queryParameters['ref'])),
+              builder: (_, state) {
+                final q = state.uri.queryParameters;
+                return ReaderScreen(
+                  target: BibleRef.decode(q['ref']),
+                  planId: q['plan'],
+                  planDay: int.tryParse(q['day'] ?? ''),
+                );
+              },
             ),
           ],
         ),

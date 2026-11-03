@@ -104,6 +104,9 @@ abstract final class AppDimens {
   /// center it, so lines and rows stay readable on desktop.
   static const double contentMaxWidth = 840;
 
+  /// Widest the audio player's cover grows.
+  static const double playerCoverMaxWidth = 280;
+
   /// Thin progress line (mini player).
   static const double progressThin = 2;
 

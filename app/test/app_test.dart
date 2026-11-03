@@ -408,6 +408,20 @@ void main() {
     expect(Settings.fromMap(const {'onboarded': 'true'}).onboarded, isTrue);
   });
 
+  testWidgets("a plan's day can be marked read from the reader", (tester) async {
+    await tester.runAsync(() => UserRepository(userDb).startPlan('gospels-30'));
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=MAT.1&plan=gospels-30&day=1',
+    );
+    expect(find.textContaining('Day 1 of 30'), findsOneWidget);
+    await tester.tap(find.byTooltip('Mark as read'));
+    await tester.pumpAndSettle();
+    expect(await UserRepository(userDb).completedDays('gospels-30'), {1});
+    expect(find.bySemanticsLabel("This day's reading is done"), findsOneWidget);
+  });
+
   testWidgets('a link to a missing page shows a way home', (tester) async {
     await pumpApp(
       tester,

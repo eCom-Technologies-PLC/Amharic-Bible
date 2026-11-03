@@ -165,7 +165,7 @@ class _DayList extends ConsumerWidget {
                 value: progress.completed.contains(day),
                 controlAffinity: ListTileControlAffinity.leading,
                 title: Text(s.day(day), style: isToday ? context.text.titleSmall : null),
-                subtitle: ReadingChips(readings: plan.readingsFor(day)),
+                subtitle: ReadingChips(readings: plan.readingsFor(day), planId: plan.id, day: day),
                 onChanged: (v) async {
                   await ref.read(userRepositoryProvider).setDayDone(plan.id, day, v ?? false);
                   invalidateUserData(ref);

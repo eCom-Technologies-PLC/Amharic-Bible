@@ -23,6 +23,7 @@ const routes = [
   '/home',
   '/read?ref=JHN.3',
   '/read?ref=PSA.23',
+  '/read?ref=MAT.1&plan=nt-90&day=1', // the plan bar (the audit starts this plan)
   '/search',
   '/me',
   '/plans',

@@ -80,6 +80,8 @@ All future UI work in this repository must follow this CLAUDE.md section.
 - Reader gestures: on phones, press and hold selects a verse, and a tap adds to a selection, jumps the audio to the
   verse, or shows and hides the bars (`immersiveProvider`; the shell hides its navigation bar with it). On the web and
   with a screen reader, a tap selects. `ParagraphView.onLongPressVerse` carries the hold; keep both paths working.
+- Reading-plan links open the reader with `plan` and `day` query parameters, which show the plan bar; the reader keeps
+  them when it moves between chapters.
 - Removing something the reader made: offer Undo (`showAppSnack` with an action) when it can be restored, otherwise
   confirm with `showConfirmDialog(destructive: true)`. Back never silently discards typing (`PopScope`).
 - Colors are defined only in `app_theme.dart` (a `ColorScheme` per reading theme) and `AppColors`.

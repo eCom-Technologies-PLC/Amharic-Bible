@@ -23,11 +23,14 @@ String formatReading(PlanReading r, Map<String, String> names, Settings s) {
       : '$name ${formatNumber(r.from, s)}-${formatNumber(r.to, s)}';
 }
 
-/// Tappable chips for a day's readings; each opens the reader.
+/// Tappable chips for a day's readings; each opens the reader. With [planId]
+/// and [day] the reader shows the plan's bar, with a way to mark the day read.
 class ReadingChips extends ConsumerWidget {
-  const ReadingChips({super.key, required this.readings});
+  const ReadingChips({super.key, required this.readings, this.planId, this.day});
 
   final List<PlanReading> readings;
+  final String? planId;
+  final int? day;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,7 +44,16 @@ class ReadingChips extends ConsumerWidget {
           ActionChip(
             avatar: const Icon(Icons.menu_book_outlined, size: AppIconSize.sm),
             label: Text(formatReading(r, names, settings)),
-            onPressed: () => context.go('/read?ref=${BibleRef(r.book, r.from).encode()}'),
+            onPressed: () => context.go(
+              Uri(
+                path: '/read',
+                queryParameters: {
+                  'ref': BibleRef(r.book, r.from).encode(),
+                  'plan': ?planId,
+                  if (day != null) 'day': '$day',
+                },
+              ).toString(),
+            ),
           ),
       ],
     );
@@ -83,7 +95,7 @@ class TodaysReadingCards extends ConsumerWidget {
                 else ...[
                   Text(s.dayOf(p.nextDay!, p.plan.length), style: context.text.bodySmall),
                   const SizedBox(height: AppSpacing.sm),
-                  ReadingChips(readings: p.plan.readingsFor(p.nextDay!)),
+                  ReadingChips(readings: p.plan.readingsFor(p.nextDay!), planId: p.plan.id, day: p.nextDay),
                 ],
                 const SizedBox(height: AppSpacing.md),
                 LinearProgressIndicator(value: p.fraction),
