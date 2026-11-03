@@ -166,10 +166,17 @@ How it differs from the mobile app:
   asks the browser for persistent storage, so the data isn't cleared when the device runs low on space.
   After upgrading `sqflite_common_ffi_web`, run `dart run sqflite_common_ffi_web:setup` in `app/` to refresh
   those two files.
+- **Offline:** after one visit the app opens without a connection. `web/sw.js` (registered in `web/index.html`)
+  keeps the page, the app's files, CanvasKit and the fallback fonts. It fetches the app's own files network-first, so
+  a new release arrives on the next online visit. `web/flutter_bootstrap.js` starts the app without Flutter's
+  deprecated service worker, which would replace `sw.js`. To check offline behavior, serve a release build, visit
+  once, then stop the server and reload.
 - **Not on the web:** offline audio downloads and study-pack downloads (audio streams instead), and the daily
   reminder (browsers cannot schedule notifications while the page is closed). The menu items are hidden.
 - **Sharing:** verse images and the data export use the browser's share sheet, or download the file.
-- **Wide windows** (840 px and wider) show a navigation rail instead of the bottom bar.
+- **Wide windows:** a navigation rail from 600 px and a labeled sidebar from 1200 px replace the bottom bar, and
+  stay beside the screens opened from the tabs (verse study, words, Ask, the player); from 1360 px the reader shows
+  the verse study beside the text. Ctrl+K (⌘K) opens "Go to".
 - **Servers:** browsers call the audio proxy and study assistant directly, so set `ALLOWED_ORIGINS` in each
   `wrangler.toml` to the web app's origin (CORS). Add the site's URL to Supabase Auth's allowed redirect URLs.
   The study assistant's app token is visible in the web app's JavaScript (as it can be extracted from an APK);

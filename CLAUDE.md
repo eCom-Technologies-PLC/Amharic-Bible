@@ -8,7 +8,9 @@ Amharic Bible: an offline-first Flutter app for Android, iOS and the web (`app/`
 
 - App: `cd app && flutter analyze && flutter test` (format: `dart format lib test`, page width 120)
 - Web app: `cd app && flutter build web --release` (or `flutter run -d chrome`). Platform-only features are gated
-  with `kIsWeb` (no file system, notifications or background-audio plugin on the web)
+  with `kIsWeb` (no file system, notifications or background-audio plugin on the web). Offline support is
+  `web/sw.js` (registered in `web/index.html`; `web/flutter_bootstrap.js` keeps Flutter's deprecated service worker
+  out): check changes to it in a release build, offline, with the server stopped
 - Pipeline: `python -m unittest discover -s pipeline/tests`
 - Audio proxy: `node --test server/audio-proxy/proxy.test.mjs`
 - Study assistant: `cd server/study-assistant && npm ci && npm test`
@@ -53,7 +55,7 @@ All future UI work in this repository must follow this CLAUDE.md section.
 | Elevation | flat 0 · card 1 · bar 3 · dialog 6 |
 | Icons | sm 18 · md 24 · lg 32 · xl 48 · hero 96 |
 | Heights | buttons 36 / 48 / 56 · input 56 · list tile 56 / 72 · app bar 56 · touch target 48 |
-| Layout | reading column max 680 (×2 side by side) · page content max 840 (`AppListView` / `ContentWidth` center it) · two columns from 600 · navigation rail from 600, sidebar from 1200 · compact app bars below 320 effective width (width ÷ text scale) |
+| Layout | reading column max 680 (×2 side by side) · page content max 840 (`AppListView` / `ContentWidth` center it) · two columns from 600 · navigation rail from 600, sidebar from 1200 · reader study panel 360 wide from 1360 · compact app bars below 320 effective width (width ÷ text scale) |
 | Type (TextTheme) | display 40/36/32 · headline 30/26/24 · title 20/17/15 (w600) · body 17/15/13 · label 15/13/12. Line heights 1.25–1.4 for display/title, 1.5–1.55 for body (Ge'ez needs taller lines) |
 | Reading sizes | 15 · 17 · 19 (default) · 21 · 24 · 28; line heights 1.5 · 1.7 · 2.0 |
 | Motion | fast 150 ms · medium 250 ms · slow 400 ms · curve `easeOutCubic` · one page transition (`FadeForwardsPageTransitionsBuilder`) |
@@ -102,7 +104,11 @@ All future UI work in this repository must follow this CLAUDE.md section.
 - The share-image card (`VerseCard`) is a fixed 1080 px picture that must look the same in every theme, so it uses `ShareCardTokens` and its own palette rather than the app theme.
 - `AppShell` (in `app.dart`) uses a plain `Scaffold`: it is the navigation shell (five tabs: Today · Read · Plans ·
   Search & Study · Me) that hosts the bottom bar, rail or sidebar, not a screen. Old `/me/plans…` and `/me/groups`
-  addresses redirect to `/plans…`.
+  addresses redirect to `/plans…`. Screens opened over the tabs (study, word, entity, timeline, Ask, group, player)
+  are `inShell` routes: on wide windows they keep the same rail beside them (`_NavigationFrame`) and fade in place
+  instead of using the page transition, so the rail doesn't move. Focused tasks (note editor, share image, book picker,
+  welcome) and anything with a `PopScope` stay ordinary routes that cover the window, since choosing a tab would close
+  them without asking.
 - Fractions of the reading font size inside `ReadingStyles` (verse numbers 0.6×, footnote markers 0.7×, secondary version 0.92×) and scroll-alignment fractions in the reader are proportional by design.
 
 **Layout gate**

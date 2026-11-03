@@ -159,6 +159,23 @@ void main() {
     }
   });
 
+  // Wide desktop windows: the sidebar, and the study panel beside the reader.
+  group('desktop', () {
+    const desktop = Device('1440 desktop', Size(1440, 900), 1.0);
+    for (final lang in ['am', 'en']) {
+      testWidgets('$lang reader with the study panel and a verse selected', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=JHN.3',
+          device: desktop,
+          settings: Settings(languageCode: lang),
+          interact: (t) => t.longPressAt(t.getTopLeft(find.byType(ParagraphView).first) + const Offset(40, 20)),
+        );
+        expect(errors, isEmpty);
+      });
+    }
+  });
+
   // docs/DESIGN.md §4.5 promises text up to 200%: the reader must hold up.
   group('the reader at 2x text', () {
     const huge = Device('360dp @2x', Size(360, 760), 2.0);

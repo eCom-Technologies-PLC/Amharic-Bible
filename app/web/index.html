@@ -145,6 +145,25 @@
     </p>
   </noscript>
   <script>
+    // Keep a copy of the app so it opens offline after the first visit (web/sw.js).
+    if ('serviceWorker' in navigator) {
+      var firstVisit = !navigator.serviceWorker.controller;
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      });
+      // On the first visit the app loads before the worker runs: once both have
+      // started, tell the worker what was loaded so it keeps those files too.
+      var started = new Promise(function (resolve) {
+        window.addEventListener('flutter-first-frame', resolve, { once: true });
+      });
+      Promise.all([navigator.serviceWorker.ready, started]).then(function (ready) {
+        if (!firstVisit) return;
+        var loaded = performance.getEntriesByType('resource')
+          .filter(function (e) { return e.initiatorType !== 'audio' && e.initiatorType !== 'video'; })
+          .map(function (e) { return e.name; });
+        ready[0].active.postMessage({ keep: loaded });
+      });
+    }
     // Fade the loading screen out once Flutter has painted its first frame.
     window.addEventListener('flutter-first-frame', function () {
       var splash = document.getElementById('splash');

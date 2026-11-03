@@ -16,6 +16,7 @@ import '../../state/providers.dart';
 import '../../state/read_aloud.dart';
 import '../../state/study.dart';
 import '../study/study_widgets.dart';
+import '../study/verse_study_screen.dart' show VerseStudyPanel;
 import '../audio/audio_controller.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
@@ -216,7 +217,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           Expanded(
             // Matched inline (not via AsyncView) because _buildChapter uses
             // ref.listen, which must run during this widget's build.
-            child: switch (chapterAsync) {
+            child: _withStudyPanel(context, switch (chapterAsync) {
               AsyncData(value: final c?) => _buildChapter(context, version, c, r),
               AsyncData() => EmptyState(
                 message: s.notInVersion,
@@ -225,7 +226,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               ),
               AsyncError() => ErrorState(onRetry: () => ref.invalidate(chapterProvider)),
               _ => const LoadingState(),
-            },
+            }),
           ),
         ],
       ),
@@ -238,6 +239,24 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         if (!didPop) setState(_selected.clear);
       },
       child: scaffold,
+    );
+  }
+
+  /// Wide windows (desktop browsers) show the verse study beside the text,
+  /// following the selection, like a study Bible's side column.
+  Widget _withStudyPanel(BuildContext context, Widget chapter) {
+    if (MediaQuery.sizeOf(context).width < AppDimens.studyPanelMinWidth) return chapter;
+    final first = _selected.isEmpty ? null : _selected.reduce((a, b) => a < b ? a : b);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: chapter),
+        const VerticalDivider(),
+        SizedBox(
+          width: AppDimens.studyPanelWidth,
+          child: VerseStudyPanel(vkey: first),
+        ),
+      ],
     );
   }
 

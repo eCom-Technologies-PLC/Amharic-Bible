@@ -100,6 +100,8 @@ class S {
   String get readingLook => _('readingLook');
   String get openInReader => _('openInReader');
   String get copiedForSharing => _('copiedForSharing');
+  String get studyPanelHint => _('studyPanelHint');
+  String get goToHint => _('goToHint');
   String get noVoiceBrowser => _('noVoiceBrowser');
   String get studyPacksAppOnly => _('studyPacksAppOnly');
   String get planDayRead => _('planDayRead');
@@ -499,6 +501,8 @@ const _am = {
   'readingLook': 'የንባብ ገጽታ',
   'openInReader': 'በንባብ ገጹ ክፈት',
   'copiedForSharing': 'ተቀድቷል። ለማጋራት በሚፈልጉት ቦታ ይለጥፉት።',
+  'studyPanelHint': 'ማጣቀሻዎችን፣ የመጀመሪያ ቋንቋ ቃላትንና ማብራሪያዎችን ለማየት ጥቅስ ይምረጡ።',
+  'goToHint': 'ዮሐ 3፥16፣ Jn 3:16 ወይም ቃል',
   'noVoiceBrowser': 'ይህ ብራውዘር ለዚህ ቋንቋ ድምፅ የለውም። ሌላ ብራውዘር ወይም የስልኩን መተግበሪያ ይሞክሩ።',
   'studyPacksAppOnly': 'የዕብራይስጥና የግሪክ ጽሑፎች፣ መዝገበ ቃላትና ሌሎች የጥናት ጥቅሎች በAndroid እና iOS መተግበሪያው ውስጥ ይገኛሉ።',
   'planDayRead': 'የዕለቱ ንባብ ተጠናቋል',
@@ -940,6 +944,8 @@ const _en = {
   'readingLook': 'Reading appearance',
   'openInReader': 'Open in reader',
   'copiedForSharing': 'Copied. Paste it wherever you want to share it.',
+  'studyPanelHint': 'Select a verse to see its cross-references, original words and commentary.',
+  'goToHint': 'ዮሐ 3፥16, Jn 3:16 or a word',
   'noVoiceBrowser': 'This browser has no voice for this language. Try another browser or the phone app.',
   'studyPacksAppOnly':
       'Hebrew and Greek texts, the lexicon and the other study packs are available in the Android and iOS app.',

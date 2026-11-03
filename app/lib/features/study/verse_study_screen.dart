@@ -53,6 +53,52 @@ class VerseStudyScreen extends ConsumerWidget {
   }
 }
 
+/// The verse study beside the reader on wide windows (desktop browsers): the
+/// same content as [VerseStudyScreen], following the reader's selection.
+class VerseStudyPanel extends ConsumerWidget {
+  const VerseStudyPanel({super.key, required this.vkey});
+
+  /// The first selected verse, or null when nothing is selected.
+  final int? vkey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final k = vkey;
+    if (k == null) return EmptyState(message: s.studyPanelHint, icon: Icons.school_outlined);
+    final books = ref.watch(refBooksProvider).value ?? const <Book>[];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.lg, AppSpacing.screen, 0),
+          child: Text(
+            books.isEmpty ? s.verseStudy : formatKeys(books, [k], amharic: s.isAmharic),
+            style: context.text.titleMedium,
+          ),
+        ),
+        Expanded(
+          child: AsyncView(
+            value: ref.watch(verseStudyProvider(k)),
+            onRetry: () => ref.invalidate(verseStudyProvider(k)),
+            data: (study) => _VerseStudyBody(vkey: k, study: study, books: books),
+          ),
+        ),
+        if (ref.watch(assistantRepositoryProvider).configured)
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.screen),
+            child: AppButton.secondary(
+              label: s.askAi,
+              icon: Icons.auto_awesome_outlined,
+              expand: true,
+              onPressed: () => context.push('/ask?v=$k'),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _VerseStudyBody extends ConsumerWidget {
   const _VerseStudyBody({required this.vkey, required this.study, required this.books});
 

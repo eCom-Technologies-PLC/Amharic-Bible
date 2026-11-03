@@ -74,6 +74,61 @@ Future<void> shareText(BuildContext context, String text, {String? subject}) asy
   await SharePlus.instance.share(ShareParams(text: text, subject: subject));
 }
 
+/// The "Go to" box (Ctrl+K or ⌘K): a reference ("ዮሐ 3፥16", "Jn 3:16") opens
+/// the reader there; anything else opens search with it.
+Future<void> showGoTo(BuildContext context, WidgetRef ref) {
+  return showAppBottomSheet<void>(
+    context: context,
+    title: S.of(context).goTo,
+    builder: (sheet) => _GoToField(
+      onSubmitted: (q) async {
+        final r = (await ref.read(referenceParserProvider.future)).parse(q);
+        if (sheet.mounted) Navigator.of(sheet).pop();
+        if (!context.mounted) return;
+        context.go(
+          r != null
+              ? '/read?ref=${BibleRef(r.bookCode, r.chapter, r.verse).encode()}'
+              : Uri(path: '/search', queryParameters: {'q': q}).toString(),
+        );
+      },
+    ),
+  );
+}
+
+/// The Go-to box's field; it owns its controller, which must outlive the
+/// sheet's closing animation.
+class _GoToField extends StatefulWidget {
+  const _GoToField({required this.onSubmitted});
+
+  final ValueChanged<String> onSubmitted;
+
+  @override
+  State<_GoToField> createState() => _GoToFieldState();
+}
+
+class _GoToFieldState extends State<_GoToField> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AppTextField(
+    controller: _controller,
+    hint: S.of(context).goToHint,
+    autofocus: true,
+    prefixIcon: Icons.search,
+    textInputAction: TextInputAction.go,
+    onSubmitted: (text) {
+      final q = text.trim();
+      if (q.isNotEmpty) widget.onSubmitted(q);
+    },
+  );
+}
+
 /// Shown for a link that matches no screen (a typo, or an old address).
 class NotFoundScreen extends StatelessWidget {
   const NotFoundScreen({super.key});

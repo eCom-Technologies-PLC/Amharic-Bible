@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -49,130 +50,135 @@ String? _movedRoute(GoRouterState state) {
   return moved == null ? null : Uri(path: moved, query: state.uri.hasQuery ? state.uri.query : null).toString();
 }
 
-GoRouter buildRouter({String initialLocation = '/home'}) => GoRouter(
-  navigatorKey: _rootKey,
-  initialLocation: initialLocation,
-  redirect: (_, state) => _movedRoute(state),
-  // A mistyped or outdated link gets a friendly page, not the router's own.
-  errorBuilder: (_, _) => const NotFoundScreen(),
-  routes: [
-    StatefulShellRoute.indexedStack(
-      builder: (context, state, shell) => AppShell(shell: shell),
-      // Tab order: Today · Read · Plans · Search & Study · Me (AppShell.tabs).
-      branches: [
-        StatefulShellBranch(
-          routes: [GoRoute(path: '/home', builder: (_, _) => const HomeScreen())],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/read',
-              builder: (_, state) {
-                final q = state.uri.queryParameters;
-                return ReaderScreen(
-                  target: BibleRef.decode(q['ref']),
-                  planId: q['plan'],
-                  planDay: int.tryParse(q['day'] ?? ''),
-                );
-              },
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/plans',
-              builder: (_, _) => const PlansScreen(),
-              routes: [
-                GoRoute(path: 'groups', builder: (_, _) => const GroupsScreen()),
-                GoRoute(
-                  path: ':id',
-                  builder: (_, state) => PlanDetailScreen(planId: state.pathParameters['id']!),
-                ),
-              ],
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [GoRoute(path: '/search', builder: (_, _) => const SearchScreen())],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/me',
-              builder: (_, _) => const MeScreen(),
-              routes: [
-                GoRoute(
-                  path: 'library',
-                  builder: (_, state) =>
-                      LibraryScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0),
-                ),
-                GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
-                GoRoute(path: 'account', builder: (_, _) => const AccountScreen()),
-                GoRoute(path: 'about', builder: (_, _) => const AboutScreen()),
-                GoRoute(path: 'downloads', builder: (_, _) => const DownloadsScreen()),
-              ],
-            ),
-          ],
-        ),
-      ],
+GoRouter buildRouter({String initialLocation = '/home'}) {
+  // The tabs' shell, so screens opened over it can show which tab they came
+  // from and switch tabs ([_InShell]).
+  final shellKey = GlobalKey<StatefulNavigationShellState>();
+
+  // A screen opened over the tabs that keeps the navigation beside it on wide
+  // windows.
+  GoRoute inShell(String path, Widget Function(GoRouterState state) screen, {bool miniPlayer = true}) => GoRoute(
+    path: path,
+    parentNavigatorKey: _rootKey,
+    pageBuilder: (_, state) => _InShellPage(
+      key: state.pageKey,
+      child: _InShell(shellKey: shellKey, miniPlayer: miniPlayer, child: screen(state)),
     ),
-    GoRoute(path: '/welcome', parentNavigatorKey: _rootKey, builder: (_, _) => const WelcomeScreen()),
-    GoRoute(path: '/books', parentNavigatorKey: _rootKey, builder: (_, _) => const BookPickerScreen()),
-    GoRoute(path: '/player', parentNavigatorKey: _rootKey, builder: (_, _) => const PlayerScreen()),
-    GoRoute(
-      path: '/share-image',
-      parentNavigatorKey: _rootKey,
-      builder: (_, state) => ShareImageScreen(
-        vkeys: (state.uri.queryParameters['keys'] ?? '').split(',').map(int.tryParse).whereType<int>().toList(),
+  );
+
+  return GoRouter(
+    navigatorKey: _rootKey,
+    initialLocation: initialLocation,
+    redirect: (_, state) => _movedRoute(state),
+    // A mistyped or outdated link gets a friendly page, not the router's own.
+    errorBuilder: (_, _) => const NotFoundScreen(),
+    routes: [
+      StatefulShellRoute.indexedStack(
+        key: shellKey,
+        builder: (context, state, shell) => AppShell(shell: shell),
+        // Tab order: Today · Read · Plans · Search & Study · Me (_tabs, AppShell.tabRoots).
+        branches: [
+          StatefulShellBranch(
+            routes: [GoRoute(path: '/home', builder: (_, _) => const HomeScreen())],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/read',
+                builder: (_, state) {
+                  final q = state.uri.queryParameters;
+                  return ReaderScreen(
+                    target: BibleRef.decode(q['ref']),
+                    planId: q['plan'],
+                    planDay: int.tryParse(q['day'] ?? ''),
+                  );
+                },
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/plans',
+                builder: (_, _) => const PlansScreen(),
+                routes: [
+                  GoRoute(path: 'groups', builder: (_, _) => const GroupsScreen()),
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, state) => PlanDetailScreen(planId: state.pathParameters['id']!),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/search',
+                builder: (_, state) => SearchScreen(query: state.uri.queryParameters['q']),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/me',
+                builder: (_, _) => const MeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'library',
+                    builder: (_, state) =>
+                        LibraryScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0),
+                  ),
+                  GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
+                  GoRoute(path: 'account', builder: (_, _) => const AccountScreen()),
+                  GoRoute(path: 'about', builder: (_, _) => const AboutScreen()),
+                  GoRoute(path: 'downloads', builder: (_, _) => const DownloadsScreen()),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
-    ),
-    GoRoute(
-      path: '/study',
-      parentNavigatorKey: _rootKey,
-      builder: (_, state) => VerseStudyScreen(vkey: int.tryParse(state.uri.queryParameters['v'] ?? '') ?? 0),
-    ),
-    GoRoute(
-      path: '/ask',
-      parentNavigatorKey: _rootKey,
-      builder: (_, state) {
+      // Focused tasks (welcome, choosing a book, an image, a note) cover the
+      // whole window; the rest keep the navigation beside them on wide windows.
+      GoRoute(path: '/welcome', parentNavigatorKey: _rootKey, builder: (_, _) => const WelcomeScreen()),
+      GoRoute(path: '/books', parentNavigatorKey: _rootKey, builder: (_, _) => const BookPickerScreen()),
+      inShell('/player', (_) => const PlayerScreen(), miniPlayer: false),
+      GoRoute(
+        path: '/share-image',
+        parentNavigatorKey: _rootKey,
+        builder: (_, state) => ShareImageScreen(
+          vkeys: (state.uri.queryParameters['keys'] ?? '').split(',').map(int.tryParse).whereType<int>().toList(),
+        ),
+      ),
+      inShell('/study', (state) => VerseStudyScreen(vkey: int.tryParse(state.uri.queryParameters['v'] ?? '') ?? 0)),
+      inShell('/ask', (state) {
         final q = state.uri.queryParameters;
         return AskScreen(vkeys: askVerses(int.tryParse(q['v'] ?? '') ?? 0, int.tryParse(q['end'] ?? '')));
-      },
-    ),
-    GoRoute(
-      path: '/groups/:id',
-      parentNavigatorKey: _rootKey,
-      builder: (_, state) => GroupScreen(groupId: state.pathParameters['id']!),
-    ),
-    GoRoute(path: '/timeline', parentNavigatorKey: _rootKey, builder: (_, _) => const TimelineScreen()),
-    GoRoute(
-      path: '/word/:id',
-      parentNavigatorKey: _rootKey,
-      builder: (_, state) => WordStudyScreen(strongs: state.pathParameters['id']!),
-    ),
-    GoRoute(
-      path: '/entity/:id',
-      parentNavigatorKey: _rootKey,
-      builder: (_, state) => EntityScreen(id: state.pathParameters['id']!),
-    ),
-    GoRoute(
-      path: '/note',
-      parentNavigatorKey: _rootKey,
-      // A note needs the verse it belongs to; without one, open the notes list.
-      redirect: (_, state) =>
-          int.tryParse(state.uri.queryParameters['start'] ?? '') == null ? '/me/library?tab=2' : null,
-      builder: (_, state) {
-        final q = state.uri.queryParameters;
-        return NoteEditorScreen(
-          vkeyStart: int.parse(q['start']!),
-          vkeyEnd: int.parse(q['end'] ?? q['start']!),
-          noteId: q['id'],
-        );
-      },
-    ),
-  ],
-);
+      }),
+      inShell('/groups/:id', (state) => GroupScreen(groupId: state.pathParameters['id']!)),
+      inShell('/timeline', (_) => const TimelineScreen()),
+      inShell('/word/:id', (state) => WordStudyScreen(strongs: state.pathParameters['id']!)),
+      inShell('/entity/:id', (state) => EntityScreen(id: state.pathParameters['id']!)),
+      GoRoute(
+        path: '/note',
+        parentNavigatorKey: _rootKey,
+        // A note needs the verse it belongs to; without one, open the notes list.
+        redirect: (_, state) =>
+            int.tryParse(state.uri.queryParameters['start'] ?? '') == null ? '/me/library?tab=2' : null,
+        builder: (_, state) {
+          final q = state.uri.queryParameters;
+          return NoteEditorScreen(
+            vkeyStart: int.parse(q['start']!),
+            vkeyEnd: int.parse(q['end'] ?? q['start']!),
+            noteId: q['id'],
+          );
+        },
+      ),
+    ],
+  );
+}
 
 /// A fresh install opens on the welcome steps; links (a shared verse on the
 /// web, a deep link on a phone) still open where they point.
@@ -210,6 +216,15 @@ class AmharicBibleApp extends ConsumerWidget {
   }
 }
 
+/// The tabs, in the router's branch order.
+List<({IconData icon, IconData selected, String label})> _tabs(S s) => [
+  (icon: Icons.wb_sunny_outlined, selected: Icons.wb_sunny, label: s.today),
+  (icon: Icons.menu_book_outlined, selected: Icons.menu_book, label: s.read),
+  (icon: Icons.event_note_outlined, selected: Icons.event_note, label: s.plans),
+  (icon: Icons.search, selected: Icons.manage_search, label: s.search),
+  (icon: Icons.person_outline, selected: Icons.person, label: s.me),
+];
+
 /// The app's navigation: Today · Read · Plans · Search & Study · Me.
 ///
 /// A bottom bar on phones (with the mini player above it), a rail from
@@ -224,6 +239,9 @@ class AppShell extends ConsumerWidget {
   /// Index of the Read tab, whose immersive mode hides the navigation bar.
   static const readTab = 1;
 
+  /// Each tab's first address, in the same order.
+  static const tabRoots = ['/home', '/read', '/plans', '/search', '/me'];
+
   void _go(WidgetRef ref, int i) {
     ref.read(immersiveProvider.notifier).set(false);
     shell.goBranch(i, initialLocation: i == shell.currentIndex);
@@ -231,69 +249,81 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = S.of(context);
     final hideBar = ref.watch(immersiveProvider) && shell.currentIndex == readTab;
-    // Same order as the router's branches.
-    final tabs = [
-      (icon: Icons.wb_sunny_outlined, selected: Icons.wb_sunny, label: s.today),
-      (icon: Icons.menu_book_outlined, selected: Icons.menu_book, label: s.read),
-      (icon: Icons.event_note_outlined, selected: Icons.event_note, label: s.plans),
-      (icon: Icons.search, selected: Icons.manage_search, label: s.search),
-      (icon: Icons.person_outline, selected: Icons.person, label: s.me),
-    ];
-    final width = MediaQuery.sizeOf(context).width;
-
-    if (width >= AppDimens.navigationRailMinWidth) {
-      final sidebar = width >= AppDimens.navigationSidebarMinWidth;
-      return Scaffold(
-        body: Row(
-          children: [
-            SafeArea(
-              right: false,
-              child: NavigationRail(
-                extended: sidebar,
-                labelType: sidebar ? NavigationRailLabelType.none : NavigationRailLabelType.all,
-                leading: sidebar ? const _Wordmark() : null,
-                selectedIndex: shell.currentIndex,
-                onDestinationSelected: (i) => _go(ref, i),
-                destinations: [
-                  for (final t in tabs)
-                    NavigationRailDestination(
-                      icon: Icon(t.icon),
-                      selectedIcon: Icon(t.selected),
-                      label: Text(t.label, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ),
-                ],
-              ),
-            ),
-            const VerticalDivider(),
-            Expanded(
-              child: Column(
+    return _GoToShortcut(
+      child: MediaQuery.sizeOf(context).width >= AppDimens.navigationRailMinWidth
+          ? _NavigationFrame(selectedIndex: shell.currentIndex, onSelected: (i) => _go(ref, i), child: shell)
+          : Scaffold(
+              body: shell,
+              bottomNavigationBar: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(child: shell),
                   const MiniPlayer(),
+                  _CollapsibleBar(
+                    hidden: hideBar,
+                    child: NavigationBar(
+                      selectedIndex: shell.currentIndex,
+                      onDestinationSelected: (i) => _go(ref, i),
+                      destinations: [
+                        for (final t in _tabs(S.of(context)))
+                          NavigationDestination(icon: Icon(t.icon), selectedIcon: Icon(t.selected), label: t.label),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      );
-    }
+    );
+  }
+}
 
+/// The rail, or the sidebar from [AppDimens.navigationSidebarMinWidth], beside
+/// [child], with the mini player under it. Shared by the tabs and the screens
+/// opened over them, so moving between the two changes only the content.
+class _NavigationFrame extends StatelessWidget {
+  const _NavigationFrame({
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.child,
+    this.miniPlayer = true,
+  });
+
+  /// The highlighted tab; null for a screen opened straight from a link.
+  final int? selectedIndex;
+  final ValueChanged<int> onSelected;
+  final Widget child;
+  final bool miniPlayer;
+
+  @override
+  Widget build(BuildContext context) {
+    final sidebar = MediaQuery.sizeOf(context).width >= AppDimens.navigationSidebarMinWidth;
     return Scaffold(
-      body: shell,
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
+      body: Row(
         children: [
-          const MiniPlayer(),
-          _CollapsibleBar(
-            hidden: hideBar,
-            child: NavigationBar(
-              selectedIndex: shell.currentIndex,
-              onDestinationSelected: (i) => _go(ref, i),
+          SafeArea(
+            right: false,
+            child: NavigationRail(
+              extended: sidebar,
+              labelType: sidebar ? NavigationRailLabelType.none : NavigationRailLabelType.all,
+              leading: sidebar ? const _Wordmark() : null,
+              selectedIndex: selectedIndex,
+              onDestinationSelected: onSelected,
               destinations: [
-                for (final t in tabs)
-                  NavigationDestination(icon: Icon(t.icon), selectedIcon: Icon(t.selected), label: t.label),
+                for (final t in _tabs(S.of(context)))
+                  NavigationRailDestination(
+                    icon: Icon(t.icon),
+                    selectedIcon: Icon(t.selected),
+                    label: Text(t.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+              ],
+            ),
+          ),
+          const VerticalDivider(),
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(child: child),
+                if (miniPlayer) const MiniPlayer(),
               ],
             ),
           ),
@@ -301,6 +331,144 @@ class AppShell extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// A screen opened over the tabs: verse study, a word, a person or place, the
+/// timeline, Ask, a group, the player. On wide windows the navigation stays
+/// beside it, so the reader can move on without going back first; choosing a
+/// tab closes these screens and returns to where the reader was in that tab.
+/// On phones the screen covers the tabs as before.
+class _InShell extends ConsumerStatefulWidget {
+  const _InShell({required this.shellKey, required this.child, this.miniPlayer = true});
+
+  /// The tabs' shell; mounted underneath unless the screen was opened straight
+  /// from a link.
+  final GlobalKey<StatefulNavigationShellState> shellKey;
+  final Widget child;
+  final bool miniPlayer;
+
+  @override
+  ConsumerState<_InShell> createState() => _InShellState();
+}
+
+class _InShellState extends ConsumerState<_InShell> {
+  /// Keeps the screen's state (a conversation, a scroll position) when the
+  /// window crosses the rail's width, such as a phone turning sideways.
+  final _content = GlobalKey();
+
+  void _go(int i) {
+    ref.read(immersiveProvider.notifier).set(false);
+    final shell = widget.shellKey.currentState;
+    if (shell != null && shell.mounted) {
+      shell.goBranch(i);
+    } else {
+      context.go(AppShell.tabRoots[i]);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final content = KeyedSubtree(key: _content, child: widget.child);
+    final wide = MediaQuery.sizeOf(context).width >= AppDimens.navigationRailMinWidth;
+    return _GoToShortcut(
+      child: wide
+          ? _NavigationFrame(
+              selectedIndex: widget.shellKey.currentState?.currentIndex,
+              onSelected: _go,
+              miniPlayer: widget.miniPlayer,
+              child: content,
+            )
+          : content,
+    );
+  }
+}
+
+/// The page for [_InShell] screens. Beside the navigation (wide windows) the
+/// screen fades in over the one underneath, which stays still, so only the
+/// content changes; on phones it uses the app's page transition.
+class _InShellPage extends Page<void> {
+  const _InShellPage({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Route<void> createRoute(BuildContext context) => _InShellRoute(this);
+}
+
+class _InShellRoute extends PageRoute<void> with MaterialRouteTransitionMixin<void> {
+  _InShellRoute(_InShellPage page) : super(settings: page);
+
+  bool get _wide => MediaQuery.sizeOf(navigator!.context).width >= AppDimens.navigationRailMinWidth;
+
+  @override
+  Widget buildContent(BuildContext context) => (settings as _InShellPage).child;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  Duration get transitionDuration => _wide ? AppMotion.medium : super.transitionDuration;
+
+  @override
+  Duration get reverseTransitionDuration => _wide ? AppMotion.medium : super.reverseTransitionDuration;
+
+  // The screen underneath animates out only when both routes agree to it.
+  @override
+  bool canTransitionFrom(TransitionRoute<dynamic> previousRoute) => !_wide;
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (MediaQuery.sizeOf(context).width < AppDimens.navigationRailMinWidth) {
+      return super.buildTransitions(context, animation, secondaryAnimation, child);
+    }
+    return FadeTransition(
+      opacity: animation.drive(CurveTween(curve: AppMotion.curve)),
+      child: child,
+    );
+  }
+}
+
+/// Ctrl+K (⌘K on a Mac) opens the Go-to box from anywhere in the app. It
+/// listens to the keyboard directly, so it works whatever has focus, and stays
+/// quiet while a sheet or dialog is open over the app.
+class _GoToShortcut extends ConsumerStatefulWidget {
+  const _GoToShortcut({required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<_GoToShortcut> createState() => _GoToShortcutState();
+}
+
+class _GoToShortcutState extends ConsumerState<_GoToShortcut> {
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    super.dispose();
+  }
+
+  bool _onKey(KeyEvent event) {
+    final keyboard = HardwareKeyboard.instance;
+    if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.keyK) return false;
+    if (!keyboard.isControlPressed && !keyboard.isMetaPressed) return false;
+    if (!mounted || ModalRoute.of(context)?.isCurrent == false) return false;
+    showGoTo(context, ref);
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// The bottom navigation bar, sliding down out of view during immersive

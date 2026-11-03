@@ -19,7 +19,10 @@ import '../study/study_widgets.dart';
 import '../study/verse_study_screen.dart' show EntityTile, openReader;
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({super.key, this.query});
+
+  /// A search to run on opening (`/search?q=…`, e.g. from the Go-to box).
+  final String? query;
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -35,6 +38,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   ParsedReference? _reference;
   StudyMatches _study = const StudyMatches();
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _runQueryFromLink();
+  }
+
+  @override
+  void didUpdateWidget(SearchScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.query != old.query) _runQueryFromLink();
+  }
+
+  void _runQueryFromLink() {
+    final q = widget.query?.trim() ?? '';
+    if (q.isEmpty) return;
+    _controller.text = q;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _run(q, remember: true);
+    });
+  }
 
   @override
   void dispose() {

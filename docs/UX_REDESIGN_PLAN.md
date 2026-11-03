@@ -1149,20 +1149,39 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
   - Share copies the text where the browser has no share sheet, instead of opening an email.
   - Read-aloud explains a missing *browser* voice.
   - Verse study says the study packs are in the Android and iOS app.
+- **Three panes on wide desktops:** from 1360 px the reader has a study panel beside the text (navigation · text ·
+  study). It follows the first selected verse (original text, cross-references, people and places, commentary, with
+  Ask); with nothing selected it says how to choose a verse.
+- **Go to (Ctrl+K or ⌘K)** from anywhere: a reference ("ዮሐ 3፥16", "Jn 3:16") opens the reader there; anything else
+  opens search. Search addresses carry the query (`/search?q=…`), so a search can be linked and bookmarked.
+- **Offline web app:** after one visit the web app opens without a connection.
+  - `web/sw.js` keeps the page, the app's files, CanvasKit and the fallback fonts. The app's own files come from the
+    network first, so an online visit always runs one consistent release.
+  - On the first visit the page tells the worker what it has already loaded, so one visit is enough.
+  - `web/flutter_bootstrap.js` starts the app without Flutter's own service worker, which is deprecated, unregisters
+    itself and would replace `sw.js`.
+  - Checked in a fresh browser: one visit, then the server stopped; a link to John 3 opened from the kept copy in under
+    a second. On a host without rewrites, app addresses work once the worker is installed.
+- **Screens opened over the tabs keep the navigation** on wide windows: verse study, words, people and places, the
+  timeline, Ask, group pages and the player. The sidebar stays still while the content fades in, and it shows the tab
+  the screen came from; choosing a tab closes these screens and returns to where the reader was in that tab. Focused
+  tasks (writing a note, making an image, choosing a book, the welcome steps) still cover the window, and phones are
+  unchanged. A screen keeps its state when a phone turns sideways.
 
 **Left for Phase 4:**
 
-- The three-pane desktop reader with a study panel, and the full-window screens opened inside the shell.
-- Popovers instead of bottom sheets on desktop.
-- A Ctrl+K "Go to" palette, hover states and right-click.
-- An offline app shell, bundled Hebrew and Greek fonts, the install prompt.
+- Popovers instead of bottom sheets on desktop; hover states and right-click.
+- Bundled Hebrew and Greek fonts (offline, the fallback fonts work only if the browser fetched them while online), and
+  the install prompt.
 - WebAssembly evaluation and deferred loading.
+- A two-column Today, and app bars aligned with the centered content on desktop.
+- Faster repeat visits: a file list generated at build time would let the worker start the app from its copy without
+  checking each file first (a post-build step, best added with the static chapter pages in Phase 6).
 
 **Left for later phases:**
 
 - The Search & Study explore page, where the study tools (now under Me) move (Phase 5).
-- In-reader tips, together with long-press selection (Phase 3).
-- A two-column Today and app bars aligned with the centered content on desktop (Phase 4).
+- The other two contextual tips from §7.1: swipe for the next chapter, and tap a verse to play from there.
 
 ---
 

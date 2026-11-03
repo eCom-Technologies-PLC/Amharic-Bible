@@ -107,6 +107,13 @@ abstract final class AppDimens {
   /// Widest the audio player's cover grows.
   static const double playerCoverMaxWidth = 280;
 
+  /// Window width from which the reader shows the verse study beside the
+  /// text (with the sidebar, there is room for the reading column and it).
+  static const double studyPanelMinWidth = 1360;
+
+  /// Width of the study panel beside the reader.
+  static const double studyPanelWidth = 360;
+
   /// Thin progress line (mini player).
   static const double progressThin = 2;
 

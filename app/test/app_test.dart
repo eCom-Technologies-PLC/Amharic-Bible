@@ -422,6 +422,65 @@ void main() {
     expect(find.bySemanticsLabel("This day's reading is done"), findsOneWidget);
   });
 
+  testWidgets('Ctrl+K goes to a reference typed in any form', (tester) async {
+    await pumpApp(tester, settings: const Settings(languageCode: 'en'));
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    expect(find.text('Go to'), findsWidgets);
+    await tester.enterText(find.byType(TextField).last, 'Jn 3:16');
+    await tester.testTextInput.receiveAction(TextInputAction.go);
+    await tester.pumpAndSettle();
+    expect(find.byType(ReaderScreen), findsOneWidget);
+    expect(find.text('ዮሐንስ 3'), findsOneWidget);
+  });
+
+  testWidgets('on a wide window, screens opened over the tabs keep the navigation beside them', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=JHN.3',
+    );
+    // On a phone, verse study covers the tabs.
+    unawaited(GoRouter.of(tester.element(find.byType(ReaderScreen))).push('/study?v=43003016'));
+    await tester.pumpAndSettle();
+    expect(find.byType(VerseStudyScreen), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(NavigationRail), findsNothing);
+    ScrollableState scrollable() =>
+        tester.state(find.descendant(of: find.byType(VerseStudyScreen), matching: find.byType(Scrollable)).first);
+    final before = scrollable();
+
+    // Turned sideways or on a desktop: the navigation appears beside it, on the
+    // Read tab it was opened from, and the screen keeps its state.
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpAndSettle();
+    NavigationRail rail() => tester.widget(find.byType(NavigationRail));
+    expect(rail().selectedIndex, AppShell.readTab);
+    expect(scrollable(), same(before));
+
+    // Choosing a tab closes the screen; Read returns to the chapter.
+    await tester.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Plans')));
+    await tester.pumpAndSettle();
+    expect(find.byType(VerseStudyScreen), findsNothing);
+    expect(rail().selectedIndex, 2);
+    await tester.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Read')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ReaderScreen), findsOneWidget);
+    expect(find.text('ዮሐንስ 3'), findsOneWidget);
+  });
+
+  testWidgets('a search link runs its query', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/search?q=ዓለም',
+    );
+    expect(find.text('1 result'), findsOneWidget);
+  });
+
   testWidgets('a link to a missing page shows a way home', (tester) async {
     await pumpApp(
       tester,
