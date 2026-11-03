@@ -209,16 +209,23 @@ class AmharicBibleApp extends ConsumerWidget {
 /// [AppDimens.navigationRailMinWidth] (tablets, phones in landscape) and a
 /// sidebar with the app's name from [AppDimens.navigationSidebarMinWidth]
 /// (desktop browsers); beside a rail the mini player sits under the content.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.shell});
 
   final StatefulNavigationShell shell;
 
-  void _go(int i) => shell.goBranch(i, initialLocation: i == shell.currentIndex);
+  /// Index of the Read tab, whose immersive mode hides the navigation bar.
+  static const readTab = 1;
+
+  void _go(WidgetRef ref, int i) {
+    ref.read(immersiveProvider.notifier).set(false);
+    shell.goBranch(i, initialLocation: i == shell.currentIndex);
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
+    final hideBar = ref.watch(immersiveProvider) && shell.currentIndex == readTab;
     // Same order as the router's branches.
     final tabs = [
       (icon: Icons.wb_sunny_outlined, selected: Icons.wb_sunny, label: s.today),
@@ -241,7 +248,7 @@ class AppShell extends StatelessWidget {
                 labelType: sidebar ? NavigationRailLabelType.none : NavigationRailLabelType.all,
                 leading: sidebar ? const _Wordmark() : null,
                 selectedIndex: shell.currentIndex,
-                onDestinationSelected: _go,
+                onDestinationSelected: (i) => _go(ref, i),
                 destinations: [
                   for (final t in tabs)
                     NavigationRailDestination(
@@ -272,18 +279,41 @@ class AppShell extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const MiniPlayer(),
-          NavigationBar(
-            selectedIndex: shell.currentIndex,
-            onDestinationSelected: _go,
-            destinations: [
-              for (final t in tabs)
-                NavigationDestination(icon: Icon(t.icon), selectedIcon: Icon(t.selected), label: t.label),
-            ],
+          _CollapsibleBar(
+            hidden: hideBar,
+            child: NavigationBar(
+              selectedIndex: shell.currentIndex,
+              onDestinationSelected: (i) => _go(ref, i),
+              destinations: [
+                for (final t in tabs)
+                  NavigationDestination(icon: Icon(t.icon), selectedIcon: Icon(t.selected), label: t.label),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+/// The bottom navigation bar, sliding down out of view during immersive
+/// reading and back when the reader scrolls up or taps.
+class _CollapsibleBar extends StatelessWidget {
+  const _CollapsibleBar({required this.hidden, required this.child});
+
+  final bool hidden;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(end: hidden ? 0 : 1),
+    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : AppMotion.medium,
+    curve: AppMotion.curve,
+    builder: (context, shown, bar) => ClipRect(
+      child: Align(alignment: Alignment.topCenter, heightFactor: shown, child: bar),
+    ),
+    child: child,
+  );
 }
 
 /// The app's name at the top of the sidebar (until the illustrator's logo exists).

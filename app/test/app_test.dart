@@ -78,9 +78,9 @@ void main() {
     expect(find.text('ዮሐንስ 3'), findsOneWidget);
     expect(find.byType(ParagraphView), findsWidgets);
 
-    // Tap inside verse 16's text to select it.
+    // Press and hold inside verse 16's text to select it.
     final para = find.byType(ParagraphView).first;
-    await tester.tapAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.longPressAt(tester.getTopLeft(para) + const Offset(80, 30));
     await tester.pumpAndSettle();
     expect(find.byType(SelectionBar), findsOneWidget);
     expect(find.textContaining('ዮሐንስ 3፥16'), findsOneWidget);
@@ -148,7 +148,7 @@ void main() {
     expect(find.textContaining('በመጀመሪያ', findRichText: true), findsOneWidget);
     // Selecting the English verse selects the shared verse key.
     final english = find.textContaining('In the beginning', findRichText: true);
-    await tester.tapAt(tester.getTopLeft(english) + const Offset(80, 12));
+    await tester.longPressAt(tester.getTopLeft(english) + const Offset(80, 12));
     await tester.pumpAndSettle();
     expect(find.byType(SelectionBar), findsOneWidget);
   });
@@ -295,11 +295,26 @@ void main() {
   testWidgets('selection bar opens the verse study', (tester) async {
     await pumpApp(tester, initial: '/read?ref=JHN.3');
     final para = find.byType(ParagraphView).first;
-    await tester.tapAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.longPressAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ተጨማሪ')); // More: the less frequent actions
     await tester.pumpAndSettle();
     await tester.tap(find.text('ጥናት'));
     await tester.pumpAndSettle();
     expect(find.byType(VerseStudyScreen), findsOneWidget);
+  });
+
+  testWidgets('a tap on the text hides the bars; another brings them back', (tester) async {
+    await pumpApp(tester, initial: '/read?ref=JHN.3');
+    final container = ProviderScope.containerOf(tester.element(find.byType(ReaderScreen)));
+    final para = find.byType(ParagraphView).first;
+    await tester.tapAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.pumpAndSettle();
+    expect(container.read(immersiveProvider), isTrue);
+    expect(find.byType(SelectionBar), findsNothing); // a tap no longer selects on phones
+    await tester.tapAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.pumpAndSettle();
+    expect(container.read(immersiveProvider), isFalse);
   });
 
   testWidgets('interlinear mode shows Hebrew words under the Amharic text', (tester) async {
@@ -412,7 +427,9 @@ void main() {
       initial: '/read?ref=JHN.3',
     );
     final para = find.byType(ParagraphView).first;
-    await tester.tapAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.longPressAt(tester.getTopLeft(para) + const Offset(80, 30));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Compare'));
     await tester.pumpAndSettle();

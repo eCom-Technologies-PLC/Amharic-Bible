@@ -6,8 +6,11 @@ import '../../state/providers.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
 
-Future<void> showTextSettingsSheet(BuildContext context) =>
-    showAppBottomSheet<void>(context: context, builder: (_) => const TextSettingsSheet());
+Future<void> showTextSettingsSheet(BuildContext context) => showAppBottomSheet<void>(
+  context: context,
+  title: S.of(context).readingLook,
+  builder: (_) => const TextSettingsSheet(showDisplayOptions: true),
+);
 
 String themeLabel(S s, ReaderTheme t) => switch (t) {
   ReaderTheme.system => s.themeSystem,
@@ -19,11 +22,13 @@ String themeLabel(S s, ReaderTheme t) => switch (t) {
 
 /// Reading appearance: text size, line spacing, font, theme and (when an
 /// original-language text is installed) interlinear words. The welcome steps
-/// embed it without the interlinear switch.
+/// embed it without the interlinear switch; the reader's Aa sheet adds the
+/// display switches (verse numbers, red letters, Ge'ez numerals).
 class TextSettingsSheet extends ConsumerWidget {
-  const TextSettingsSheet({super.key, this.showInterlinear = true});
+  const TextSettingsSheet({super.key, this.showInterlinear = true, this.showDisplayOptions = false});
 
   final bool showInterlinear;
+  final bool showDisplayOptions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,15 +114,93 @@ class TextSettingsSheet extends ConsumerWidget {
             runSpacing: AppSpacing.sm,
             children: [
               for (final th in ReaderTheme.values)
-                ChoiceChip(
-                  label: Text(themeLabel(s, th)),
+                _ThemeSwatch(
+                  theme: th,
+                  label: themeLabel(s, th),
                   selected: settings.readerTheme == th,
-                  onSelected: (_) => notifier.update((x) => x.copyWith(readerTheme: th)),
+                  onTap: () => notifier.update((x) => x.copyWith(readerTheme: th)),
                 ),
             ],
           ),
         ),
+        if (showDisplayOptions) ...[
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(s.verseNumbers),
+            value: settings.verseNumbers,
+            onChanged: (v) => notifier.update((x) => x.copyWith(verseNumbers: v)),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(s.redLetters),
+            value: settings.redLetters,
+            onChanged: (v) => notifier.update((x) => x.copyWith(redLetters: v)),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(s.geezNumerals),
+            value: settings.geezNumerals,
+            onChanged: (v) => notifier.update((x) => x.copyWith(geezNumerals: v)),
+          ),
+        ],
       ],
+    );
+  }
+}
+
+/// A reading theme shown as itself: a letter on that theme's page, so the
+/// choice can be seen rather than read.
+class _ThemeSwatch extends StatelessWidget {
+  const _ThemeSwatch({required this.theme, required this.label, required this.selected, required this.onTap});
+
+  final ReaderTheme theme;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = readingPreview(theme, MediaQuery.platformBrightnessOf(context));
+    final scheme = context.colors;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: ExcludeSemantics(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: AppDimens.touchTarget + AppSpacing.sm,
+                  height: AppDimens.touchTarget,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: preview.paper,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                      color: selected ? scheme.primary : scheme.outlineVariant,
+                      width: selected ? AppDimens.selectedBorder : 1,
+                    ),
+                  ),
+                  child: theme == ReaderTheme.system
+                      ? Icon(Icons.brightness_auto_outlined, color: preview.ink)
+                      : Text(
+                          'ሀ',
+                          style: context.text.titleLarge?.copyWith(color: preview.ink, fontFamily: AppFonts.serif),
+                        ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(label, style: context.text.labelMedium),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

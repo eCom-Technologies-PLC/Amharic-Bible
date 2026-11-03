@@ -97,6 +97,11 @@ class S {
   String get beginToday => _('beginToday');
   String get beginTodayHint => _('beginTodayHint');
 
+  String get readingLook => _('readingLook');
+  String get readerTip => _('readerTip');
+  String get gotIt => _('gotIt');
+  String get moreActions => _('moreActions');
+  String get holdToSelectHint => _('holdToSelectHint');
   String get guest => _('guest');
   String get syncOn => _('syncOn');
   String get signInToSync => _('signInToSync');
@@ -481,6 +486,11 @@ const _am = {
   'beginPlanHint': 'መጽሐፍ ቅዱስን በዓመት፣ አዲስ ኪዳንን በ90 ቀን፣ ወይም ወንጌላትን በ30 ቀን።',
   'beginToday': 'ወደ ዛሬ ይሂዱ',
   'beginTodayHint': 'የዕለቱ ጥቅስና የንባብዎ ቦታ።',
+  'readerTip': 'ለማድመቅ፣ ማስታወሻ ለመጻፍ ወይም ለማጋራት ጥቅሱን ተጭነው ይያዙ። ምናሌዎቹን ለማሳየት ወይም ለመደበቅ አንዴ ይንኩ፤ ለቀጣዩ ምዕራፍ ወደ ጎን ያንሸራቱ።',
+  'gotIt': 'ገባኝ',
+  'readingLook': 'የንባብ ገጽታ',
+  'moreActions': 'ተጨማሪ',
+  'holdToSelectHint': 'ለማድመቅ፣ ለማጋራት ወይም ማስታወሻ ለመጻፍ ጥቅሱን ተጭነው ይያዙ',
   'guest': 'እንግዳ',
   'syncOn': 'ድምቀቶችና ማስታወሻዎች ከዚህ መለያ ጋር ይመሳሰላሉ',
   'signInToSync': 'ድምቀቶችዎና ማስታወሻዎችዎ እንዳይጠፉ ይግቡና ያመሳስሉ',
@@ -912,6 +922,11 @@ const _en = {
   'beginPlanHint': 'The Bible in a year, the New Testament in 90 days, or the Gospels in 30 days.',
   'beginToday': 'Go to Today',
   'beginTodayHint': 'The verse of the day and where you left off.',
+  'readerTip': 'Press and hold a verse to highlight, note or share it. Tap to show or hide the bars; swipe sideways for the next chapter.',
+  'gotIt': 'Got it',
+  'readingLook': 'Reading appearance',
+  'moreActions': 'More',
+  'holdToSelectHint': 'Press and hold a verse to highlight, share or add a note',
   'guest': 'Guest',
   'syncOn': 'Highlights and notes sync with this account',
   'signInToSync': 'Sign in to back up your highlights and notes',

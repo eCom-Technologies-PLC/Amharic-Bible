@@ -77,6 +77,9 @@ All future UI work in this repository must follow this CLAUDE.md section.
 **Rules specific to this app**
 
 - Dialogs only confirm destructive or blocking actions (delete account, stop/restart a plan, download progress). Choices, pickers and details (versions, language, speed, sleep timer, footnotes, text settings) use bottom sheets via `showOptionPicker` / `showAppBottomSheet`.
+- Reader gestures: on phones, press and hold selects a verse, and a tap adds to a selection, jumps the audio to the
+  verse, or shows and hides the bars (`immersiveProvider`; the shell hides its navigation bar with it). On the web and
+  with a screen reader, a tap selects. `ParagraphView.onLongPressVerse` carries the hold; keep both paths working.
 - Removing something the reader made: offer Undo (`showAppSnack` with an action) when it can be restored, otherwise
   confirm with `showConfirmDialog(destructive: true)`. Back never silently discards typing (`PopScope`).
 - Colors are defined only in `app_theme.dart` (a `ColorScheme` per reading theme) and `AppColors`.
@@ -99,5 +102,5 @@ All future UI work in this repository must follow this CLAUDE.md section.
 
 **Layout gate**
 
-`app/test/layout_audit_test.dart` renders every route at 320 dp with 1.3× text in all four reading themes and both languages, plus phone and tablet sizes and key interactive states (verse selected, text settings sheet, option picker), and fails on any overflow or layout error. Add new routes to its `routes` list. `app/test/strings_test.dart` fails
-when a string is missing in either language.
+`app/test/layout_audit_test.dart` renders every route at 320 dp with 1.3× text in all four reading themes and both languages, plus phone and tablet sizes and key interactive states (verse selected, text settings sheet, option picker), and fails on any overflow or layout error. It also renders the reader at 2× text (DESIGN.md §4.5). Add new routes to
+its `routes` list. `app/test/strings_test.dart` fails when a string is missing in either language.

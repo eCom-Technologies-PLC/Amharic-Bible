@@ -32,6 +32,12 @@ TextTheme _textTheme(Color color) {
   );
 }
 
+/// Page and text colors of a reading theme, for previews in the theme picker.
+({Color paper, Color ink}) readingPreview(ReaderTheme mode, Brightness platform) {
+  final t = resolveReaderTheme(mode, platform);
+  return (paper: AppColors.of(t).paper, ink: _scheme(t).onSurface);
+}
+
 ReaderTheme resolveReaderTheme(ReaderTheme mode, Brightness platform) =>
     mode == ReaderTheme.system ? (platform == Brightness.dark ? ReaderTheme.dark : ReaderTheme.light) : mode;
 

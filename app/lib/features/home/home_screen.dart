@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -135,7 +136,7 @@ class HomeScreen extends ConsumerWidget {
           Gutter(
             vertical: AppSpacing.lg,
             child: Text(
-              s.tapToSelectHint,
+              kIsWeb ? s.tapToSelectHint : s.holdToSelectHint,
               style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
             ),
           ),

@@ -88,6 +88,7 @@ class Settings {
     this.lastRef,
     this.recentSearches = const [],
     this.onboarded = true,
+    this.readerTipSeen = true,
   });
 
   final ReaderTheme readerTheme;
@@ -127,6 +128,11 @@ class Settings {
   /// steps are finished or skipped; installs from before them count as done.
   final bool onboarded;
 
+  /// The reader's one-time tip about its gestures (press and hold to select,
+  /// tap for the bars) was dismissed. Everyone sees it once, since selecting
+  /// moved from a tap to a long press.
+  final bool readerTipSeen;
+
   double get fontSize => AppFonts.readingSizes[fontSizeIndex.clamp(0, AppFonts.readingSizes.length - 1)];
   String get fontFamily => serif ? AppFonts.serif : AppFonts.sans;
   Locale get locale => Locale(languageCode);
@@ -152,6 +158,7 @@ class Settings {
     BibleRef? lastRef,
     List<String>? recentSearches,
     bool? onboarded,
+    bool? readerTipSeen,
   }) => Settings(
     readerTheme: readerTheme ?? this.readerTheme,
     fontSizeIndex: fontSizeIndex ?? this.fontSizeIndex,
@@ -173,6 +180,7 @@ class Settings {
     lastRef: lastRef ?? this.lastRef,
     recentSearches: recentSearches ?? this.recentSearches,
     onboarded: onboarded ?? this.onboarded,
+    readerTipSeen: readerTipSeen ?? this.readerTipSeen,
   );
 
   Map<String, String?> toMap() => {
@@ -196,6 +204,7 @@ class Settings {
     'last_ref': lastRef?.encode(),
     'recent_searches': jsonEncode(recentSearches),
     'onboarded': '$onboarded',
+    'reader_tip_seen': '$readerTipSeen',
   };
 
   factory Settings.fromMap(Map<String, String> m) {
@@ -227,6 +236,7 @@ class Settings {
           : const [],
       // Anything stored means an install from before the welcome steps existed.
       onboarded: b('onboarded', m.isNotEmpty),
+      readerTipSeen: b('reader_tip_seen', false),
     );
   }
 }
@@ -372,6 +382,22 @@ final streakProvider = FutureProvider<Streak>((ref) async {
   final days = await ref.watch(userRepositoryProvider).readingDays();
   return streakFrom(days, ref.watch(clockProvider)());
 });
+
+/// Immersive reading: the reader's app bar and the shell's navigation bar are
+/// hidden (scrolling down or tapping the text hides them, scrolling up or
+/// tapping again shows them). Phones only; see ReaderScreen.
+final immersiveProvider = NotifierProvider<Immersive, bool>(Immersive.new);
+
+class Immersive extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool hidden) {
+    if (state != hidden) state = hidden;
+  }
+
+  void toggle() => state = !state;
+}
 
 /// Days read this week, Sunday first (Today's week row).
 final weekRhythmProvider = FutureProvider<List<bool>>((ref) async {

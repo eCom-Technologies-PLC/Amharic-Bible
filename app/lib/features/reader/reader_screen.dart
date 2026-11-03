@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -76,7 +79,56 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _toggleVerse(int k) {
+    final wasEmpty = _selected.isEmpty;
     setState(() => _selected.contains(k) ? _selected.remove(k) : _selected.add(k));
+    if (wasEmpty && _selected.isNotEmpty) _revealSelection(k);
+  }
+
+  /// Touch gestures (phones): press and hold selects, a tap adds to a
+  /// selection, jumps the audio to the verse, or shows and hides the bars.
+  /// With a mouse (the web) or a screen reader, a tap selects as before:
+  /// holding is awkward with a mouse and screen readers can't long-press.
+  bool _holdToSelect = false;
+
+  /// The chapter on screen, for gesture handlers.
+  ({BibleVersion version, Book book, int chapter, ChapterLayout layout})? _shown;
+
+  void _onTapVerse(int k) {
+    if (!_holdToSelect || _selected.isNotEmpty) return _toggleVerse(k);
+    final shown = _shown;
+    if (shown != null) {
+      final (version, book, chapter) = (shown.version, shown.book, shown.chapter);
+      final audio = ref.read(audioControllerProvider);
+      if (audio.playing && audio.isChapter(version.id, book.code, chapter)) {
+        unawaited(ref.read(audioControllerProvider.notifier).playChapter(version, book, chapter, fromVerse: k % 1000));
+        return;
+      }
+      if (ref.read(readAloudProvider).isChapter(version.id, book.code, chapter)) {
+        unawaited(startReadAloud(context, ref, version, book, chapter, fromVerse: k % 1000));
+        return;
+      }
+    }
+    ref.read(immersiveProvider.notifier).toggle();
+  }
+
+  void _onLongPressVerse(int k) {
+    HapticFeedback.selectionClick();
+    final first = _selected.isEmpty;
+    setState(() => _selected.add(k));
+    if (first) _revealSelection(k);
+  }
+
+  /// The selection bar takes room at the bottom: if the verse just selected
+  /// ends up under it, scroll it up into view.
+  void _revealSelection(int k) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final idx = _shown?.layout.blockOfVerse[k];
+      if (!mounted || idx == null || !_scroll.isAttached) return;
+      final pos = _positions.itemPositions.value.where((p) => p.index == idx).firstOrNull;
+      if (pos == null || pos.itemTrailingEdge > 1) {
+        _scroll.scrollTo(index: idx, duration: AppMotion.medium, curve: AppMotion.curve, alignment: _revealAlignment);
+      }
+    });
   }
 
   void _showFootnote(String text) {
@@ -112,9 +164,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final chapterAsync = ref.watch(chapterProvider((versionId: version.id, book: r.bookCode, chapter: r.chapter)));
     final content = chapterAsync.value;
     final book = content?.book;
+    _holdToSelect = !kIsWeb && !MediaQuery.accessibleNavigationOf(context);
+    final immersive = _holdToSelect && ref.watch(immersiveProvider);
 
     final scaffold = AppScaffold(
       reading: true,
+      appBarHidden: immersive,
       pageTitle: book != null ? '${book.shortName} ${r.chapter}' : null,
       titleWidget: _ChapterTitle(
         label: book != null ? '${book.shortName} ${formatNumber(r.chapter, ref.watch(settingsProvider))}' : r.bookCode,
@@ -211,6 +266,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         : secondary != null
         ? parallelLayout(c, secondary)
         : layoutChapter(c);
+    _shown = (version: version, book: c.book, chapter: c.chapter, layout: layout);
+    final onHold = _holdToSelect ? _onLongPressVerse : null;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _savePosition(version.id, r, c.book.num);
@@ -268,8 +325,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _changeChapter(version, c.book, c.chapter, v < 0 ? 1 : -1);
       },
       child: NotificationListener<UserScrollNotification>(
-        onNotification: (_) {
+        onNotification: (n) {
           _lastUserScroll = DateTime.now();
+          // Reading down hides the bars; scrolling back up brings them back.
+          if (_holdToSelect && _selected.isEmpty && n.direction != ScrollDirection.idle) {
+            ref.read(immersiveProvider.notifier).set(n.direction == ScrollDirection.reverse);
+          }
           return false;
         },
         child: ScrollablePositionedList.builder(
@@ -283,9 +344,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           itemBuilder: (context, i) {
             final Widget child;
             if (i == 0) {
-              child = twoVersions
-                  ? _ParallelHeader(left: version.abbrev, right: secondaryVersion.abbrev)
-                  : const SizedBox.shrink();
+              // Chapter header, then (once) the gesture tip: inside the list,
+              // so on small screens it scrolls away instead of crowding the text.
+              child = Column(
+                children: [
+                  _ChapterHeader(book: c.book.name, chapter: formatNumber(c.chapter, settings)),
+                  if (_holdToSelect && !settings.readerTipSeen) const _GestureTip(),
+                  if (twoVersions) _ParallelHeader(left: version.abbrev, right: secondaryVersion.abbrev),
+                ],
+              );
             } else if (i == layout.blocks.length + 1) {
               child = _ChapterNav(
                 onPrevious: () => _changeChapter(version, c.book, c.chapter, -1),
@@ -300,24 +367,27 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   block: block,
                   options: options,
                   decor: decor,
-                  onTapVerse: _toggleVerse,
+                  onTapVerse: _onTapVerse,
                   onTapFootnote: _showFootnote,
+                  onLongPressVerse: onHold,
                 ),
                 PairBlock() => _PairView(
                   block: block,
                   options: options,
                   secondaryRtl: isRtlLanguage(secondaryVersion?.language ?? ''),
                   decor: decor,
-                  onTapVerse: _toggleVerse,
+                  onTapVerse: _onTapVerse,
                   onTapFootnote: _showFootnote,
+                  onLongPressVerse: onHold,
                 ),
                 InterlinearBlock() => _InterlinearView(
                   block: block,
                   options: options,
                   wordsRtl: wordsRtl,
                   decor: decor,
-                  onTapVerse: _toggleVerse,
+                  onTapVerse: _onTapVerse,
                   onTapFootnote: _showFootnote,
+                  onLongPressVerse: onHold,
                 ),
               };
             }
@@ -334,6 +404,77 @@ const _initialVerseAlignment = 0.1;
 
 /// Where the verse being read aloud is scrolled to.
 const _followAlongAlignment = 0.2;
+
+/// Where a newly selected verse is scrolled to when the selection bar would
+/// cover it.
+const _revealAlignment = 0.2;
+
+/// The top of a chapter: the book's name in rubric red over a large chapter
+/// number and an ornament rule, as a manuscript would open a section.
+class _ChapterHeader extends StatelessWidget {
+  const _ChapterHeader({required this.book, required this.chapter});
+
+  final String book;
+  final String chapter;
+
+  @override
+  Widget build(BuildContext context) {
+    final reading = context.reading;
+    return Semantics(
+      header: true,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.lg, AppSpacing.screen, AppSpacing.sm),
+        child: Column(
+          children: [
+            Text(
+              book,
+              textAlign: TextAlign.center,
+              style: reading.heading.copyWith(color: context.colors.tertiary),
+            ),
+            Text(
+              chapter,
+              textAlign: TextAlign.center,
+              style: context.text.displaySmall?.copyWith(fontFamily: reading.verse.fontFamily),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            const OrnamentRule(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A one-time note about the reader's gestures, until it is dismissed.
+class _GestureTip extends ConsumerWidget {
+  const _GestureTip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final colors = context.appColors;
+    return Material(
+      color: colors.infoContainer,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.sm, AppSpacing.xs, AppSpacing.sm),
+        child: Row(
+          children: [
+            Icon(Icons.touch_app_outlined, size: AppIconSize.sm, color: colors.onInfoContainer),
+            const SizedBox(width: AppSpacing.iconGap),
+            Expanded(
+              child: Text(s.readerTip, style: context.text.bodySmall?.copyWith(color: colors.onInfoContainer)),
+            ),
+            AppButton.ghost(
+              label: s.gotIt,
+              size: AppButtonSize.sm,
+              onPressed: () => ref.read(settingsProvider.notifier).update((x) => x.copyWith(readerTipSeen: true)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Centers scripture in a readable column on tablets (twice as wide for
 /// side-by-side reading).
@@ -390,6 +531,7 @@ class _PairView extends StatelessWidget {
     required this.decor,
     required this.onTapVerse,
     required this.onTapFootnote,
+    this.onLongPressVerse,
   });
 
   final PairBlock block;
@@ -398,6 +540,7 @@ class _PairView extends StatelessWidget {
   final VerseDecor decor;
   final ValueChanged<int> onTapVerse;
   final ValueChanged<String> onTapFootnote;
+  final ValueChanged<int>? onLongPressVerse;
 
   @override
   Widget build(BuildContext context) {
@@ -410,6 +553,7 @@ class _PairView extends StatelessWidget {
           decor: decor,
           onTapVerse: onTapVerse,
           onTapFootnote: onTapFootnote,
+          onLongPressVerse: onLongPressVerse,
         );
         final second = block.secondary;
         final secondary = second == null
@@ -420,6 +564,7 @@ class _PairView extends StatelessWidget {
                 decor: decor,
                 onTapVerse: onTapVerse,
                 onTapFootnote: onTapFootnote,
+                onLongPressVerse: onLongPressVerse,
               );
         if (wide) {
           return Row(
@@ -470,6 +615,7 @@ class _InterlinearView extends StatelessWidget {
     required this.decor,
     required this.onTapVerse,
     required this.onTapFootnote,
+    this.onLongPressVerse,
   });
 
   final InterlinearBlock block;
@@ -478,11 +624,13 @@ class _InterlinearView extends StatelessWidget {
   final VerseDecor decor;
   final ValueChanged<int> onTapVerse;
   final ValueChanged<String> onTapFootnote;
+  final ValueChanged<int>? onLongPressVerse;
 
   @override
   Widget build(BuildContext context) {
     final text = block.text;
     final selected = decor.selected.contains(block.vkey);
+    final onHold = onLongPressVerse;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -493,6 +641,7 @@ class _InterlinearView extends StatelessWidget {
             decor: decor,
             onTapVerse: onTapVerse,
             onTapFootnote: onTapFootnote,
+            onLongPressVerse: onLongPressVerse,
           )
         else
           Align(
@@ -501,6 +650,7 @@ class _InterlinearView extends StatelessWidget {
               padding: const EdgeInsets.only(left: AppSpacing.screen, top: AppSpacing.sm),
               child: InkWell(
                 onTap: () => onTapVerse(block.vkey),
+                onLongPress: onHold == null ? null : () => onHold(block.vkey),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: AppDimens.touchTarget, minWidth: AppDimens.touchTarget),

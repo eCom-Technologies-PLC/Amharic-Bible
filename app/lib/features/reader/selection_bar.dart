@@ -42,6 +42,50 @@ class SelectionBar extends ConsumerWidget {
     return '$text\n— $reference (${version.abbrev})';
   }
 
+  /// The less frequent actions, in a sheet, so the bar stays one short row.
+  void _showMore(BuildContext context, WidgetRef ref, S s) {
+    final reference = formatReference(book, chapter, selected.map((k) => k % 1000), amharic: s.isAmharic);
+    Widget action(BuildContext sheet, IconData icon, String label, VoidCallback run) => AppListTile(
+      leadingIcon: icon,
+      title: label,
+      onTap: () {
+        Navigator.of(sheet).pop();
+        run();
+      },
+    );
+    showAppBottomSheet<void>(
+      context: context,
+      title: reference,
+      builder: (sheet) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          action(sheet, Icons.school_outlined, s.study, () {
+            context.push('/study?v=${selected.first}');
+            onDone();
+          }),
+          action(sheet, Icons.compare_arrows, s.compare, () => showCompareSheet(context, selected, reference)),
+          action(sheet, Icons.image_outlined, s.image, () {
+            context.push('/share-image?keys=${selected.join(',')}');
+            onDone();
+          }),
+          action(sheet, Icons.headphones_outlined, s.listen, () async {
+            if (!hasRecordedAudio(ref, version)) {
+              await startReadAloud(context, ref, version, book, chapter, fromVerse: selected.first % 1000);
+              onDone();
+              return;
+            }
+            final controller = ref.read(audioControllerProvider.notifier);
+            await controller.playChapter(version, book, chapter, fromVerse: selected.first % 1000);
+            final err = ref.read(audioControllerProvider).error;
+            if (err != null && context.mounted) showAppSnack(context, audioErrorText(s, err));
+            onDone();
+          }),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
@@ -132,32 +176,6 @@ class SelectionBar extends ConsumerWidget {
                     },
                   ),
                   LabeledIconButton(
-                    icon: Icons.school_outlined,
-                    label: s.study,
-                    onPressed: () {
-                      context.push('/study?v=${selected.first}');
-                      onDone();
-                    },
-                  ),
-                  LabeledIconButton(
-                    icon: Icons.compare_arrows,
-                    label: s.compare,
-                    onPressed: () => showCompareSheet(
-                      context,
-                      selected,
-                      formatReference(book, chapter, selected.map((k) => k % 1000), amharic: s.isAmharic),
-                    ),
-                  ),
-                  LabeledIconButton(
-                    icon: Icons.copy,
-                    label: s.copy,
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: _shareText()));
-                      if (context.mounted) showAppSnack(context, s.copied);
-                      onDone();
-                    },
-                  ),
-                  LabeledIconButton(
                     icon: Icons.share_outlined,
                     label: s.share,
                     onPressed: () async {
@@ -166,28 +184,18 @@ class SelectionBar extends ConsumerWidget {
                     },
                   ),
                   LabeledIconButton(
-                    icon: Icons.image_outlined,
-                    label: s.image,
-                    onPressed: () {
-                      context.push('/share-image?keys=${selected.join(',')}');
+                    icon: Icons.copy_outlined,
+                    label: s.copy,
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: _shareText()));
+                      if (context.mounted) showAppSnack(context, s.copied);
                       onDone();
                     },
                   ),
                   LabeledIconButton(
-                    icon: Icons.headphones_outlined,
-                    label: s.listen,
-                    onPressed: () async {
-                      if (!hasRecordedAudio(ref, version)) {
-                        await startReadAloud(context, ref, version, book, chapter, fromVerse: selected.first % 1000);
-                        onDone();
-                        return;
-                      }
-                      final controller = ref.read(audioControllerProvider.notifier);
-                      await controller.playChapter(version, book, chapter, fromVerse: selected.first % 1000);
-                      final err = ref.read(audioControllerProvider).error;
-                      if (err != null && context.mounted) showAppSnack(context, audioErrorText(s, err));
-                      onDone();
-                    },
+                    icon: Icons.more_horiz,
+                    label: s.moreActions,
+                    onPressed: () => _showMore(context, ref, s),
                   ),
                 ],
               ),

@@ -1101,6 +1101,32 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
   sections.
 - **New shared widgets:** `HeroCard`, `OrnamentRule`, `StatTile`, `ContentWidth`.
 
+### Phase 3 (started 2026-11-03)
+
+**Done:**
+
+- **Chapter header:** the book's name in rubric red, a large chapter number and an ornament rule.
+- **Gestures on phones:**
+  - Press and hold selects a verse, with a haptic tick.
+  - While a selection is open, a tap adds to it.
+  - While audio or read-aloud plays, a tap jumps to the verse.
+  - Otherwise a tap shows or hides the bars.
+
+  On the web and with a screen reader, a tap still selects.
+- **Immersive reading:** scrolling down slides the app bar and the tab bar away, and scrolling up brings them back.
+- **Verse actions:** one short row (Bookmark · Note · Share · Copy · More). More holds Study, Compare, Image and
+  Listen. A newly selected verse is scrolled clear of the bar.
+- **A one-time gesture tip** inside the chapter. Everyone sees it once, since selecting moved to a long press.
+- **Aa sheet:** a title, theme swatches that show each theme's page, and the verse-number, red-letter and Ge'ez-numeral
+  switches.
+- **Layout audit:** the reader now passes at 2× text in both languages, including with a verse selected.
+
+**Left for Phase 3:**
+
+- The audio player redesign (follow-along text, artwork, listening mode).
+- Larger footnote markers.
+- The plan context bar in the reader.
+
 **Left for later phases:**
 
 - The Search & Study explore page, where the study tools (now under Me) move (Phase 5).

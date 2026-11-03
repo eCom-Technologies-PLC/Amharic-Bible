@@ -26,6 +26,7 @@ class AppScaffold extends StatelessWidget {
     this.showAppBar = true,
     this.reading = false,
     this.pageTitle,
+    this.appBarHidden,
   });
 
   final String? title;
@@ -48,6 +49,10 @@ class AppScaffold extends StatelessWidget {
   /// [title]. Screens with a [titleWidget] pass it themselves.
   final String? pageTitle;
 
+  /// For screens that can hide their app bar (immersive reading): when true
+  /// the bar slides away, keeping the status-bar strip; null for a fixed bar.
+  final bool? appBarHidden;
+
   @override
   Widget build(BuildContext context) {
     final scaffold = _scaffold(context);
@@ -56,27 +61,61 @@ class AppScaffold extends StatelessWidget {
 
   Widget _scaffold(BuildContext context) {
     final paper = reading ? context.appColors.paper : null;
+    final appBar = AppBar(
+      backgroundColor: paper,
+      leading: leading,
+      title: titleWidget ?? (title != null ? Text(title!, maxLines: 1, overflow: TextOverflow.ellipsis) : null),
+      actions: [
+        ...?actions,
+        const SizedBox(width: AppSpacing.xs),
+      ],
+      bottom: bottom,
+    );
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: paper,
-      appBar: showAppBar
-          ? AppBar(
-              backgroundColor: paper,
-              leading: leading,
-              title: titleWidget ?? (title != null ? Text(title!, maxLines: 1, overflow: TextOverflow.ellipsis) : null),
-              actions: [
-                ...?actions,
-                const SizedBox(width: AppSpacing.xs),
-              ],
-              bottom: bottom,
-            )
-          : null,
+      appBar: !showAppBar
+          ? null
+          : appBarHidden == null
+          ? appBar
+          : _CollapsibleAppBar(hidden: appBarHidden!, child: appBar),
       body: SafeArea(
         top: !showAppBar,
         bottom: bottomBar == null,
         child: padded ? Padding(padding: const EdgeInsets.all(AppSpacing.screen), child: body) : body,
       ),
       bottomNavigationBar: bottomBar,
+    );
+  }
+}
+
+/// An app bar that slides up out of view when [hidden], leaving the status-bar
+/// strip; the body below follows it smoothly instead of jumping.
+class _CollapsibleAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _CollapsibleAppBar({required this.hidden, required this.child});
+
+  final bool hidden;
+  final PreferredSizeWidget child;
+
+  @override
+  Size get preferredSize => child.preferredSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+    final full = top + child.preferredSize.height;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: hidden ? 0 : 1),
+      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : AppMotion.medium,
+      curve: AppMotion.curve,
+      builder: (context, shown, bar) => ClipRect(
+        child: Align(
+          alignment: Alignment.topCenter,
+          heightFactor: full == 0 ? 1 : (top + (full - top) * shown) / full,
+          child: bar,
+        ),
+      ),
+      child: child,
     );
   }
 }

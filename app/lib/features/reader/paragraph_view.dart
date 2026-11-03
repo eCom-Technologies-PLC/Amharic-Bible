@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -70,6 +72,7 @@ class ParagraphView extends StatefulWidget {
     required this.decor,
     required this.onTapVerse,
     required this.onTapFootnote,
+    this.onLongPressVerse,
   });
 
   final ParaBlock block;
@@ -78,18 +81,51 @@ class ParagraphView extends StatefulWidget {
   final ValueChanged<int> onTapVerse;
   final ValueChanged<String> onTapFootnote;
 
+  /// Pressing and holding a verse (selects it on phones).
+  final ValueChanged<int>? onLongPressVerse;
+
   @override
   State<ParagraphView> createState() => _ParagraphViewState();
 }
 
 class _ParagraphViewState extends State<ParagraphView> {
   final _recognizers = <Object, TapGestureRecognizer>{};
+  Timer? _hold;
+  bool _held = false;
 
-  TapGestureRecognizer _tap(Object key, VoidCallback onTap) =>
-      (_recognizers[key] ??= TapGestureRecognizer())..onTap = onTap;
+  /// One recognizer per verse (or footnote). A text span takes a single
+  /// recognizer, so a press held for [kLongPressTimeout] is timed here: it
+  /// fires [onLongPress] and the tap that ends it is ignored.
+  TapGestureRecognizer _recognizer(Object key, VoidCallback onTap, [VoidCallback? onLongPress]) {
+    final r = _recognizers[key] ??= TapGestureRecognizer();
+    r
+      ..onTapDown = onLongPress == null
+          ? null
+          : (_) {
+              _hold?.cancel();
+              _held = false;
+              _hold = Timer(kLongPressTimeout, () {
+                _held = true;
+                onLongPress();
+              });
+            }
+      ..onTapCancel = () {
+        _hold?.cancel();
+      }
+      ..onTap = () {
+        _hold?.cancel();
+        if (_held) {
+          _held = false;
+          return;
+        }
+        onTap();
+      };
+    return r;
+  }
 
   @override
   void dispose() {
+    _hold?.cancel();
     for (final r in _recognizers.values) {
       r.dispose();
     }
@@ -122,7 +158,8 @@ class _ParagraphViewState extends State<ParagraphView> {
         decorationColor: scheme.primary,
         decorationThickness: AppDimens.selectionUnderline,
       );
-      final tap = _tap(k, () => widget.onTapVerse(k));
+      final onHold = widget.onLongPressVerse;
+      final tap = _recognizer(k, () => widget.onTapVerse(k), onHold == null ? null : () => onHold(k));
       switch (seg.kind) {
         case 'num':
           if (!first) spans.add(TextSpan(text: ' ', style: base));
@@ -145,7 +182,7 @@ class _ParagraphViewState extends State<ParagraphView> {
             TextSpan(
               text: '*',
               style: reading.footnoteMarker,
-              recognizer: _tap('n$k-$idx', () => widget.onTapFootnote(seg.text)),
+              recognizer: _recognizer('n$k-$idx', () => widget.onTapFootnote(seg.text)),
             ),
           );
         case 'wj':

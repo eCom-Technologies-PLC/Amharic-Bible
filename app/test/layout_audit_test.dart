@@ -158,6 +158,40 @@ void main() {
     }
   });
 
+  // docs/DESIGN.md §4.5 promises text up to 200%: the reader must hold up.
+  group('the reader at 2x text', () {
+    const huge = Device('360dp @2x', Size(360, 760), 2.0);
+    for (final lang in ['am', 'en']) {
+      for (final route in ['/read?ref=JHN.3', '/read?ref=PSA.23']) {
+        testWidgets('$lang $route', (tester) async {
+          final errors = await render(
+            tester,
+            route: route,
+            device: huge,
+            settings: Settings(languageCode: lang),
+          );
+          expect(errors, isEmpty);
+        });
+      }
+      testWidgets('$lang with a verse selected', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=GEN.1',
+          device: huge,
+          settings: Settings(languageCode: lang),
+          interact: (t) async {
+            for (var i = 0; i < 8 && find.byType(ParagraphView).evaluate().isEmpty; i++) {
+              await t.drag(find.byType(Scrollable).first, const Offset(0, -160));
+              await t.pumpAndSettle();
+            }
+            await t.longPressAt(t.getTopLeft(find.byType(ParagraphView).first) + const Offset(40, 20));
+          },
+        );
+        expect(errors, isEmpty);
+      });
+    }
+  });
+
   group('interactive states on a small phone with large text', () {
     for (final lang in ['am', 'en']) {
       testWidgets('$lang reader with a verse selected', (tester) async {
@@ -168,7 +202,29 @@ void main() {
           settings: Settings(languageCode: lang),
           interact: (t) async {
             final para = find.byType(ParagraphView).first;
-            await t.tapAt(t.getTopLeft(para) + const Offset(60, 20));
+            await t.longPressAt(t.getTopLeft(para) + const Offset(60, 20));
+          },
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang reader gesture tip and the More actions', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/read?ref=GEN.1',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, readerTipSeen: false),
+          interact: (t) async {
+            // On this small screen the header and the one-time tip fill the
+            // first view; scroll to the text before selecting.
+            for (var i = 0; i < 8 && find.byType(ParagraphView).evaluate().isEmpty; i++) {
+              await t.drag(find.byType(Scrollable).first, const Offset(0, -160));
+              await t.pumpAndSettle();
+            }
+            final para = find.byType(ParagraphView).first;
+            await t.longPressAt(t.getTopLeft(para) + const Offset(60, 20));
+            await t.pumpAndSettle();
+            await t.tap(find.byIcon(Icons.more_horiz));
           },
         );
         expect(errors, isEmpty);
