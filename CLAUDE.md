@@ -48,7 +48,7 @@ All future UI work in this repository must follow this CLAUDE.md section.
 
 | Path | Contents |
 |---|---|
-| `app/lib/ui/tokens/tokens.dart` | `AppSpacing`, `AppRadius`, `AppElevation`, `AppOpacity`, `AppIconSize`, `AppDimens`, `AppMotion`, `AppFonts`, `context.isCompact` |
+| `app/lib/ui/tokens/tokens.dart` | `AppSpacing`, `AppRadius`, `AppElevation`, `AppOpacity`, `AppIconSize`, `AppDimens`, `AppMotion`, `AppFonts`, `context.isCompact`, `context.isWideWindow` (sheets open as popovers) |
 | `app/lib/ui/tokens/share_card_tokens.dart` | Share-image card palette and sizes (documented exception, below) |
 | `app/lib/ui/theme/app_theme.dart` | `buildAppTheme(...)`: TextTheme + every component theme, for the light / sepia / dark / black reading themes |
 | `app/lib/ui/theme/app_colors.dart` | ThemeExtensions `AppColors`, one set per reading theme (success/warning/info + containers, the reader's `paper`, the `playing` and `selection` verse tints, highlight colors, red letters) and `ReadingStyles` (scripture styles that follow the user's text-size/font/line-spacing settings); `context.colors`, `context.text`, `context.appColors`, `context.reading`, `context.scriptureSnippet`, `context.scriptureFeature` |
@@ -89,7 +89,8 @@ All future UI work in this repository must follow this CLAUDE.md section.
 - States: `AsyncView` (loading/error/data for any `AsyncValue`), `EmptyState`, `LoadingState`, `ErrorState` (friendly text + retry; never show exception text to readers), `InlineSpinner`.
 - Overlays: `showAppDialog`, `showConfirmDialog`, `showAppBottomSheet`, `showOptionPicker` / `PickerOption`,
   `showAppSnack` (optional `actionLabel` / `onAction`, e.g. Undo), `LastPress` (wraps the app: remembers the press
-  that opens a sheet, see below).
+  that opens a sheet, see below), `showAppPopover` (`anchor`, `width`: content made only for wide windows, such as
+  the desktop book picker; on phones the caller shows a screen or a sheet instead).
   (These functions are this project's `AppDialog` / `AppBottomSheet`.)
 
 **Rules specific to this app**

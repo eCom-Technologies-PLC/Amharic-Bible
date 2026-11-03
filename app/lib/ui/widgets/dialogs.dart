@@ -70,7 +70,7 @@ Future<T?> showAppBottomSheet<T>({
   bool centered = false,
 }) {
   final physics = scrollable ? null : const NeverScrollableScrollPhysics();
-  if (!_wideWindow(context)) {
+  if (!context.isWideWindow) {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
@@ -136,7 +136,7 @@ Future<T?> showOptionPicker<T>({
   required T? selected,
   BuildContext? anchor,
 }) {
-  if (!_wideWindow(context)) {
+  if (!context.isWideWindow) {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
@@ -152,6 +152,23 @@ Future<T?> showOptionPicker<T>({
     anchor: _anchorOf(context, anchor),
     builder: (context) => _OptionList<T>(title: title, options: options, selected: selected, inSheet: false),
   );
+}
+
+/// A popover under (or above) [anchor], [width] wide at most, for content made
+/// for wide windows (`context.isWideWindow`), such as the desktop book picker;
+/// on phones the caller shows a screen or [showAppBottomSheet] instead. Unlike
+/// a sheet, [builder] lays out the whole popover, padding and scrolling
+/// included, within the height there is room for. [title] names it for screen
+/// readers. It closes with Esc or a click outside, or `Navigator.of(popover)`.
+Future<T?> showAppPopover<T>({
+  required BuildContext context,
+  required BuildContext anchor,
+  required String title,
+  double width = AppDimens.popoverWidth,
+  required WidgetBuilder builder,
+}) {
+  final rect = _anchorOf(context, anchor);
+  return _showBeside<T>(context: context, title: title, anchor: rect, width: width, builder: builder);
 }
 
 /// Remembers where the pointer last went down, so that a sheet the press
@@ -209,13 +226,6 @@ class _LastPressState extends State<LastPress> {
   );
 }
 
-/// Desktop browsers and tablets on their side: wide, and too tall to be a
-/// phone in landscape.
-bool _wideWindow(BuildContext context) {
-  final size = MediaQuery.sizeOf(context);
-  return size.width >= AppDimens.popoverMinWindowWidth && size.height >= AppDimens.popoverMinWindowHeight;
-}
-
 /// What a popover points to, in global coordinates: [anchor]'s box, or the
 /// spot just pressed; null to center it.
 Rect? _anchorOf(BuildContext context, BuildContext? anchor) {
@@ -233,6 +243,7 @@ Future<T?> _showBeside<T>({
   required String? title,
   required Rect? anchor,
   required WidgetBuilder builder,
+  double width = AppDimens.popoverWidth,
 }) {
   if (anchor == null) {
     return showDialog<T>(
@@ -240,7 +251,7 @@ Future<T?> _showBeside<T>({
       builder: (context) => Dialog(
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppDimens.centeredSheetMaxWidth),
+          constraints: BoxConstraints(maxWidth: math.max(width, AppDimens.centeredSheetMaxWidth)),
           child: _Named(title: title, child: builder(context)),
         ),
       ),
@@ -251,6 +262,7 @@ Future<T?> _showBeside<T>({
     _PopoverRoute<T>(
       anchor: anchor,
       title: title,
+      width: width,
       builder: builder,
       themes: InheritedTheme.capture(from: context, to: navigator.context),
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -332,6 +344,7 @@ class _PopoverRoute<T> extends PopupRoute<T> {
   _PopoverRoute({
     required this.anchor,
     required this.title,
+    required this.width,
     required this.builder,
     required this.themes,
     required this.barrierLabel,
@@ -340,6 +353,7 @@ class _PopoverRoute<T> extends PopupRoute<T> {
   /// The control (or spot) it points to, in global coordinates.
   final Rect anchor;
   final String? title;
+  final double width;
   final WidgetBuilder builder;
   final CapturedThemes themes;
 
@@ -362,6 +376,7 @@ class _PopoverRoute<T> extends PopupRoute<T> {
           builder: (context) => CustomSingleChildLayout(
             delegate: _PopoverLayout(
               anchor: anchor,
+              width: width,
               margins: MediaQuery.paddingOf(context) + const EdgeInsets.all(AppSpacing.lg),
               textDirection: Directionality.of(context),
             ),
@@ -396,9 +411,10 @@ class _PopoverRoute<T> extends PopupRoute<T> {
 /// Places a popover under its anchor, or above it when there is more room
 /// there, starting at the anchor's leading edge and kept inside the window.
 class _PopoverLayout extends SingleChildLayoutDelegate {
-  _PopoverLayout({required this.anchor, required this.margins, required this.textDirection});
+  _PopoverLayout({required this.anchor, required this.width, required this.margins, required this.textDirection});
 
   final Rect anchor;
+  final double width;
   final EdgeInsets margins;
   final TextDirection textDirection;
 
@@ -409,9 +425,9 @@ class _PopoverLayout extends SingleChildLayoutDelegate {
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
-    final width = math.min(AppDimens.popoverWidth, constraints.maxWidth - margins.horizontal);
+    final fit = math.min(width, constraints.maxWidth - margins.horizontal);
     final height = math.max(_below(constraints.biggest), _above);
-    return BoxConstraints.tightFor(width: math.max(0, width)).copyWith(maxHeight: math.max(0, height));
+    return BoxConstraints.tightFor(width: math.max(0, fit)).copyWith(maxHeight: math.max(0, height));
   }
 
   @override
@@ -428,5 +444,5 @@ class _PopoverLayout extends SingleChildLayoutDelegate {
 
   @override
   bool shouldRelayout(_PopoverLayout old) =>
-      anchor != old.anchor || margins != old.margins || textDirection != old.textDirection;
+      anchor != old.anchor || width != old.width || margins != old.margins || textDirection != old.textDirection;
 }

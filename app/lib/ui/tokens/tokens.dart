@@ -121,6 +121,13 @@ abstract final class AppDimens {
   /// Widest a sheet grows when it opens centered on a wide window.
   static const double centeredSheetMaxWidth = 560;
 
+  /// The book picker on wide windows (a popover under the reader's title):
+  /// its largest size, and the chapter panel beside the books (four chapter
+  /// cells across).
+  static const double bookPickerWidth = 960;
+  static const double bookPickerHeight = 560;
+  static const double bookPickerChapters = 280;
+
   /// Widest the audio player's cover grows.
   static const double playerCoverMaxWidth = 280;
 
@@ -169,6 +176,13 @@ extension CompactLayout on BuildContext {
   /// True on narrow screens or when large system text leaves little room.
   bool get isCompact =>
       MediaQuery.sizeOf(this).width / MediaQuery.textScalerOf(this).scale(1) < AppDimens.compactEffectiveWidth;
+
+  /// Desktop browsers and tablets on their side (wide, and too tall to be a
+  /// phone in landscape): sheets open as popovers there.
+  bool get isWideWindow {
+    final size = MediaQuery.sizeOf(this);
+    return size.width >= AppDimens.popoverMinWindowWidth && size.height >= AppDimens.popoverMinWindowHeight;
+  }
 }
 
 abstract final class AppMotion {

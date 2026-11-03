@@ -21,6 +21,7 @@ import '../study/verse_study_screen.dart' show VerseStudyPanel;
 import '../audio/audio_controller.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import 'book_picker_screen.dart' show showBookPicker;
 import 'chapter_layout.dart';
 import 'paragraph_view.dart';
 import 'selection_bar.dart';
@@ -352,9 +353,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       contentWidth: AppDimens.readingMaxWidth * (sideBySide ? 2 : 1),
       endPanelWidth: _studyPanelShown(context) ? AppDimens.studyPanelWidth + _panelDivider : 0,
       pageTitle: book != null ? '${book.shortName} ${r.chapter}' : null,
-      titleWidget: _ChapterTitle(
-        label: book != null ? '${book.shortName} ${formatNumber(r.chapter, ref.watch(settingsProvider))}' : r.bookCode,
-        onTap: () => context.push('/books'),
+      titleWidget: Builder(
+        builder: (title) => _ChapterTitle(
+          label: book != null
+              ? '${book.shortName} ${formatNumber(r.chapter, ref.watch(settingsProvider))}'
+              : r.bookCode,
+          onTap: () => showBookPicker(context, anchor: title, current: r.bookCode),
+        ),
       ),
       actions: [
         _VersionMenu(current: version),

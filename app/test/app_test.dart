@@ -6,6 +6,7 @@ import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/domain/models.dart';
 import 'package:amharic_bible/domain/plans.dart';
+import 'package:amharic_bible/features/reader/book_picker_screen.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/reader/reader_screen.dart';
 import 'package:amharic_bible/features/reader/selection_bar.dart';
@@ -761,6 +762,66 @@ void main() {
     expect(week.left, greaterThan(verse.right));
     expect(week.top, lessThan(verse.bottom));
     expect(inAppBar(tester, find.text('Today')).left, verse.left);
+  });
+
+  Finder readerTitle(String text) => find.descendant(of: find.byType(AppBar), matching: find.text(text));
+
+  testWidgets('on a desktop window the book picker opens under the title, with the chapters beside the books', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=JHN.3',
+    );
+    await desktopWindow(tester);
+    await tester.tap(readerTitle('ዮሐንስ 3'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BookPickerScreen), findsNothing);
+    expect(find.text('Old Testament'), findsOneWidget);
+    expect(find.text('New Testament'), findsOneWidget);
+    // The chapters of the book being read (the reader shows its name too).
+    final picker = find.ancestor(of: find.text('Old Testament'), matching: find.byType(Material)).first;
+    expect(find.descendant(of: picker, matching: find.text('የዮሐንስ ወንጌል')), findsOneWidget);
+
+    // Another book shows its chapters; a chapter opens it.
+    await tester.tap(find.text('መዝሙር'));
+    await tester.pumpAndSettle();
+    expect(find.text('መዝሙረ ዳዊት'), findsOneWidget);
+    await tester.tap(find.text('23').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Old Testament'), findsNothing);
+    expect(readerTitle('መዝሙር 23'), findsOneWidget);
+  });
+
+  testWidgets('the desktop book picker filters as you type, choosing the one book left', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=JHN.3',
+    );
+    await desktopWindow(tester);
+    await tester.tap(readerTitle('ዮሐንስ 3'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'gen');
+    await tester.pumpAndSettle();
+    expect(find.text('መዝሙር'), findsNothing);
+    expect(find.text('New Testament'), findsNothing);
+    expect(find.text('ኦሪት ዘፍጥረት'), findsOneWidget);
+    await tester.tap(find.text('1').last);
+    await tester.pumpAndSettle();
+    expect(readerTitle('ዘፍጥረት 1'), findsOneWidget);
+  });
+
+  testWidgets('on a phone the book picker is a screen of its own', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=JHN.3',
+    );
+    await tester.tap(readerTitle('ዮሐንስ 3'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BookPickerScreen), findsOneWidget);
   });
 
   testWidgets('on a desktop window a page lines its back button up with its content', (tester) async {

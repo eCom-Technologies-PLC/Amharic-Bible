@@ -1262,10 +1262,15 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 - **Result:** the app's code is 16% smaller. `main.dart.wasm` went from 4.58 to 3.83 MB (1.45 MB gzipped, was
   1.63), and `main.dart.js` from 4.74 to 4.01 MB (1.21 MB gzipped, was 1.34).
 
-**Left for Phase 4:**
+**Done (the book picker on desktop):**
 
-- The book picker as a popover (books in columns, chapters inline) attached to the reader's title on desktop; it is a
-  full-window screen today.
+- On wide windows the reader's title opens the book picker as a popover under it, up to 960 × 560: a filter, the Old
+  and New Testament books in two columns, and the chosen book's chapters beside them (first the book being read). A
+  chapter opens the reader there. Typing narrows the books, and when one is left it is chosen, so "gen" and then a
+  chapter number is all it takes. Esc or a click outside closes it. Phones keep the full-screen picker.
+- `showAppPopover` (shared) shows content made only for wide windows, beside its control, at a given width.
+
+**Left for Phase 4:** nothing; the remaining web items are listed under later phases or wait on outside work.
 
 **Left for later phases:**
 

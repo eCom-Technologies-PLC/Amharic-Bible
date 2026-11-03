@@ -193,6 +193,7 @@ void main() {
         ),
         'a settings option list': ('/me/settings', (t) => t.tap(find.byIcon(Icons.view_column_outlined))),
         'search filters': ('/search?q=God', (t) => t.tap(find.byIcon(Icons.tune))),
+        'the book picker under the title': ('/read?ref=JHN.3', (t) => t.tap(find.byIcon(Icons.arrow_drop_down))),
       };
       for (final MapEntry(key: name, value: (route, open)) in popovers.entries) {
         testWidgets('$lang $name', (tester) async {

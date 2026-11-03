@@ -140,6 +140,7 @@ class S {
   String get searchHint => _('searchHint');
   String get noResults => _('noResults');
   String get goTo => _('goTo');
+  String get chooseBookChapter => _('chooseBookChapter');
   String get settings => _('settings');
   String get theme => _('theme');
   String get themeSystem => _('themeSystem');
@@ -637,6 +638,7 @@ const _am = {
   'searchHint': 'ቃል ወይም ጥቅስ ይፈልጉ (ለምሳሌ ዮሐ 3፥16)',
   'noResults': 'ምንም አልተገኘም',
   'goTo': 'ወደዚህ ሂድ',
+  'chooseBookChapter': 'መጽሐፍና ምዕራፍ ይምረጡ',
   'settings': 'ማስተካከያ',
   'theme': 'ገጽታ',
   'themeSystem': 'እንደ ስልኩ',
@@ -1162,6 +1164,7 @@ const _en = {
   'searchHint': 'Search words or a reference (e.g. John 3:16)',
   'noResults': 'No results',
   'goTo': 'Go to',
+  'chooseBookChapter': 'Choose a book and chapter',
   'settings': 'Settings',
   'theme': 'Theme',
   'themeSystem': 'System',
