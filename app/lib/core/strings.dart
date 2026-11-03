@@ -319,6 +319,9 @@ class S {
   String get reminderBody => _('reminderBody');
   String get notificationsBlocked => _('notificationsBlocked');
   String get reminderPlanHint => _('reminderPlanHint');
+  String get reminderOffer => _('reminderOffer');
+  String get notNow => _('notNow');
+  String reminderSetFor(String time) => isAmharic ? 'ዕለታዊ ማስታወሻ ለ$time ተዘጋጅቷል' : 'Daily reminder set for $time';
   String get readingStreak => _('readingStreak');
   String get readingStreakHint => _('readingStreakHint');
   String get streakStart => _('streakStart');
@@ -777,6 +780,8 @@ const _am = {
   'reminderBody': 'የዛሬው የመጽሐፍ ቅዱስ ንባብ ጊዜ ደርሷል።',
   'notificationsBlocked': 'ማሳወቂያዎች ተከልክለዋል። በስልክዎ ቅንብሮች ውስጥ ይፍቀዱ።',
   'reminderPlanHint': 'የጀመሩት የንባብ ዕቅድ ካለ፣ ማስታወሻው የዕቅዱን ቀጣይ ንባብ ይናገራል፤ ሲነኩትም ንባቡን ይከፍታል።',
+  'reminderOffer': 'በየቀኑ በዚህ ሰዓት ማንበብ ይፈልጋሉ? ዕለታዊ ማስታወሻ ቀጣዩን ንባብዎን ይነግርዎታል፤ ሲነኩትም ይከፍተዋል።',
+  'notNow': 'አሁን አይደለም',
   'readingStreak': 'የንባብ ተከታታይ ቀናት',
   'readingStreakHint': 'በተከታታይ ያነበቡባቸውን ቀናት በመነሻ ገጽ አሳይ',
   'streakStart': 'ዛሬ አንብበው ይጀምሩ።',
@@ -1304,6 +1309,8 @@ const _en = {
   'reminderBody': 'Time for today\'s Bible reading.',
   'notificationsBlocked': 'Notifications are blocked. Allow them in your phone\'s settings.',
   'reminderPlanHint': 'With a reading plan under way, it names the plan\'s next reading, and a tap opens it.',
+  'reminderOffer': 'Read at this time every day? A daily reminder names your next reading, and a tap opens it.',
+  'notNow': 'Not now',
   'readingStreak': 'Reading streak',
   'readingStreakHint': 'Show how many days in a row you have read, on Home',
   'streakStart': 'Read today to start a streak.',

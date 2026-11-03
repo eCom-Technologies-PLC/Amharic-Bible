@@ -682,8 +682,8 @@ Priority: **P0** first release of the redesign · **P1** next · **P2** later.
   - A clear "Today" button.
   - A completion celebration and a shareable card.
 - **Auto-complete a day** once its readings are opened and read to the end (approved).
-- **Plan reminders** (built in Phase 6): the daily reminder names the plan's next reading and opens it. Still to
-  come: offering a reminder after the first completed day.
+- **Plan reminders** (built in Phase 6): the daily reminder names the plan's next reading and opens it, and it is
+  offered once a plan day has been read.
 
 ### 7.8 Me and Library · P1
 
@@ -1416,6 +1416,14 @@ explore page lists them to browse instead. Amharic names belong in the content p
   - The sheet explains what a plan adds. iOS now sets the notification delegate the plugin needs to receive taps.
   - Tested with a fake scheduler: what it says in both languages, moving on as days are read, and opening the reading
     from a tap and from a start.
+- **The reminder offered after a success (§5):** once a plan day has been read and no reminder is set, Today (under
+  today's reading) and the plan's page (under the day just marked) offer the daily reminder.
+  - "Remind me" opens the reminder's sheet at the time it is now, rounded down to five minutes (the time the reader
+    reads), and confirms the time it set; "Not now" puts the offer away for good.
+  - The offer is made once: answering it, or choosing the reminder in Settings (on or off), ends it. Installs from
+    before it see it once too. Not on the web, which can't schedule notifications.
+  - The sheet is shared with Settings (`showReminderSheet`), and the layout audit renders the offer at 320 dp with
+    1.3× text in both languages.
 
 **Waiting:**
 

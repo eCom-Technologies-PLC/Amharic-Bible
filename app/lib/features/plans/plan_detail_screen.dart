@@ -8,6 +8,7 @@ import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 import '../share/share_image_screen.dart' show PlanCompleteCard, sharePng;
+import 'plan_reminders.dart';
 import 'plan_widgets.dart';
 
 class PlanDetailScreen extends ConsumerWidget {
@@ -242,6 +243,8 @@ class _DayListState extends ConsumerState<_DayList> {
             ],
           ),
         ),
+        // Right after a day is marked read: the daily reminder, once.
+        const ReminderOffer(),
       ],
     );
   }

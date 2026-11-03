@@ -14,6 +14,7 @@ import '../../state/study.dart';
 import '../../ui/ui.dart';
 import '../audio/audio_controller.dart';
 import '../common.dart';
+import '../plans/plan_reminders.dart';
 import '../plans/plan_widgets.dart';
 import '../reader/reader_screen.dart' show audioErrorText, hasRecordedAudio, startReadAloud;
 
@@ -135,6 +136,8 @@ class HomeScreen extends ConsumerWidget {
     };
     final plansAndWeek = <Widget>[
       const TodaysReadingCards(),
+      // After a plan day is read: the daily reminder, once.
+      const ReminderOffer(),
       if (!hasPlan) const _StartPlanCard(),
       if (settings.streaks) const _StreakCard(),
       const _WeekRhythm(),

@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart' show CupertinoDatePicker, CupertinoDatePickerMode;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +9,7 @@ import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
 import '../reader/text_settings_sheet.dart';
+import 'reminder_sheet.dart';
 
 /// Settings in sections: language and region, reading, reminders and habits,
 /// audio and downloads, privacy. The reading appearance (theme, text size,
@@ -113,7 +113,7 @@ class SettingsScreen extends ConsumerWidget {
               title: s.dailyReminder,
               subtitle: settings.reminderMinutes == null ? s.off : formatTimeOfDay(settings.reminderMinutes!),
               chevron: true,
-              onTap: () => _chooseReminder(context, ref),
+              onTap: () => showReminderSheet(context, ref),
             ),
           SwitchListTile(
             secondary: const Icon(Icons.local_fire_department_outlined),
@@ -148,63 +148,5 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-/// The reminder time offered when none is set (07:00).
-const _defaultReminder = 7 * 60;
-
-/// The daily reminder: a time to the minute on a wheel, then "Remind me"; or
-/// "Turn off" when one is set. The app keeps the notification scheduled from
-/// the setting (`reminderScheduleProvider`), naming a plan's next reading.
-Future<void> _chooseReminder(BuildContext context, WidgetRef ref) async {
-  final s = S.of(context);
-  final settings = ref.read(settingsProvider);
-  final notifier = ref.read(settingsProvider.notifier);
-  var minutes = settings.reminderMinutes ?? _defaultReminder;
-  // Minutes after midnight, -1 to turn the reminder off, or null when dismissed.
-  final choice = await showAppBottomSheet<int>(
-    context: context,
-    title: s.dailyReminder,
-    builder: (sheet) {
-      final scale = MediaQuery.textScalerOf(sheet);
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(s.reminderPlanHint, style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant)),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            height: scale.scale(AppDimens.timeWheel),
-            child: CupertinoDatePicker(
-              mode: CupertinoDatePickerMode.time,
-              use24hFormat: true,
-              initialDateTime: DateTime(2000, 1, 1, minutes ~/ 60, minutes % 60),
-              itemExtent: scale.scale(AppDimens.timeWheelItem),
-              onDateTimeChanged: (t) => minutes = t.hour * 60 + t.minute,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppButton(
-            label: s.remindMe,
-            icon: Icons.notifications_active_outlined,
-            expand: true,
-            onPressed: () => Navigator.of(sheet).pop(minutes),
-          ),
-          if (settings.reminderMinutes != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            AppButton.ghost(label: s.turnOff, expand: true, onPressed: () => Navigator.of(sheet).pop(-1)),
-          ],
-        ],
-      );
-    },
-  );
-  if (choice == null || !context.mounted) return;
-  if (choice < 0) {
-    await notifier.update((x) => x.copyWith(reminderMinutes: () => null));
-  } else if (await ref.read(reminderSchedulerProvider).requestPermission()) {
-    await notifier.update((x) => x.copyWith(reminderMinutes: () => choice));
-  } else if (context.mounted) {
-    showAppSnack(context, s.notificationsBlocked);
   }
 }

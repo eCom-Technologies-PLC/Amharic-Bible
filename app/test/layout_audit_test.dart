@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:amharic_bible/app.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
+import 'package:amharic_bible/features/plans/plan_reminders.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/study/study_widgets.dart';
 import 'package:amharic_bible/state/providers.dart';
@@ -277,6 +278,27 @@ void main() {
             await t.longPressAt(t.getTopLeft(para) + const Offset(60, 20));
             await t.pumpAndSettle();
             await t.tap(find.byIcon(Icons.more_horiz));
+          },
+        );
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('$lang Today offering the reminder after a plan day', (tester) async {
+        final errors = await render(
+          tester,
+          route: '/home',
+          device: smallLargeText,
+          settings: Settings(languageCode: lang, reminderOffered: false),
+          interact: (t) async {
+            // Read the day from Today's card; the offer comes up under it.
+            final check = find.byIcon(Icons.check_circle_outline);
+            await t.scrollUntilVisible(check, 160, scrollable: find.byType(Scrollable).first);
+            await _settle(t);
+            await t.tap(check);
+            await _settle(t);
+            final card = find.descendant(of: find.byType(ReminderOffer), matching: find.byType(AppCard));
+            expect(card, findsOneWidget);
+            await t.ensureVisible(card);
           },
         );
         expect(errors, isEmpty);

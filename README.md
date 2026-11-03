@@ -132,7 +132,8 @@ Features:
   display names, never emails.
 - **Habits:** an optional daily reading reminder at any time of day, and an opt-in reading streak (Settings →
   Reminders and habits). With a reading plan under way, the reminder names the plan's next reading ("Day 12: John
-  3-4") and a tap opens it in the reader with the plan's bar; otherwise it opens Today.
+  3-4") and a tap opens it in the reader with the plan's bar; otherwise it opens Today. Once a plan day has been
+  read, Today and the plan's page offer the reminder, once, at the time of day the reader is reading.
 - **Read aloud:** versions without recorded audio are read with the phone's text-to-speech voice.
 - **Downloads:** Wi-Fi only by default; interrupted audio and study-pack downloads resume.
 - **Recently read:** the last chapters you opened, on Home.

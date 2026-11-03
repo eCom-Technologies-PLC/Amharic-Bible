@@ -88,7 +88,11 @@ void main() {
 
   testWidgets('choosing a reminder time schedules it; Off cancels it', (tester) async {
     final reminders = FakeReminders();
-    final container = await pumpSettings(tester, reminders);
+    final container = await pumpSettings(
+      tester,
+      reminders,
+      settings: const Settings(languageCode: 'en', reminderOffered: false),
+    );
     await tester.scrollUntilVisible(find.text('Daily reading reminder'), 200);
     await tester.pumpAndSettle(); // lay out the scrolled list before tapping
     await tester.tap(find.text('Daily reading reminder'));
@@ -104,6 +108,8 @@ void main() {
     expect(reminders.scheduled?.body, "Time for today's Bible reading.");
     expect(reminders.scheduled?.route, '/home');
     expect(container.read(settingsProvider).reminderMinutes, 420);
+    // Chosen here, it isn't offered again after a plan day.
+    expect(container.read(settingsProvider).reminderOffered, isTrue);
     // Any minute, not just whole hours: turn the minutes on, slowly.
     await tester.tap(find.text('Daily reading reminder'));
     await tester.pumpAndSettle();

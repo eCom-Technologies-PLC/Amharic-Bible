@@ -94,6 +94,7 @@ class Settings {
     this.recentSearches = const [],
     this.onboarded = true,
     this.readerTipSeen = true,
+    this.reminderOffered = true,
   });
 
   final ReaderTheme readerTheme;
@@ -138,6 +139,10 @@ class Settings {
   /// moved from a tap to a long press.
   final bool readerTipSeen;
 
+  /// The daily reminder was offered after a plan day was read, or chosen in
+  /// Settings (on or off): the offer doesn't come back.
+  final bool reminderOffered;
+
   double get fontSize => AppFonts.readingSizes[fontSizeIndex.clamp(0, AppFonts.readingSizes.length - 1)];
   String get fontFamily => serif ? AppFonts.serif : AppFonts.sans;
   Locale get locale => Locale(languageCode);
@@ -164,6 +169,7 @@ class Settings {
     List<String>? recentSearches,
     bool? onboarded,
     bool? readerTipSeen,
+    bool? reminderOffered,
   }) => Settings(
     readerTheme: readerTheme ?? this.readerTheme,
     fontSizeIndex: fontSizeIndex ?? this.fontSizeIndex,
@@ -186,6 +192,7 @@ class Settings {
     recentSearches: recentSearches ?? this.recentSearches,
     onboarded: onboarded ?? this.onboarded,
     readerTipSeen: readerTipSeen ?? this.readerTipSeen,
+    reminderOffered: reminderOffered ?? this.reminderOffered,
   );
 
   Map<String, String?> toMap() => {
@@ -210,6 +217,7 @@ class Settings {
     'recent_searches': jsonEncode(recentSearches),
     'onboarded': '$onboarded',
     'reader_tip_seen': '$readerTipSeen',
+    'reminder_offered': '$reminderOffered',
   };
 
   factory Settings.fromMap(Map<String, String> m) {
@@ -242,6 +250,7 @@ class Settings {
       // Anything stored means an install from before the welcome steps existed.
       onboarded: b('onboarded', m.isNotEmpty),
       readerTipSeen: b('reader_tip_seen', false),
+      reminderOffered: b('reminder_offered', false),
     );
   }
 }
