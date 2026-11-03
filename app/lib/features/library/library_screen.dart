@@ -9,6 +9,7 @@ import '../../domain/notes_export.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import 'note_tile.dart';
 
 /// Highlights, bookmarks and notes, newest first.
 class LibraryScreen extends ConsumerWidget {
@@ -227,7 +228,7 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
     }
     final md = notesMarkdown(
       notes,
-      reference: (n) => formatKeys(books, _keys(n), amharic: s.isAmharic),
+      reference: (n) => formatKeys(books, NoteTile.keysOf(n), amharic: s.isAmharic),
       verseTexts: texts,
       versionName: version.name,
       attribution: version.attribution,
@@ -242,14 +243,9 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
     if (mounted) await shareText(context, md, subject: s.notesExportTitle);
   }
 
-  static List<int> _keys(Note n) => n.vkeyStart ~/ 1000 == n.vkeyEnd ~/ 1000
-      ? [for (var k = n.vkeyStart; k <= n.vkeyEnd; k++) k]
-      : [n.vkeyStart, n.vkeyEnd];
-
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final settings = ref.watch(settingsProvider);
     return AsyncView(
       value: ref.watch(notesListProvider),
       onRetry: () => ref.invalidate(notesListProvider),
@@ -282,27 +278,7 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
                 separatorBuilder: (_, _) => const Divider(indent: AppSpacing.screen),
                 itemBuilder: (_, i) {
                   final n = items[i];
-                  return AppListTile(
-                    leadingIcon: Icons.sticky_note_2_outlined,
-                    title: formatKeys(books, _keys(n), amharic: s.isAmharic),
-                    subtitleWidget: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(n.body, maxLines: 4, overflow: TextOverflow.ellipsis),
-                        if (n.tags.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Wrap(
-                            spacing: AppSpacing.xs,
-                            runSpacing: AppSpacing.xs,
-                            children: [for (final t in n.tags) StatusBadge(t, icon: Icons.label_outline)],
-                          ),
-                        ],
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(formatDate(n.updatedAt, settings, s), style: context.text.bodySmall),
-                      ],
-                    ),
-                    onTap: () => context.push('/note?start=${n.vkeyStart}&end=${n.vkeyEnd}&id=${n.id}'),
-                  );
+                  return NoteTile(note: n, books: books);
                 },
               ),
             ),

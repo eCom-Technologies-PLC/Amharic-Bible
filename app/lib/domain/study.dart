@@ -166,6 +166,25 @@ class CrossRef {
 
 enum EntityKind { person, place, event }
 
+/// Eras of biblical history, to group the timeline. The boundaries follow the
+/// traditional dating the event data uses (Creation about 4000 BC, the Exodus
+/// 1446 BC) and are approximate.
+enum BibleEra { beginnings, patriarchs, exodus, judges, kingdom, exile, returnHome, between, jesus, church }
+
+/// The era of an event that starts in [year] (negative for BC).
+BibleEra eraOf(int year) => switch (year) {
+  < -2166 => BibleEra.beginnings, // before Abram
+  < -1446 => BibleEra.patriarchs, // until the Exodus
+  < -1406 => BibleEra.exodus, // forty years in the wilderness
+  < -1050 => BibleEra.judges, // until Saul
+  < -586 => BibleEra.kingdom, // until Jerusalem falls
+  < -538 => BibleEra.exile,
+  < -400 => BibleEra.returnHome, // Ezra, Nehemiah, Malachi
+  < -5 => BibleEra.between,
+  < 30 => BibleEra.jesus,
+  _ => BibleEra.church,
+};
+
 class Entity {
   const Entity({
     required this.id,

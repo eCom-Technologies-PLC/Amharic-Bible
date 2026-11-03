@@ -318,22 +318,84 @@ void main() {
       initial: '/study?v=43003016',
     );
     expect(find.text('John 3:16'), findsWidgets);
-    expect(find.text('Original text'), findsOneWidget);
+    // The study comes in tabs, Original text first: the words, then the variants.
+    Finder tab(String label) => find.descendant(of: find.byType(TabBar), matching: find.textContaining(label));
+    Future<void> openTab(String label) async {
+      await tester.ensureVisible(tab(label)); // the tab bar scrolls sideways on phones
+      await tester.pumpAndSettle();
+      await tester.tap(tab(label));
+      await tester.pumpAndSettle();
+    }
+
+    expect(tab('Original text'), findsOneWidget);
     expect(find.byType(InterlinearWords), findsOneWidget);
-    // Scroll to each item (in page order) and lay it out before checking it,
-    // so the test doesn't depend on how tall the sections above happen to be.
+    final page = find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).first;
+    // Scroll to each item and lay it out before checking it, so the test
+    // doesn't depend on how tall the sections above happen to be.
     Future<void> scrollTo(Finder f) async {
-      await tester.scrollUntilVisible(f, 200);
+      await tester.scrollUntilVisible(f, 200, scrollable: page);
       await tester.pumpAndSettle();
       expect(f, findsOneWidget);
     }
 
     await scrollTo(find.text('Textual variants'));
     await scrollTo(find.text('Nestle-Aland'));
-    await scrollTo(find.text('Jesus and Nicodemus'));
-    await scrollTo(find.text('Commentary'));
+    for (final label in ['Cross-references', 'People & places', 'Commentary', 'My notes']) {
+      expect(tab(label), findsOneWidget);
+    }
+    await openTab('People & places');
+    expect(find.text('Jesus and Nicodemus'), findsOneWidget);
+    await openTab('Commentary');
     await scrollTo(find.textContaining('Augustine of Hippo'));
-    expect(find.text('Not Scripture'), findsOneWidget);
+    expect(find.text('Not Scripture'), findsWidgets);
+  });
+
+  testWidgets('verse study keeps the chosen tab for the next verse, and lists my notes on the verse', (tester) async {
+    await tester.runAsync(
+      () =>
+          UserRepository(userDb).saveNote(vkeyStart: 43003016, vkeyEnd: 43003017, body: 'Love gives.', tags: const []),
+    );
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/study?v=43003016',
+    );
+    Finder tab(String label) => find.descendant(of: find.byType(TabBar), matching: find.textContaining(label));
+    expect(tab('My notes · 1'), findsOneWidget);
+    await tester.ensureVisible(tab('My notes')); // the tab bar scrolls sideways on phones
+    await tester.pumpAndSettle();
+    await tester.tap(tab('My notes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Love gives.'), findsOneWidget);
+    expect(find.text('Write a note'), findsOneWidget);
+    // Another verse opens on the same tab.
+    final router = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first)).read(routerProvider);
+    router.go('/study?v=43003017');
+    await tester.pumpAndSettle();
+    expect(find.text('Love gives.'), findsOneWidget); // the note covers 3:16-17
+    await tester.tap(find.text('Write a note'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsWidgets); // the note editor
+  });
+
+  testWidgets('the timeline groups events into eras', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/timeline',
+    );
+    expect(find.text('Beginnings'), findsOneWidget); // Creation, the Flood
+    expect(find.text('The life of Jesus'), findsOneWidget); // Jesus and Nicodemus
+    expect(find.text('The patriarchs'), findsNothing); // no events of that era in the sample
+  });
+
+  testWidgets('a place offers a map', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/entity/place%3Agaleed_432',
+    );
+    expect(find.text('Show on a map'), findsOneWidget);
   });
 
   testWidgets('tapping a word shows its grammar and opens the word study', (tester) async {

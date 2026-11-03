@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/strings.dart';
 import '../../domain/models.dart';
@@ -32,6 +33,21 @@ class EntityScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Opens a map with a pin at the place (OpenStreetMap, in the browser or the
+/// phone's map app). An offline map of Bible lands is planned in the content
+/// pipeline; until then this needs a connection.
+Future<void> _openMap(BuildContext context, double lat, double lon) async {
+  final s = S.of(context);
+  final map = Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lon#map=9/$lat/$lon');
+  var opened = false;
+  try {
+    opened = await launchUrl(map, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    // No browser or map app (or no plugin, as in tests): say so below.
+  }
+  if (!opened && context.mounted) showAppSnack(context, s.mapOpenFailed);
 }
 
 class _Entity extends ConsumerWidget {
@@ -68,11 +84,18 @@ class _Entity extends ConsumerWidget {
                 Text(years, style: context.text.titleSmall),
                 Text(s.datesApproximate, style: context.text.bodySmall),
               ],
-              if (e.lat != null && e.lon != null) ...[
+              if ((e.lat, e.lon) case (final lat?, final lon?)) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  '${s.coordinates}: ${e.lat!.toStringAsFixed(4)}, ${e.lon!.toStringAsFixed(4)}',
+                  '${s.coordinates}: ${lat.toStringAsFixed(4)}, ${lon.toStringAsFixed(4)}',
                   style: context.text.bodyMedium,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                AppButton.outline(
+                  label: s.showOnMap,
+                  icon: Icons.map_outlined,
+                  size: AppButtonSize.sm,
+                  onPressed: () => _openMap(context, lat, lon),
                 ),
               ],
               if (e.summary.isNotEmpty) ...[

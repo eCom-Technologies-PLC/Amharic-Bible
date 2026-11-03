@@ -39,24 +39,63 @@ class TimelineScreen extends ConsumerWidget {
                     vertical: AppSpacing.sm,
                     child: Text(s.datesApproximate, style: context.text.bodySmall),
                   ),
-                  for (final e in events)
-                    AppListTile(
-                      leading: SizedBox(
-                        width: AppDimens.timelineYearWidth,
-                        child: Text(
-                          s.year(e.startYear!),
-                          style: context.text.labelMedium?.copyWith(color: context.colors.primary),
-                          maxLines: 2,
+                  for (final (era, inEra) in _byEra(events)) ...[
+                    _EraBand(label: s.era(era.name)),
+                    for (final e in inEra)
+                      AppListTile(
+                        leading: SizedBox(
+                          width: AppDimens.timelineYearWidth,
+                          child: Text(
+                            s.year(e.startYear!),
+                            style: context.text.labelMedium?.copyWith(color: context.colors.primary),
+                            maxLines: 2,
+                          ),
                         ),
+                        title: e.name,
+                        chevron: true,
+                        onTap: () => context.push('/entity/${Uri.encodeComponent(e.id)}'),
                       ),
-                      title: e.name,
-                      chevron: true,
-                      onTap: () => context.push('/entity/${Uri.encodeComponent(e.id)}'),
-                    ),
+                  ],
                   for (final r in resources.where((r) => r.kind == 'entities')) AttributionText(r.attribution),
                 ],
               ),
       ),
     );
   }
+}
+
+/// Events (in order) grouped into runs of the same era.
+List<(BibleEra, List<Entity>)> _byEra(List<Entity> events) {
+  final out = <(BibleEra, List<Entity>)>[];
+  for (final e in events) {
+    final era = eraOf(e.startYear!);
+    if (out.isEmpty || out.last.$1 != era) out.add((era, []));
+    out.last.$2.add(e);
+  }
+  return out;
+}
+
+/// An era's name as a tinted band across the timeline.
+class _EraBand extends StatelessWidget {
+  const _EraBand({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.lg, AppSpacing.screen, AppSpacing.xs),
+    child: Semantics(
+      header: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.colors.secondaryContainer,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Text(label, style: context.text.titleSmall?.copyWith(color: context.colors.onSecondaryContainer)),
+        ),
+      ),
+    ),
+  );
 }

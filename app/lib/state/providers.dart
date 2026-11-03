@@ -409,6 +409,11 @@ final weekRhythmProvider = FutureProvider<List<bool>>((ref) async {
 });
 
 /// Providers that read the user database, refreshed after it changes.
+/// The reader's notes that include a verse (verse study's "My notes").
+final verseNotesProvider = FutureProvider.family<List<Note>, int>(
+  (ref, vkey) => ref.watch(userRepositoryProvider).notesInRange(vkey, vkey),
+);
+
 final List<ProviderOrFamily> _userDataProviders = [
   planProgressProvider,
   activePlansProvider,
@@ -416,6 +421,7 @@ final List<ProviderOrFamily> _userDataProviders = [
   highlightsListProvider,
   bookmarksListProvider,
   notesListProvider,
+  verseNotesProvider,
 ];
 
 /// Refresh every screen showing user data (after a sync pulled changes).

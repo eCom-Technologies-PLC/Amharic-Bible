@@ -108,7 +108,8 @@ Features:
   quoted and the version cited.
 - **Grammar search:** `morph:V-AAI` (Greek aorist active indicative), `@HVqw` (Hebrew Qal wayyiqtol), optionally
   with a Strong's number (`G25 morph:V-AAI`).
-- **Timeline:** dated biblical events in order (Search & Study → Bible timeline).
+- **Timeline:** dated biblical events in order, grouped into eras (Search & Study → Bible timeline). Places
+  open on a map (online).
 - **Study groups (needs accounts):** create a group or join with an 8-character code; discuss, follow a shared
   reading plan with everyone's progress, and teachers give assignments (passage, task, due date) that members
   mark done. Members see each other's chosen display names, never emails.
@@ -119,13 +120,15 @@ Features:
 - **Deep links:** `amharicbible://open/read?ref=JHN.3.16` opens the reader at John 3:16 (Android and iOS).
 - **Original languages:** Hebrew and Greek texts (Hebrew right to left), an interlinear mode with each word's
   gloss and code under the verse, and a word sheet that explains the grammar in plain Amharic or English.
-- **Word and verse study:** Strong's entries with every occurrence (a concordance); per verse, the original
-  words, textual variants, cross-references, people/places/events and attributed commentary marked "Not Scripture".
+- **Word and verse study:** Strong's entries with every occurrence (a concordance); per verse, in tabs, the original
+  words and textual variants, cross-references, people/places/events, attributed commentary marked "Not Scripture",
+  and your notes on the verse.
   Search also finds words by Strong's number, lemma or meaning, and people, places and dictionary entries.
   Search & Study opens on the study tools: key Greek and Hebrew words, the most-mentioned people, places and
   events, the timeline, and Ask about a passage.
-- **AI study assistant (optional):** explain, summarize, study questions, sermon help or a free question, at a
-  simple or scholar level, in Amharic or English, with an optional tradition. See below.
+- **AI study assistant (optional):** a conversation about a passage: explain, summarize, study questions, sermon
+  help or your own questions, at a simple or scholar level, in Amharic or English, with an optional tradition; cited
+  sources open on a tap. See below.
 - **Audio:** follow-along verse highlighting, background playback, speed, sleep timer and book downloads.
 - **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
   60 days, with a strip of the plan's days and a "today's reading" card on Home (where a first plan starts in one

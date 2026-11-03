@@ -461,6 +461,19 @@ class S {
   String get markAsUnread => _('markAsUnread');
   String get seeAllPlans => _('seeAllPlans');
   String get dayComplete => _('dayComplete');
+  String get myNotes => _('myNotes');
+  String get addNote => _('addNote');
+  String get noNotesHere => _('noNotesHere');
+  String get aiWritten => _('aiWritten');
+  String get aiWriting => _('aiWriting');
+  String get aiStartWith => _('aiStartWith');
+  String get aiOptions => _('aiOptions');
+  String get aiLevel => _('aiLevel');
+  String get showOnMap => _('showOnMap');
+  String get mapOpenFailed => _('mapOpenFailed');
+
+  /// An era of biblical history on the timeline, by `BibleEra.name`.
+  String era(String name) => _('era.$name');
   String dayRange(int a, int b) => isAmharic ? 'ቀን $a–$b' : 'Days $a–$b';
   String days(int n) => isAmharic ? (n == 1 ? '1 ቀን' : '$n ቀናት') : (n == 1 ? '1 day' : '$n days');
   String behind(int n) => isAmharic ? '${days(n)} ወደኋላ' : '${days(n)} behind';
@@ -966,6 +979,27 @@ const _am = {
   'markAsUnread': 'እንዳልተነበበ ምልክት አድርግ',
   'seeAllPlans': 'ሁሉንም ዕቅዶች ይመልከቱ',
   'dayComplete': 'ተነቧል',
+  // Study screens
+  'myNotes': 'የእኔ ማስታወሻዎች',
+  'addNote': 'ማስታወሻ ጻፍ',
+  'noNotesHere': 'በዚህ ጥቅስ ላይ ገና ማስታወሻ አልጻፉም።',
+  'aiWritten': 'በAI የተጻፈ',
+  'aiWriting': 'መልሱ እየተጻፈ ነው…',
+  'aiStartWith': 'በዚህ ይጀምሩ',
+  'aiOptions': 'የመልስ ምርጫዎች',
+  'aiLevel': 'ደረጃ',
+  'showOnMap': 'በካርታ ላይ አሳይ',
+  'mapOpenFailed': 'ካርታውን መክፈት አልተቻለም',
+  'era.beginnings': 'ፍጥረትና የጥንቱ ዓለም',
+  'era.patriarchs': 'የአበው ዘመን',
+  'era.exodus': 'ዘጸአትና የምድረ በዳው ጉዞ',
+  'era.judges': 'የከነዓን ርስትና መሳፍንት',
+  'era.kingdom': 'የነገሥታት ዘመን',
+  'era.exile': 'ምርኮ',
+  'era.returnHome': 'ከምርኮ መመለስ',
+  'era.between': 'በብሉይና በአዲስ ኪዳን መካከል',
+  'era.jesus': 'የኢየሱስ ክርስቶስ ሕይወት',
+  'era.church': 'የመጀመሪያዋ ቤተ ክርስቲያን',
 };
 
 const _en = {
@@ -1446,4 +1480,25 @@ const _en = {
   'markAsUnread': 'Mark as unread',
   'seeAllPlans': 'See all plans',
   'dayComplete': 'Done',
+  // Study screens
+  'myNotes': 'My notes',
+  'addNote': 'Write a note',
+  'noNotesHere': "You haven't written a note on this verse yet.",
+  'aiWritten': 'AI-written',
+  'aiWriting': 'Writing an answer…',
+  'aiStartWith': 'Start with',
+  'aiOptions': 'Answer options',
+  'aiLevel': 'Level',
+  'showOnMap': 'Show on a map',
+  'mapOpenFailed': "Couldn't open the map",
+  'era.beginnings': 'Beginnings',
+  'era.patriarchs': 'The patriarchs',
+  'era.exodus': 'Exodus and wilderness',
+  'era.judges': 'Conquest and judges',
+  'era.kingdom': 'The kingdom',
+  'era.exile': 'Exile',
+  'era.returnHome': 'Return from exile',
+  'era.between': 'Between the Testaments',
+  'era.jesus': 'The life of Jesus',
+  'era.church': 'The early church',
 };

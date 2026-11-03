@@ -12,6 +12,7 @@ import '../../state/providers.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import '../library/note_tile.dart';
 import 'study_widgets.dart';
 
 void openReader(BuildContext context, List<Book> books, int key) {
@@ -47,7 +48,9 @@ class VerseStudyScreen extends ConsumerWidget {
       body: AsyncView(
         value: ref.watch(verseStudyProvider(vkey)),
         onRetry: () => ref.invalidate(verseStudyProvider(vkey)),
-        data: (study) => _VerseStudyBody(vkey: vkey, study: study, books: books),
+        data: (study) => ContentWidth(
+          child: _VerseStudyBody(vkey: vkey, study: study, books: books),
+        ),
       ),
     );
   }
@@ -99,6 +102,23 @@ class VerseStudyPanel extends ConsumerWidget {
   }
 }
 
+/// The tabs of a verse study.
+enum _StudyTab { original, crossRefs, people, commentary, notes }
+
+/// The tab last chosen, kept when moving to another verse (the desktop panel
+/// follows the selection; someone reading cross-references keeps reading them).
+class _ChosenStudyTab extends Notifier<_StudyTab?> {
+  @override
+  _StudyTab? build() => null;
+
+  void choose(_StudyTab tab) => state = tab;
+}
+
+final _chosenStudyTabProvider = NotifierProvider<_ChosenStudyTab, _StudyTab?>(_ChosenStudyTab.new);
+
+/// The verse, then its study in tabs: Original (words and variants) ·
+/// Cross-references · People & places · Commentary · My notes. Tabs without
+/// material are left out; each credits its sources at the end.
 class _VerseStudyBody extends ConsumerWidget {
   const _VerseStudyBody({required this.vkey, required this.study, required this.books});
 
@@ -117,11 +137,19 @@ class _VerseStudyBody extends ConsumerWidget {
         ? const <int, Verse>{}
         : ref.watch(versesByKeyProvider((versionId: current.id, keys: keys.join(',')))).value ?? const <int, Verse>{};
     final resources = ref.watch(studyResourcesProvider).value ?? const <StudyResource>[];
+    final notes = ref.watch(verseNotesProvider(vkey)).value ?? const <Note>[];
+    // Original words come with the study packs (downloaded on phones).
+    final packs = study.words.isEmpty && ref.watch(packsConfiguredProvider);
+    final appOnly = study.words.isEmpty && kIsWeb;
 
     String abbrev(String id) => byId[id]?.abbrev ?? id;
     bool rtl(String id) => isRtlLanguage(byId[id]?.language ?? '');
+    List<Widget> credits(String kind) => [
+      for (final r in resources.where((r) => r.kind == kind)) AttributionText(r.attribution),
+    ];
 
-    return AppListView(
+    final header = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (texts[vkey] case final verse?)
           Gutter(
@@ -132,77 +160,242 @@ class _VerseStudyBody extends ConsumerWidget {
               textDirection: rtl(current!.id) ? TextDirection.rtl : null,
             ),
           ),
-        if (study.words.isEmpty && ref.watch(packsConfiguredProvider))
-          AppCard(
-            eyebrow: s.studyPacks,
-            trailing: const Icon(Icons.download_outlined),
-            onTap: () => context.push('/me/downloads'),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(s.getStudyPacks, style: context.text.titleSmall),
-                const SizedBox(height: AppSpacing.xs),
-                Text(s.getStudyPacksHint, style: context.text.bodyMedium),
-              ],
+        if (study.isEmpty)
+          Gutter(
+            vertical: AppSpacing.sm,
+            child: Text(
+              s.noStudyData,
+              style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
             ),
           ),
-        // The web can't download study packs: say where to find them.
-        if (study.words.isEmpty && kIsWeb)
-          AppCard(
-            eyebrow: s.studyPacks,
-            child: Text(s.studyPacksAppOnly, style: context.text.bodyMedium),
-          ),
-        if (study.isEmpty) EmptyState(message: s.noStudyData, icon: Icons.school_outlined),
-        if (study.words.isNotEmpty) ...[
-          SectionHeader(s.originalText, first: true),
-          for (final e in study.words.entries) ...[
-            Gutter(child: Text(abbrev(e.key), style: context.text.labelLarge)),
-            Gutter(
-              vertical: AppSpacing.xs,
-              child: InterlinearWords(words: e.value, rtl: rtl(e.key)),
-            ),
-          ],
-        ],
-        if (study.variants.isNotEmpty) ...[
-          SectionHeader(s.textualVariants),
-          Gutter(child: Text(s.variantsNote, style: context.text.bodySmall)),
-          for (final v in study.variants)
-            VariantTile(variant: v, versionAbbrev: abbrev(v.versionId), rtl: rtl(v.versionId)),
-        ],
-        if (study.crossRefs.isNotEmpty) ...[
-          SectionHeader(s.crossReferences),
-          for (final x in study.crossRefs)
-            AppListTile(
-              title: _rangeLabel(books, x, s.isAmharic),
-              subtitleWidget: texts[x.start] == null
-                  ? null
-                  : Text(
-                      texts[x.start]!.text,
-                      style: context.scriptureSnippet,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-              onTap: () => openReader(context, books, x.start),
-            ),
-        ],
-        if (study.entities.isNotEmpty) ...[
-          SectionHeader(s.peoplePlacesEvents),
-          for (final e in study.entities) EntityTile(entity: e),
-        ],
-        if (study.comments.isNotEmpty) ...[
-          SectionHeader(s.commentary),
-          Gutter(child: Text(s.commentaryNote, style: context.text.bodySmall)),
-          for (final c in study.comments) _CommentCard(comment: c, books: books),
-        ],
-        if (!study.isEmpty) ...[
-          SectionHeader(s.studySources),
-          for (final r in resources) AttributionText(r.attribution),
-          for (final id in study.words.keys)
-            if (byId[id] case final v?) AttributionText(v.attribution),
-        ],
       ],
     );
+
+    final tabs = <({_StudyTab tab, String label, List<Widget> children})>[
+      if (study.words.isNotEmpty || study.variants.isNotEmpty || packs || appOnly)
+        (
+          tab: _StudyTab.original,
+          label: s.originalText,
+          children: [
+            if (packs)
+              AppCard(
+                eyebrow: s.studyPacks,
+                trailing: const Icon(Icons.download_outlined),
+                onTap: () => context.push('/me/downloads'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.getStudyPacks, style: context.text.titleSmall),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(s.getStudyPacksHint, style: context.text.bodyMedium),
+                  ],
+                ),
+              ),
+            // The web can't download study packs: say where to find them.
+            if (appOnly)
+              AppCard(
+                eyebrow: s.studyPacks,
+                child: Text(s.studyPacksAppOnly, style: context.text.bodyMedium),
+              ),
+            for (final e in study.words.entries) ...[
+              Gutter(
+                vertical: AppSpacing.sm,
+                child: Text(abbrev(e.key), style: context.text.labelLarge),
+              ),
+              Gutter(
+                child: InterlinearWords(words: e.value, rtl: rtl(e.key)),
+              ),
+            ],
+            if (study.variants.isNotEmpty) ...[
+              SectionHeader(s.textualVariants, first: study.words.isEmpty),
+              Gutter(child: Text(s.variantsNote, style: context.text.bodySmall)),
+              for (final v in study.variants)
+                VariantTile(variant: v, versionAbbrev: abbrev(v.versionId), rtl: rtl(v.versionId)),
+            ],
+            if (study.words.isNotEmpty) ...[
+              ...credits('lexicon'),
+              for (final id in study.words.keys)
+                if (byId[id] case final v?) AttributionText(v.attribution),
+            ],
+          ],
+        ),
+      if (study.crossRefs.isNotEmpty)
+        (
+          tab: _StudyTab.crossRefs,
+          label: '${s.crossReferences} · ${study.crossRefs.length}',
+          children: [
+            for (final x in study.crossRefs)
+              AppListTile(
+                title: _rangeLabel(books, x, s.isAmharic),
+                subtitleWidget: texts[x.start] == null
+                    ? null
+                    : Text(
+                        texts[x.start]!.text,
+                        style: context.scriptureSnippet,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                onTap: () => openReader(context, books, x.start),
+              ),
+            ...credits('crossrefs'),
+          ],
+        ),
+      if (study.entities.isNotEmpty)
+        (
+          tab: _StudyTab.people,
+          label: '${s.peopleAndPlaces} · ${study.entities.length}',
+          children: [
+            for (final e in study.entities) EntityTile(entity: e),
+            ...credits('entities'),
+          ],
+        ),
+      if (study.comments.isNotEmpty)
+        (
+          tab: _StudyTab.commentary,
+          label: '${s.commentary} · ${study.comments.length}',
+          children: [
+            Gutter(
+              vertical: AppSpacing.sm,
+              child: Text(s.commentaryNote, style: context.text.bodySmall),
+            ),
+            for (final c in study.comments) _CommentCard(comment: c, books: books),
+            ...credits('commentary'),
+          ],
+        ),
+      (
+        tab: _StudyTab.notes,
+        label: notes.isEmpty ? s.myNotes : '${s.myNotes} · ${notes.length}',
+        children: [
+          if (notes.isEmpty)
+            Gutter(
+              vertical: AppSpacing.md,
+              child: Text(
+                s.noNotesHere,
+                style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+              ),
+            ),
+          for (final n in notes) NoteTile(note: n, books: books),
+          Gutter(
+            vertical: AppSpacing.md,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AppButton.secondary(
+                label: s.addNote,
+                icon: Icons.edit_note,
+                onPressed: () => context.push('/note?start=$vkey'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ];
+
+    return _StudyTabs(header: header, tabs: tabs);
   }
+}
+
+/// [header] scrolls away; the tab bar stays pinned under the app bar.
+class _StudyTabs extends ConsumerStatefulWidget {
+  const _StudyTabs({required this.header, required this.tabs});
+
+  final Widget header;
+  final List<({_StudyTab tab, String label, List<Widget> children})> tabs;
+
+  @override
+  ConsumerState<_StudyTabs> createState() => _StudyTabsState();
+}
+
+class _StudyTabsState extends ConsumerState<_StudyTabs> with TickerProviderStateMixin {
+  late TabController _controller = _newController();
+
+  TabController _newController() {
+    final chosen = ref.read(_chosenStudyTabProvider);
+    final i = widget.tabs.indexWhere((t) => t.tab == chosen);
+    final controller = TabController(length: widget.tabs.length, initialIndex: i < 0 ? 0 : i, vsync: this);
+    controller.addListener(() {
+      if (!controller.indexIsChanging) {
+        ref.read(_chosenStudyTabProvider.notifier).choose(widget.tabs[controller.index].tab);
+      }
+    });
+    return controller;
+  }
+
+  @override
+  void didUpdateWidget(_StudyTabs old) {
+    super.didUpdateWidget(old);
+    // Another verse may have other tabs (no commentary, say).
+    if (old.tabs.map((t) => t.tab).join() != widget.tabs.map((t) => t.tab).join()) {
+      _controller.dispose();
+      _controller = _newController();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tabBar = TabBar(
+      controller: _controller,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      tabs: [for (final t in widget.tabs) Tab(text: t.label)],
+    );
+    final background = Scaffold.maybeOf(context)?.widget.backgroundColor ?? context.theme.scaffoldBackgroundColor;
+    return NestedScrollView(
+      headerSliverBuilder: (context, _) => [
+        SliverToBoxAdapter(child: widget.header),
+        SliverOverlapAbsorber(
+          handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+          sliver: SliverPersistentHeader(
+            pinned: true,
+            delegate: _TabBarHeader(tabBar: tabBar, background: background),
+          ),
+        ),
+      ],
+      body: TabBarView(
+        controller: _controller,
+        children: [
+          for (final t in widget.tabs)
+            Builder(
+              builder: (context) => CustomScrollView(
+                key: PageStorageKey(t.tab),
+                slivers: [
+                  SliverOverlapInjector(handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context)),
+                  SliverPadding(
+                    padding: AppListView.defaultPadding,
+                    sliver: SliverList.list(children: t.children),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabBarHeader extends SliverPersistentHeaderDelegate {
+  const _TabBarHeader({required this.tabBar, required this.background});
+
+  final TabBar tabBar;
+  final Color background;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      ColoredBox(color: background, child: tabBar);
+
+  @override
+  bool shouldRebuild(_TabBarHeader old) => old.tabBar != tabBar || old.background != background;
 }
 
 String _rangeLabel(List<Book> books, CrossRef x, bool amharic) {

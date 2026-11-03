@@ -169,16 +169,22 @@ void main() {
 
   final page = find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).first;
 
-  testWidgets('answer shows Scripture from the app text and labels AI text', (tester) async {
-    await pumpAsk(tester, configured: true, textScale: 1.3);
-    expect(find.textContaining('can be wrong'), findsOneWidget); // disclaimer before asking
-    await tester.tap(find.text('Ask'));
-    // The request and DB reads run on real async I/O; let them finish.
-    for (var i = 0; i < 10 && find.text('AI explanation').evaluate().isEmpty; i++) {
+  /// The request and DB reads run on real async I/O; let them finish.
+  Future<void> waitForAnswer(WidgetTester tester) async {
+    for (var i = 0; i < 10 && find.text('AI-written').evaluate().isEmpty; i++) {
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
       await tester.pump();
     }
     await tester.pumpAndSettle();
+  }
+
+  testWidgets('answer shows Scripture from the app text and labels AI text', (tester) async {
+    await pumpAsk(tester, configured: true, textScale: 1.3);
+    expect(find.textContaining('can be wrong'), findsOneWidget); // disclaimer before asking
+    await tester.tap(find.text('Explain'));
+    await waitForAnswer(tester);
+    expect(find.text('Explain'), findsWidgets); // the request, as the reader's line (and its chip)
+    expect(find.text('AI-written'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.textContaining('For God so loved the world'),
       200,
@@ -189,6 +195,23 @@ void main() {
     await tester.scrollUntilVisible(find.text('Not found in its source'), 200, scrollable: page);
     await tester.scrollUntilVisible(find.text('What does "only born" mean?'), 200, scrollable: page);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a typed question joins the conversation, and a cited source opens', (tester) async {
+    await pumpAsk(tester, configured: true);
+    await tester.enterText(find.byType(TextField), 'Why the world?');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Ask'));
+    await waitForAnswer(tester);
+    expect(find.text('Why the world?'), findsOneWidget);
+    // The explanation cites the verse; its chip shows it, with a way to the reader.
+    final chip = find.byWidgetPredicate((w) => w is ActionChip && (w.tooltip ?? '').startsWith('Sources: John 3:16'));
+    await tester.scrollUntilVisible(chip.first, 200, scrollable: page);
+    await tester.pumpAndSettle(); // lay out the scrolled list before tapping
+    await tester.tap(chip.first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('For God so loved the world'), findsWidgets);
+    expect(find.text('Open in reader'), findsOneWidget);
   });
 
   testWidgets('without a server the assistant explains it is not set up', (tester) async {

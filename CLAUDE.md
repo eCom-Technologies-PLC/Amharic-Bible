@@ -96,6 +96,8 @@ All future UI work in this repository must follow this CLAUDE.md section.
 - Colors are defined only in `app_theme.dart` (a `ColorScheme` per reading theme) and `AppColors`.
   `test/contrast_test.dart` checks scripture, red letters and verse numbers against every highlight, the playing and
   selection tints in all four themes; keep it passing when changing colors.
+- A text field at the bottom of a screen (the Ask composer) goes at the end of the body's `Column`, not in
+  `AppScaffold.bottomBar`: the keyboard covers the bottom bar, while the body resizes above it.
 - Never put dropdowns or segmented buttons in a `ListTile` trailing slot — use an `AppListTile` with the current value as subtitle that opens `showOptionPicker` (this crashed on narrow screens).
 - Scripture text always uses `context.reading` styles (or `context.scriptureSnippet` / `scriptureFeature` outside the reader), never `TextStyle(fontSize: ...)`.
 - One loading pattern: centered spinner (`LoadingState`); `InlineSpinner` inside buttons and rows.

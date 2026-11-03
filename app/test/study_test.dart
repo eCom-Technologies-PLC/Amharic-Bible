@@ -120,6 +120,49 @@ void main() {
     });
   });
 
+  test('events fall into eras by the year they start', () {
+    expect(eraOf(-4003), BibleEra.beginnings); // Creation
+    expect(eraOf(-2000), BibleEra.patriarchs);
+    expect(eraOf(-1446), BibleEra.exodus);
+    expect(eraOf(-1200), BibleEra.judges);
+    expect(eraOf(-1000), BibleEra.kingdom);
+    expect(eraOf(-586), BibleEra.exile);
+    expect(eraOf(-500), BibleEra.returnHome);
+    expect(eraOf(-100), BibleEra.between);
+    expect(eraOf(27), BibleEra.jesus);
+    expect(eraOf(50), BibleEra.church);
+  });
+
+  test('a word means its gloss when there is one, else its first KJV rendering', () {
+    const word = LexEntry(
+      id: 'G2316',
+      language: LexLanguage.greek,
+      lemma: 'θεός',
+      translit: 'theós',
+      pron: '',
+      definition: 'a deity',
+      derivation: '',
+      usage: 'X exceeding, God, god(-ly, -ward)',
+      resourceId: 'STRONGS',
+    );
+    expect(word.meaning, 'exceeding');
+    expect(
+      const LexEntry(
+        id: 'G2316',
+        language: LexLanguage.greek,
+        lemma: 'θεός',
+        translit: 'theós',
+        pron: '',
+        definition: 'a deity',
+        derivation: '',
+        usage: 'X exceeding, God, god(-ly, -ward)',
+        resourceId: 'STRONGS',
+        gloss: 'God',
+      ).meaning,
+      'God',
+    );
+  });
+
   test('shortGloss keeps the first rendering', () {
     expect(shortGloss('beginning, chief(-est), first(-fruits, part, time)', null), 'beginning');
     expect(shortGloss('', '{father}'), 'father');

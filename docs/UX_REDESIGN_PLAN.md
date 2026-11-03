@@ -1210,9 +1210,27 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 - **Fixed along the way:** word lists showed the first KJV rendering as the meaning (θεός "exceeding", λόγος
   "account"); they now use the STEPBible glosses, also shown on the word study page.
 
+**Done (part 2: study screens):**
+
+- **Verse study in tabs:** Original text (words, then variants) · Cross-references · People & places · Commentary ·
+  My notes, with counts. The verse stays above the tabs, which stay pinned while scrolling. Tabs with nothing in them
+  are left out, and each tab credits its own sources. The chosen tab is kept for the next verse, so the desktop panel
+  stays on Cross-references while the selection moves. My notes lists the notes covering the verse and offers
+  "Write a note".
+- **Timeline in eras:** tinted bands (Beginnings, the patriarchs, Exodus, the judges, the kingdom, exile, return,
+  between the Testaments, the life of Jesus, the early church) over the dated events. Eras with no events are left
+  out. The boundaries follow the data's traditional dating and are approximate.
+- **Ask as a conversation:** the four tasks (Explain, Summarize, Study questions, Sermon help) are one-tap chips
+  above a question field at the bottom. Level and tradition are in an options sheet, and their chip shows the
+  current choice. Each exchange shows the request, then a placeholder while the answer is written, then an
+  "AI-written" badge and the answer, scrolled into view. Cited sources are chips that open the source, with
+  "Open in reader" for verses. The conversation lasts while the screen is open.
+- **Places:** a "Show on a map" button (OpenStreetMap, with a pin) under the coordinates.
+
 **Left for Phase 5:**
 
-- Study screens (§7.6): verse study tabs, a map card for places, timeline era bands, the Ask composer.
+- An offline map card for places (a simplified coastline of Bible lands from Natural Earth, built by the content
+  pipeline); for now the map opens online.
 - Plans: covers (illustrator), "Behind? Adjust the schedule", a month view, the completion celebration and card.
 - Groups polish (§7.13), Settings regrouping (§7.11), share-image additions (§7.12).
 - Search: a passage preview beside the results on wide windows; Amharic stemming (pipeline).
