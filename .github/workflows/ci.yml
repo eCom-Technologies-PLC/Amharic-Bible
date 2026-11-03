@@ -111,7 +111,8 @@ jobs:
         with:
           channel: stable
           cache: true
-      - run: flutter build web --release
+      # WebAssembly for Chromium browsers, with the JavaScript build for the rest.
+      - run: flutter build web --release --wasm
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

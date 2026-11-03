@@ -151,7 +151,7 @@ The same Flutter code also builds a web app.
 ```sh
 cd app
 flutter run -d chrome                     # development
-flutter build web --release               # static site in app/build/web
+flutter build web --release --wasm        # static site in app/build/web
 # The same --dart-define options as the mobile build (audio, accounts, assistant)
 cd ..
 python pipeline/build_site.py --db app/assets/content/content.db --out app/build/web --site-url https://bible.example.org
@@ -185,6 +185,11 @@ the `web-sample-content` artifact.
 
 How it differs from the mobile app:
 
+- **WebAssembly:** `--wasm` builds the app twice. Chromium browsers (Chrome, Edge, Samsung Internet, Android) run the
+  WebAssembly build, and Firefox and Safari run the JavaScript one. On a phone, the WebAssembly build blocks the page
+  for a quarter of the time while it starts (330 ms against 1,360 ms in Lighthouse), for about the same download.
+  Its renderer runs on one thread: several threads would need cross-origin isolation headers (COOP/COEP), which would
+  also block the audio and study servers unless they opted in.
 - **Storage:** SQLite runs in the browser as WebAssembly (`sqflite_common_ffi_web`; `web/sqlite3.wasm` and
   `web/sqflite_sw.js`) and keeps the content and user databases in IndexedDB. Clearing site data erases
   unsynced highlights and notes, so suggest that web readers sign in to sync. After the first local change the app
@@ -197,6 +202,7 @@ How it differs from the mobile app:
     from that copy without waiting for the network. A new release downloads in the background during a visit and
     takes over the next time the app starts in a tab of its own (or once the app's tabs have closed), so an open
     app never mixes two releases.
+  - Of the two builds, it keeps only the one this browser loads.
   - Without the stamp (a plain `flutter build web`), it fetches the page and the app's files network-first, so a
     new release arrives on the next online visit.
 

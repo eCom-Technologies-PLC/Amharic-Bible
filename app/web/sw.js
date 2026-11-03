@@ -12,6 +12,10 @@
 //   mixes two releases. It takes over when the app starts in a tab of its own
 //   (index.html asks it to before loading the app), or once the app's tabs
 //   have closed.
+//   Built with --wasm, the app's code comes twice, as WebAssembly (Chromium
+//   browsers) and as JavaScript (the others), and each browser loads one. The
+//   worker notes which one this browser loads and keeps only that one; until it
+//   knows (the first visit), the page hands over the one it loaded.
 // - Without the list (a plain `flutter build web`), the page and the app's files
 //   come from the network first, so the app is always one consistent release,
 //   and the kept copies are used offline or when a host answers an app address
@@ -22,8 +26,8 @@
 // Other servers (sync, audio, the study assistant) and audio or video are left
 // alone: they need a connection anyway, and audio is large.
 
-// The release's files with their hashes, and its CanvasKit version, stamped by
-// pipeline/build_site.py.
+// The release's files with their hashes, its CanvasKit version and, built
+// with --wasm, each build's own code; stamped by pipeline/build_site.py.
 const RELEASE = null;
 
 // The release's files (or, without a list, the app's files as they are used).
@@ -42,6 +46,9 @@ const PAGE = SCOPE.href;
 // exists beside this one.
 const own = () => caches.open(CACHE);
 
+// Which build (compile target) this browser loads, noted across releases.
+const BUILD_NOTE = new URL('.flutter-build', SCOPE).href;
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -50,7 +57,7 @@ self.addEventListener('install', (event) => {
         // may hold the previous release; an unchanged file costs a "not
         // modified" answer, not a download. The page is kept under the root
         // address (keepPage), not as index.html.
-        const files = Object.keys(RELEASE.files).filter((f) => f !== 'index.html');
+        const files = await filesToKeep();
         await (await own()).addAll(files.map((f) => new Request(new URL(f, SCOPE), { cache: 'no-cache' })));
       }
       // The first visit didn't go through this worker, so keep the page now.
@@ -84,9 +91,13 @@ self.addEventListener('message', (event) => {
     Promise.all(
       urls.map(async (u) => {
         const k = kind(u);
-        if (k === null || (k === 'own' && inRelease(new URL(u)))) return;
+        if (k === null) return;
+        const target = k === 'own' ? buildOf(new URL(u)) : null;
+        if (target) await noteBuild(target);
         const cache = await caches.open(k === 'own' ? CACHE : LASTING);
-        if (!(await cache.match(u, { ignoreVary: true }))) await cache.add(u).catch(() => {});
+        if (!(await cache.match(u, { ignoreVary: true, ignoreSearch: k === 'own' }))) {
+          await cache.add(u).catch(() => {});
+        }
       }),
     ),
   );
@@ -104,9 +115,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   switch (kind(request.url)) {
-    case 'own':
-      event.respondWith(inRelease(new URL(request.url)) ? fromRelease(event) : networkFirst(event));
+    case 'own': {
+      const url = new URL(request.url);
+      const target = buildOf(url);
+      if (target) event.waitUntil(noteBuild(target).catch(() => {}));
+      event.respondWith(inRelease(url) ? fromRelease(event) : networkFirst(event));
       break;
+    }
     case 'versioned':
       event.respondWith(cacheFirst(event));
       break;
@@ -128,6 +143,32 @@ function kind(address) {
 function inRelease(url) {
   if (!RELEASE || !url.pathname.startsWith(SCOPE.pathname)) return false;
   return Object.prototype.hasOwnProperty.call(RELEASE.files, url.pathname.slice(SCOPE.pathname.length));
+}
+
+// The build (compile target) whose own code [url] is, or null.
+function buildOf(url) {
+  const builds = (RELEASE && RELEASE.builds) || {};
+  const path = url.pathname.slice(SCOPE.pathname.length);
+  return Object.keys(builds).find((target) => builds[target].includes(path)) || null;
+}
+
+async function noteBuild(target) {
+  const cache = await caches.open(LASTING);
+  const note = await cache.match(BUILD_NOTE);
+  if (!note || (await note.text()) !== target) await cache.put(BUILD_NOTE, new Response(target));
+}
+
+// The release's files to keep when installing: all but the page (kept under
+// the root address by keepPage) and, with two builds, the code of the one
+// this browser doesn't load; before a visit has shown which one it loads,
+// neither (the page hands over the one it loaded).
+async function filesToKeep() {
+  const builds = RELEASE.builds || {};
+  const targets = Object.keys(builds);
+  const note = targets.length > 1 ? await (await caches.open(LASTING)).match(BUILD_NOTE) : null;
+  const loaded = note ? await note.text() : null;
+  const skip = new Set(targets.length > 1 ? targets.filter((t) => t !== loaded).flatMap((t) => builds[t]) : []);
+  return Object.keys(RELEASE.files).filter((f) => f !== 'index.html' && !skip.has(f));
 }
 
 // The app's own addresses (/, /read?ref=…, /plans/…), as opposed to the
@@ -204,10 +245,15 @@ async function page(event) {
   }
 }
 
-// A release file: the kept copy, or the network if it is somehow missing.
+// A release file: the kept copy, or the network (and kept from then on) when
+// it isn't kept yet: the other build's code, should this browser load it.
 async function fromRelease(event) {
-  const kept = await (await own()).match(event.request, { ignoreSearch: true, ignoreVary: true });
-  return kept || fetch(event.request);
+  const cache = await own();
+  const kept = await cache.match(event.request, { ignoreSearch: true, ignoreVary: true });
+  if (kept) return kept;
+  const response = await fetch(event.request);
+  if (response.status === 200) event.waitUntil(cache.put(event.request, response.clone()));
+  return response;
 }
 
 async function networkFirst(event) {

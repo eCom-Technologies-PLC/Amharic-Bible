@@ -1208,9 +1208,46 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 - **Found along the way:** the desktop layout-audit case "a verse selected" pressed between a verse's small number and
   its words, so nothing was ever selected. It now presses the words, and new cases cover the popovers.
 
+**Done (WebAssembly):**
+
+- **The build is now `flutter build web --release --wasm`**, which builds the app twice. Chromium browsers (Chrome,
+  Edge, Samsung Internet, Android) run the WebAssembly build with Flutter's skwasm renderer; Firefox and Safari run
+  the JavaScript build, as Flutter's loader decides.
+- **Compatibility:** the code compiles for WebAssembly unchanged. The database worker (sqflite's SQLite in
+  WebAssembly) reads chapters under it, Ethiopic text renders, and the app starts offline from the kept copy.
+- **Measured** with Lighthouse 12 on a local server that compresses files as hosts do:
+
+  | | Performance | Blocking time | Interactive | Download |
+  |---|---|---|---|---|
+  | JavaScript, phone (slow 4G) | 71 | 1,360 ms | 16.5 s | 3.00 MB |
+  | WebAssembly, phone | 88 | 330 ms | 17.5 s | 2.89 MB |
+  | JavaScript, desktop | 98 | 110 ms | 2.7 s | 3.00 MB |
+  | WebAssembly, desktop | 98 | 60 ms | 3.0 s | 2.89 MB |
+
+  The app's code is larger as WebAssembly (1.63 MB gzipped against 1.34 MB), but its renderer is smaller than
+  CanvasKit. On phones it blocks the page for a quarter of the time while starting. "Interactive" barely moves
+  because on slow 4G it is mostly the download itself.
+- **Single-threaded:** skwasm runs on one thread. Several threads would need a cross-origin isolated page (COOP and
+  COEP headers), which would also block the audio and study servers unless they opted in. The warning Flutter logs
+  about it is turned off in `web/flutter_bootstrap.js`.
+- **The offline worker keeps one build:** `build_site.py` stamps which files are each build's code, and the worker
+  notes which build this browser loads. It keeps only that one, so updates don't download the other (about 1.3–1.6
+  MB). On a first visit it keeps neither and the page hands over the one it loaded. Checked in Chrome: on a first
+  visit and an update, the WebAssembly path never downloaded `main.dart.js`, and the JavaScript path (forced through
+  the loader's `wasmAllowList`) never downloaded the WebAssembly code.
+- **Deferred loading, measured rather than built:** from the JavaScript build's source map, the study, Ask, share
+  and groups screens are under 1% of `main.dart.js` (about 36 KB), and the app's own code about 5.5% in all. A
+  loading step on those screens would cost more than it saves. The large parts are Flutter's framework (25%) and web
+  engine (11.5%), the Dart runtime, and two packages:
+  - `unorm_dart` (Unicode normalization for search, 6.2%, 294 KB). It has to match the pipeline's Python
+    normalization, so replacing it needs a table generated from Python's data and tested against it.
+  - `flutter_localizations` (4.2%, 199 KB). It carries Material's texts for about 80 languages where the app uses
+    two; delegates for Amharic and English alone would drop the rest.
+
 **Left for Phase 4:**
 
-- WebAssembly evaluation and deferred loading: the way to cut the first visit's download and parse time.
+- Smaller first download: trim `flutter_localizations` to Amharic and English, and replace `unorm_dart` with
+  generated tables for the scripts in the content (together about 10% of the app's code).
 - The book picker as a popover (books in columns, chapters inline) attached to the reader's title on desktop; it is a
   full-window screen today.
 

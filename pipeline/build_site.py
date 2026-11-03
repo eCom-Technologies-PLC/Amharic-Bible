@@ -426,17 +426,50 @@ def release_files(out: Path) -> dict[str, str]:
         rel = path.relative_to(out).as_posix()
         if rel in _NOT_IN_RELEASE or rel.startswith(_NOT_IN_RELEASE_DIRS) or rel.endswith(('.map', '.symbols')):
             continue
-        files[quote(rel, safe="/!$&'()*+,;=:@")] = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+        files[_url_path(rel)] = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
     return files
+
+
+def _url_path(rel: str) -> str:
+    """A build path as it appears in the address the browser asks for."""
+    return quote(rel, safe="/!$&'()*+,;=:@")
+
+
+def build_config(out: Path) -> dict:
+    """Flutter's build configuration (`_flutter.buildConfig` in the built
+    flutter_bootstrap.js): the engine and the builds made; empty without it."""
+    bootstrap = out / 'flutter_bootstrap.js'
+    if not bootstrap.exists():
+        return {}
+    text = bootstrap.read_text(encoding='utf-8')
+    match = re.search(r'_flutter\.buildConfig\s*=\s*', text)
+    if not match:
+        return {}
+    try:
+        config, _ = json.JSONDecoder().raw_decode(text, match.end())
+    except ValueError:
+        return {}
+    return config if isinstance(config, dict) else {}
 
 
 def engine_revision(out: Path) -> str | None:
     """The Flutter engine the build uses, which names its CanvasKit files."""
-    bootstrap = out / 'flutter_bootstrap.js'
-    if not bootstrap.exists():
-        return None
-    match = re.search(r'"engineRevision"\s*:\s*"([0-9a-f]+)"', bootstrap.read_text(encoding='utf-8'))
-    return match.group(1) if match else None
+    engine = build_config(out).get('engineRevision')
+    return engine if isinstance(engine, str) and re.fullmatch(r'[0-9a-f]+', engine) else None
+
+
+def build_files(out: Path) -> dict[str, list[str]]:
+    """Each build's own code, by compile target: with --wasm, Flutter builds
+    the app as WebAssembly (main.dart.wasm, main.dart.mjs) and as JavaScript
+    (main.dart.js), and each browser loads one of them."""
+    builds = {}
+    for build in build_config(out).get('builds', []):
+        target = build.get('compileTarget') if isinstance(build, dict) else None
+        if not target:
+            continue
+        paths = [build.get(k) for k in ('mainWasmPath', 'jsSupportRuntimePath', 'mainJsPath')]
+        builds[target] = [_url_path(p) for p in paths if isinstance(p, str) and p]
+    return builds
 
 
 def stamp_release(out: Path) -> str | None:
@@ -454,6 +487,9 @@ def stamp_release(out: Path) -> str | None:
     engine = engine_revision(out)
     if engine:
         stamp['engine'] = engine  # the worker drops other engines' CanvasKit copies
+    builds = build_files(out)
+    if len(builds) > 1:
+        stamp['builds'] = builds  # the worker keeps only the build this browser loads
     release = json.dumps(stamp, separators=(',', ':'), sort_keys=True)
     sw.write_bytes(text.replace(RELEASE_PLACEHOLDER, f'const RELEASE = {release};').encode('utf-8'))
     return release_id

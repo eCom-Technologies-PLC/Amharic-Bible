@@ -103,6 +103,33 @@ class SiteTest(unittest.TestCase):
         # As in the address the browser asks for, so the worker finds it.
         self.assertIn('assets/%E1%8B%AE%E1%88%90%E1%8A%95%E1%88%B5%203.png', listed['files'])
 
+    def _stamp(self, builds: str) -> dict:
+        (self.out / 'sw.js').write_text('const RELEASE = null;\n', encoding='utf-8')
+        (self.out / 'flutter_bootstrap.js').write_text(
+            '_flutter.buildConfig = {"engineRevision":"1a2b3c","builds":' + builds + '};\n_flutter.loader.load();',
+            encoding='utf-8')
+        for name in ('main.dart.wasm', 'main.dart.mjs', 'main.dart.js'):
+            (self.out / name).write_text(name, encoding='utf-8')
+        build_site.stamp_release(self.out)
+        sw = (self.out / 'sw.js').read_text(encoding='utf-8')
+        return json.loads(sw.split('const RELEASE = ', 1)[1].rsplit(';', 1)[0])
+
+    def test_a_webassembly_build_says_which_files_belong_to_each_build(self):
+        listed = self._stamp(
+            '[{"compileTarget":"dart2wasm","renderer":"skwasm","mainWasmPath":"main.dart.wasm",'
+            '"jsSupportRuntimePath":"main.dart.mjs"},'
+            '{"compileTarget":"dart2js","renderer":"canvaskit","mainJsPath":"main.dart.js"}]')
+        # Each browser loads one of the two; the worker keeps that one only.
+        self.assertEqual(listed['builds'], {'dart2wasm': ['main.dart.wasm', 'main.dart.mjs'], 'dart2js': ['main.dart.js']})
+        self.assertLessEqual({'main.dart.wasm', 'main.dart.mjs', 'main.dart.js'}, set(listed['files']))
+        self.assertEqual(listed['engine'], '1a2b3c')
+
+    def test_a_javascript_build_has_no_builds_to_choose_from(self):
+        # As flutter build web writes it without --wasm (with an empty entry).
+        listed = self._stamp('[{"compileTarget":"dart2js","renderer":"canvaskit","mainJsPath":"main.dart.js"},{}]')
+        self.assertNotIn('builds', listed)
+        self.assertIn('main.dart.js', listed['files'])
+
     def test_the_release_line_matches_the_service_worker(self):
         sw = Path(__file__).resolve().parents[2] / 'app' / 'web' / 'sw.js'
         self.assertIn(build_site.RELEASE_PLACEHOLDER, sw.read_text(encoding='utf-8'))
