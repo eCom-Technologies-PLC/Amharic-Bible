@@ -1244,10 +1244,26 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
   - `flutter_localizations` (4.2%, 199 KB). It carries Material's texts for about 80 languages where the app uses
     two; delegates for Amharic and English alone would drop the rest.
 
+**Done (a smaller download):**
+
+- **Flutter's own texts in two languages:** `appLocalizationsDelegates` (`core/localizations.dart`) builds Material's,
+  Cupertino's and the widgets' texts for Amharic and English only, where `GlobalMaterialLocalizations.delegates`
+  pulled in about 80 languages. The date names come from a copy of Flutter's data for the two languages
+  (`core/date_data.dart`, from `pipeline/build_dart_dates.py`), which also replaces intl's all-language date data.
+  A test checks that every text and date is the same as with Flutter's own delegates.
+- **Search normalization without `unorm_dart`:** a table of Unicode canonical decompositions generated from
+  Python's `unicodedata` (`core/unicode_data.dart`, from `pipeline/build_dart_unicode.py`), plus Hangul's formula,
+  does what search needs. That is the decomposition with nonspacing marks removed, as the pipeline computes it for
+  the index.
+  - The composing step (NFC) geez.py starts with is left out: a pipeline test shows it can't change the result.
+  - Another pipeline test checks the table against `unicodedata` for every character, and eight new shared vectors
+    (accents, Hebrew presentation forms, polytonic Greek, the Ångström, Kelvin and Ohm signs, Hangul, CJK
+    compatibility ideographs) pass on both sides.
+- **Result:** the app's code is 16% smaller. `main.dart.wasm` went from 4.58 to 3.83 MB (1.45 MB gzipped, was
+  1.63), and `main.dart.js` from 4.74 to 4.01 MB (1.21 MB gzipped, was 1.34).
+
 **Left for Phase 4:**
 
-- Smaller first download: trim `flutter_localizations` to Amharic and English, and replace `unorm_dart` with
-  generated tables for the scripts in the content (together about 10% of the app's code).
 - The book picker as a popover (books in columns, chapters inline) attached to the reader's title on desktop; it is a
   full-window screen today.
 

@@ -5,7 +5,7 @@
 // are tested against pipeline/tests/normalize_vectors.json, so the app's query
 // normalization always matches how the pipeline built the search index.
 
-import 'package:unorm_dart/unorm_dart.dart' as unorm;
+import 'unicode_data.dart';
 
 /// Homophone series and vowel folds (generated from geez.py CHAR_MAP).
 const Map<int, int> _charMap = {
@@ -122,8 +122,12 @@ String intToGeez(int n) {
 }
 
 /// Normalize text for search so spelling variants compare equal.
+///
+/// geez.py first composes the text (NFC); that can't change the result, so it
+/// is left out here: no character of [_charMap] takes part in a composition,
+/// and none makes a punctuation mark or symbol out of a letter or the reverse
+/// (pipeline/tests/test_dart_unicode.py checks both).
 String normalize(String text) {
-  text = unorm.nfc(text);
   text = String.fromCharCodes(text.runes.map((r) => _charMap[r] ?? r));
   text = text.replaceAllMapped(_geezNumRe, (m) => ' ${geezToInt(m[0]!)} ');
   text = text.replaceAll(_ethiopicPunctRe, ' ');
@@ -131,9 +135,42 @@ String normalize(String text) {
   text = text.toLowerCase();
   // Drop combining marks (Hebrew points, Greek accents, Latin diacritics) and
   // fold final sigma, as normalize() in pipeline/abible/geez.py does.
-  text = unorm.nfd(text).replaceAll(_combiningMarkRe, '').replaceAll('ς', 'σ');
+  text = _withoutMarks(text).replaceAll('ς', 'σ');
   return text.trim().split(_wsRe).where((w) => w.isNotEmpty).join(' ');
 }
+
+Map<int, String>? _decompositions;
+
+/// [text] in canonical decomposition (Unicode NFD) without its nonspacing
+/// marks (category Mn), as geez.py computes it: "ἀρχῇ" becomes "αρχη".
+///
+/// NFD's reordering of marks is left out: it only moves marks, which all go,
+/// apart from 27 rare spacing ones (viramas of four Philippine and Indonesian
+/// scripts, Hangul tone marks, musical symbols) that Bible text doesn't use.
+String _withoutMarks(String text) {
+  final table = _decompositions ??= _readDecompositions();
+  final out = StringBuffer();
+  for (final rune in text.runes) {
+    if (rune >= 0xAC00 && rune <= 0xD7A3) {
+      // A Hangul syllable: its leading consonant, vowel and final consonant.
+      final s = rune - 0xAC00;
+      out.writeCharCode(0x1100 + s ~/ 588);
+      out.writeCharCode(0x1161 + (s % 588) ~/ 28);
+      if (s % 28 != 0) out.writeCharCode(0x11A7 + s % 28);
+    } else {
+      final decomposed = table[rune];
+      decomposed != null ? out.write(decomposed) : out.writeCharCode(rune);
+    }
+  }
+  return out.toString().replaceAll(_combiningMarkRe, '');
+}
+
+Map<int, String> _readDecompositions() => {
+  for (final entry in decompositionTable.split('.'))
+    int.parse(entry.substring(0, 5), radix: 16): String.fromCharCodes([
+      for (var i = 5; i < entry.length; i += 5) int.parse(entry.substring(i, i + 5), radix: 16),
+    ]),
+};
 
 /// Key for matching a typed book name against the content DB's book_alias table.
 String aliasKey(String s) {

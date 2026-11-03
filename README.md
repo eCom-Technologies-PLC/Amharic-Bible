@@ -42,6 +42,15 @@ The Ge'ez search normalization exists in Python (`pipeline/abible/geez.py`) and 
 Both are tested against `pipeline/tests/normalize_vectors.json`, so the app's queries always match the index.
 Search also ignores Hebrew vowel points, Greek accents and Latin diacritics, so "λογος" finds "λόγος".
 
+Two Dart files are generated, to keep the web app's download small:
+
+```sh
+# After moving to a Python with a newer Unicode: the decompositions search uses (app/lib/core/unicode_data.dart)
+python pipeline/build_dart_unicode.py
+# After a Flutter upgrade: Amharic and English date names (app/lib/core/date_data.dart), from the Flutter SDK
+python pipeline/build_dart_dates.py C:/src/flutter
+```
+
 ### Study material
 
 | ID | What | License |

@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -13,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/config.dart';
+import 'core/date_data.dart';
 import 'data/audio_repository.dart';
 import 'data/databases.dart';
 import 'data/error_reports.dart';
@@ -43,7 +43,8 @@ Future<void> main() async {
     );
   }
   useWebDatabases();
-  await initializeDateFormatting();
+  // Amharic and English only: intl's own data holds every language.
+  initializeAppDateFormatting();
 
   AccountService? account;
   if (AppConfig.accountsConfigured) {

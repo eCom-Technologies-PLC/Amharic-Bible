@@ -17,6 +17,10 @@ Amharic Bible: an offline-first Flutter app for Android, iOS and the web (`app/`
   server stopped, across two releases, and in both builds `--wasm` makes (WebAssembly in Chromium browsers,
   JavaScript elsewhere; the worker keeps only the one a browser loads)
 - Pipeline: `python -m unittest discover -s pipeline/tests`
+- Generated app data (never hand-edit): `app/lib/core/unicode_data.dart` (search normalization's Unicode
+  decompositions) from `python pipeline/build_dart_unicode.py`, after moving to a Python with a newer Unicode
+  (`test_dart_unicode.py` checks it against `unicodedata`); `app/lib/core/date_data.dart` (Amharic and English date
+  names) from `python pipeline/build_dart_dates.py <flutter sdk>`, after a Flutter upgrade
 - Audio proxy: `node --test server/audio-proxy/proxy.test.mjs`
 - Study assistant: `cd server/study-assistant && npm ci && npm test`
 - Sync SQL: `cd server/supabase/test && npm ci && npm test`
@@ -50,6 +54,7 @@ All future UI work in this repository must follow this CLAUDE.md section.
 | `app/lib/ui/theme/app_colors.dart` | ThemeExtensions `AppColors`, one set per reading theme (success/warning/info + containers, the reader's `paper`, the `playing` and `selection` verse tints, highlight colors, red letters) and `ReadingStyles` (scripture styles that follow the user's text-size/font/line-spacing settings); `context.colors`, `context.text`, `context.appColors`, `context.reading`, `context.scriptureSnippet`, `context.scriptureFeature` |
 | `app/lib/ui/widgets/` | Shared widgets (inventory below) |
 | `app/lib/core/strings.dart` | All UI text, Amharic + English. No literal user-facing strings in widgets |
+| `app/lib/core/localizations.dart` | `appLocalizationsDelegates`: Flutter's own texts and dates in Amharic and English only (never `GlobalMaterialLocalizations.delegates`, which brings ~80 languages into the web download) |
 
 **Token values**
 

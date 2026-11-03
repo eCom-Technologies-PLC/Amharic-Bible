@@ -31,7 +31,6 @@ dependencies:
   sqflite: ^2.4.4
   supabase_flutter: ^2.18.0
   timezone: 0.11.2
-  unorm_dart: ^0.3.2
   url_launcher: ^6.3.2
   uuid: ^4.6.0
   cupertino_icons: ^2.0.0

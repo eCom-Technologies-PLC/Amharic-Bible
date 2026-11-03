@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/localizations.dart';
 import 'core/strings.dart';
 import 'core/web/web_storage.dart';
 import 'features/common.dart';
@@ -231,7 +231,7 @@ class AmharicBibleApp extends ConsumerWidget {
       ),
       locale: settings.locale,
       supportedLocales: S.supported,
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      localizationsDelegates: appLocalizationsDelegates,
       routerConfig: ref.watch(routerProvider),
       // Sheets open beside the press that opened them on wide windows.
       builder: (context, child) => LastPress(child: child ?? const SizedBox.shrink()),
