@@ -95,6 +95,23 @@ void main() {
       }
     });
 
+    test("a lake's or a town's name keeps to the land, not across a coast", () {
+      for (final center in [
+        jerusalem,
+        (lat: 32.56526757, lon: 36.00555931), // Galeed, just east of the Sea of Galilee
+        (lat: 32.7, lon: 35.3), // Nazareth
+      ]) {
+        final view = around(center);
+        for (final (:label, :box, dot: _) in placed(center)) {
+          if (label.kind == MapLabelKind.sea) continue;
+          for (final corner in [box.topLeft, box.topRight, box.bottomLeft, box.bottomRight]) {
+            final at = view.toMap(corner);
+            expect(map.onLand(at.lat, at.lon), isTrue, reason: '${label.text} around $center');
+          }
+        }
+      }
+    });
+
     test('the names in both languages', () {
       expect([for (final l in mapLabels(S.am)) l.text], containsAll(['ኢየሩሳሌም', 'ሙት ባሕር', 'ጣና ሐይቅ', 'ሜዲትራኒያን ባሕር']));
       expect([for (final l in mapLabels(S.en)) l.text], containsAll(['Jerusalem', 'Dead Sea', 'Lake Tana', 'Red Sea']));

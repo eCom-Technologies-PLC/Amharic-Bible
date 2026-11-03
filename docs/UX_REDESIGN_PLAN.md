@@ -1446,7 +1446,11 @@ explore page lists them to browse instead. Amharic names belong in the content p
   - Names in the app's language: the seas (Mediterranean, Red, Aegean, Adriatic, Black, Caspian, the Persian Gulf),
     each written only where its whole name lies on open water, at the nearest of a few spots; the Sea of Galilee, the
     Dead Sea and Lake Tana beside their shores; and Jerusalem as a dot and its name, unless it is under the pin. Names
-    never cover the pin or each other, and are left out where there is no room.
+    never cover the pin or each other, and are left out where there is no room. A lake's or a town's name tries eight
+    spots around it, one wholly on land first, so it doesn't straddle a coast.
+  - Checked in Chrome with a stamped WebAssembly release: the release's file list keeps the map, and with the server
+    stopped and the browser offline, a place's page opened from the kept copy with its map, names and small map, at
+    phone and desktop widths, with no console errors.
   - Tests: the pipeline's clipping, simplifying and encoding, and the checked-in file (land at Jerusalem, Patmos and
     Addis Ababa, sea in the Mediterranean and the Caspian, the Sea of Galilee, the Dead Sea and Lake Tana); in the
     app, decoding, distances and directions, and the place page. The layout audit already renders a place.

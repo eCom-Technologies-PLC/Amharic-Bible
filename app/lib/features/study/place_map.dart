@@ -266,6 +266,13 @@ List<({MapLabel label, Rect box, Offset? dot})> placeMapLabels({
     r.bottomCenter,
     r.bottomRight,
   ].map(view.toMap).every((p) => !map.onLand(p.lat, p.lon));
+  bool onLand(Rect r) => [
+    r.topLeft,
+    r.topRight,
+    r.center,
+    r.bottomLeft,
+    r.bottomRight,
+  ].map(view.toMap).every((p) => map.onLand(p.lat, p.lon));
 
   final placed = <({MapLabel label, Rect box, Offset? dot})>[];
   for (final label in labels) {
@@ -294,13 +301,22 @@ List<({MapLabel label, Rect box, Offset? dot})> placeMapLabels({
     final dot = town ? Rect.fromCircle(center: at, radius: _townDot) : null;
     // A town under the pin (the place itself, or close by) goes unnamed.
     if (dot != null ? !free(dot) : !inside.contains(at)) continue;
-    // Beside the town's dot, or beside the lake's shore (not over its water).
-    final (left, right) = town ? (at.dx - _townDot, at.dx + _townDot) : _shores(map, view, spot, at);
-    final top = at.dy - size.height / 2;
-    final box = [
-      Rect.fromLTWH(right + _labelGap, top, size.width, size.height),
-      Rect.fromLTWH(left - _labelGap - size.width, top, size.width, size.height),
-    ].where(free).firstOrNull;
+    // Around the town's dot or the lake's shores (not over its water): to
+    // the right, left, above, below, then the corners. A spot wholly on land
+    // first, so the name doesn't straddle a coast; else any with room.
+    final e = town ? Rect.fromCircle(center: at, radius: _townDot) : _extent(map, view, spot, at);
+    final (w, h, g) = (size.width, size.height, _labelGap);
+    final around = [
+      Rect.fromLTWH(e.right + g, at.dy - h / 2, w, h),
+      Rect.fromLTWH(e.left - g - w, at.dy - h / 2, w, h),
+      Rect.fromLTWH(at.dx - w / 2, e.top - g - h, w, h),
+      Rect.fromLTWH(at.dx - w / 2, e.bottom + g, w, h),
+      Rect.fromLTWH(e.right + g, e.top - h, w, h),
+      Rect.fromLTWH(e.right + g, e.bottom, w, h),
+      Rect.fromLTWH(e.left - g - w, e.top - h, w, h),
+      Rect.fromLTWH(e.left - g - w, e.bottom, w, h),
+    ].where(free);
+    final box = around.where(onLand).firstOrNull ?? around.firstOrNull;
     if (box == null) continue;
     taken.addAll([box, ?dot]);
     placed.add((label: label, box: box, dot: dot?.center));
@@ -308,14 +324,14 @@ List<({MapLabel label, Rect box, Offset? dot})> placeMapLabels({
   return placed;
 }
 
-/// How far a lake reaches west and east on [view], on screen: the lake
-/// around [spot] (the Dead Sea's northern basin, not its southern one), or a
-/// few pixels either side of [at] when none is.
-(double, double) _shores(BibleLandsMap map, MapView view, LatLon spot, Offset at) {
+/// Where a lake lies on [view], on screen: the lake around [spot] (the Dead
+/// Sea's northern basin, not its southern one), or a few pixels around [at]
+/// when none is.
+Rect _extent(BibleLandsMap map, MapView view, LatLon spot, Offset at) {
   final lake = map.lakes.where((l) => l.bounds.contains(Offset(spot.lon, spot.lat))).firstOrNull;
-  if (lake == null) return (at.dx - _lakeGap, at.dx + _lakeGap);
+  if (lake == null) return Rect.fromCircle(center: at, radius: _lakeGap);
   final b = lake.bounds;
-  return (view.toScreen(spot.lat, b.left).dx, view.toScreen(spot.lat, b.right).dx);
+  return Rect.fromPoints(view.toScreen(b.top, b.left), view.toScreen(b.bottom, b.right));
 }
 
 /// [box] moved to lie within [area], or null when it doesn't fit.
