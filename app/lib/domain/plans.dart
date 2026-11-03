@@ -80,5 +80,19 @@ class PlanProgress {
   /// Scheduled days up to today that are not completed.
   int get behind => [for (var d = 1; d <= scheduledDay; d++) d].where((d) => !completed.contains(d)).length;
 
+  /// Days scheduled before today that were not read: what catching up is about.
+  List<int> get missed => [
+    for (var d = 1; d < scheduledDay; d++)
+      if (!completed.contains(d)) d,
+  ];
+
+  /// The days of week [w] (1-based, from the plan's start), up to its end.
+  List<int> week(int w) => [for (var d = (w - 1) * 7 + 1; d <= plan.length && d <= w * 7; d++) d];
+
+  int get weeks => (plan.length + 6) ~/ 7;
+
+  /// The date a plan day falls on (the start date is day 1).
+  DateTime dateOf(int day) => DateTime(startedAt.year, startedAt.month, startedAt.day + day - 1);
+
   double get fraction => completed.length / plan.length;
 }

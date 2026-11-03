@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/strings.dart';
 import '../../domain/plans.dart';
 import '../../state/providers.dart';
 import '../../ui/ui.dart';
 import '../common.dart';
+import '../share/share_image_screen.dart' show PlanCompleteCard, sharePng;
 import 'plan_widgets.dart';
 
 class PlanDetailScreen extends ConsumerWidget {
@@ -137,34 +139,69 @@ class _DayListState extends ConsumerState<_DayList> {
     final settings = ref.watch(settingsProvider);
 
     Future<void> mark(bool read) async {
+      // Reading the last unread day finishes the plan: a moment to celebrate.
+      final finishing = read && !done && progress.completed.length == plan.length - 1;
       await ref.read(userRepositoryProvider).setDayDone(plan.id, day, read);
       invalidateUserData(ref);
+      if (finishing && context.mounted) await showPlanComplete(context, plan);
     }
 
     return AppListView(
       children: [
-        Gutter(
-          vertical: AppSpacing.md,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.xs,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    progress.finished ? s.planFinished : s.dayOf(progress.scheduledDay, plan.length),
-                    style: context.text.titleSmall,
-                  ),
-                  if (!progress.finished && progress.behind > 1)
-                    StatusBadge(s.behind(progress.behind - 1), tone: BadgeTone.warning),
-                ],
+        if (progress.finished)
+          HeroCard(
+            eyebrow: s.planComplete,
+            actions: [
+              AppButton.secondary(
+                label: s.share,
+                icon: Icons.share_outlined,
+                size: AppButtonSize.sm,
+                onPressed: () => showPlanComplete(context, plan),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              LinearProgressIndicator(value: progress.fraction),
-              const SizedBox(height: AppSpacing.xs),
-              Text(formatDate(progress.startedAt, settings, s), style: context.text.bodySmall),
+            ],
+            child: Text(s.planFinished, style: context.text.titleMedium),
+          )
+        else
+          Gutter(
+            vertical: AppSpacing.md,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(s.dayOf(progress.scheduledDay, plan.length), style: context.text.titleSmall),
+                    if (progress.missed.isNotEmpty)
+                      StatusBadge(s.behind(progress.missed.length), tone: BadgeTone.warning),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                LinearProgressIndicator(value: progress.fraction),
+                const SizedBox(height: AppSpacing.xs),
+                Text(formatDate(progress.startedAt, settings, s), style: context.text.bodySmall),
+              ],
+            ),
+          ),
+        Gutter(
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              if (!progress.finished && progress.missed.isNotEmpty)
+                AppButton.secondary(
+                  label: s.adjustSchedule,
+                  icon: Icons.update,
+                  size: AppButtonSize.sm,
+                  onPressed: () => _catchUp(s, progress),
+                ),
+              AppButton.ghost(
+                label: s.planCalendar,
+                icon: Icons.calendar_view_week_outlined,
+                size: AppButtonSize.sm,
+                onPressed: () => _showAllDays(s, progress),
+              ),
             ],
           ),
         ),
@@ -208,6 +245,141 @@ class _DayListState extends ConsumerState<_DayList> {
       ],
     );
   }
+
+  /// Behind? Either move the schedule so the next unread day is today, or mark
+  /// the missed days read (read elsewhere). Both keep what was read.
+  Future<void> _catchUp(S s, PlanProgress progress) async {
+    final missed = progress.missed;
+    final next = progress.nextDay;
+    if (missed.isEmpty || next == null) return;
+    final choice = await showAppBottomSheet<String>(
+      context: context,
+      title: s.catchUpTitle,
+      builder: (sheet) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(s.missedDays(missed.length), style: sheet.text.bodyMedium),
+          const SizedBox(height: AppSpacing.sm),
+          AppListTile(
+            leadingIcon: Icons.event_repeat_outlined,
+            title: s.pickUp,
+            subtitle: s.pickUpHint(next),
+            onTap: () => Navigator.of(sheet).pop('pickUp'),
+          ),
+          AppListTile(
+            leadingIcon: Icons.done_all,
+            title: s.markMissed(missed.length),
+            subtitle: s.markMissedHint,
+            onTap: () => Navigator.of(sheet).pop('markRead'),
+          ),
+        ],
+      ),
+    );
+    if (choice == null) return;
+    final repo = ref.read(userRepositoryProvider);
+    if (choice == 'pickUp') {
+      await repo.rescheduleFrom(progress.plan.id, next);
+    } else {
+      await repo.markDaysDone(progress.plan.id, missed);
+    }
+    if (!mounted) return;
+    invalidateUserData(ref);
+    setState(() => _chosen = null);
+    showAppSnack(context, s.scheduleAdjusted);
+  }
+
+  /// Every week of the plan with its dates and how much of it was read;
+  /// choosing one shows its first unread day.
+  Future<void> _showAllDays(S s, PlanProgress progress) async {
+    final settings = ref.read(settingsProvider);
+    final next = progress.nextDay;
+    final picked = await showAppBottomSheet<int>(
+      context: context,
+      title: s.planCalendar,
+      builder: (sheet) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var w = 1; w <= progress.weeks; w++)
+            Builder(
+              builder: (_) {
+                final days = progress.week(w);
+                final read = days.where(progress.completed.contains).length;
+                final dates =
+                    '${formatDate(progress.dateOf(days.first), settings, s)} – '
+                    '${formatDate(progress.dateOf(days.last), settings, s)}';
+                return AppListTile(
+                  leading: ProgressRing(value: read / days.length),
+                  title: s.week(w),
+                  subtitle: '$dates · ${s.daysRead(read, days.length)}',
+                  selected: next != null && days.contains(next),
+                  onTap: () =>
+                      Navigator.of(sheet)
+                          .pop(days.firstWhere((d) => !progress.completed.contains(d), orElse: () => days.first)),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+    if (picked != null && mounted) setState(() => _chosen = picked);
+  }
+}
+
+/// A finished plan: a card to share (the plan's name and length on the
+/// illuminated background) and a way to the next plan.
+Future<void> showPlanComplete(BuildContext context, ReadingPlan plan) {
+  final s = S.of(context);
+  final name = plan.nameFor(s.locale.languageCode);
+  final card = GlobalKey();
+  return showAppBottomSheet<void>(
+    context: context,
+    title: s.planComplete,
+    builder: (sheet) => Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppDimens.shareCardPreview),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: FittedBox(
+                child: RepaintBoundary(
+                  key: card,
+                  child: PlanCompleteCard(
+                    eyebrow: s.planComplete,
+                    title: name,
+                    detail: s.days(plan.length),
+                    footer: s.appName,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(s.planFinished, textAlign: TextAlign.center, style: sheet.text.titleMedium),
+        const SizedBox(height: AppSpacing.md),
+        AppButton(
+          label: s.share,
+          icon: Icons.share,
+          expand: true,
+          onPressed: () => sharePng(card, s.planCompleteShare(name), name: 'plan'),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton.ghost(
+          label: s.chooseAnotherPlan,
+          expand: true,
+          onPressed: () {
+            Navigator.of(sheet).pop();
+            context.go('/plans');
+          },
+        ),
+      ],
+    ),
+  );
 }
 
 /// The plan's days in a row that scrolls sideways, starting near the chosen

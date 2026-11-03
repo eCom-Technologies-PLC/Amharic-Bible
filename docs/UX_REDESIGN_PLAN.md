@@ -1248,13 +1248,26 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
   - Backgrounds wrap instead of scrolling sideways, so all nine stay in reach (a mouse can't drag a row sideways).
 - **Shared:** `MonogramAvatar` (the reader on Me, group members).
 
+**Done (part 4: plans):**
+
+- **Behind? Adjust the schedule:** when days before today were not read, the plan page offers two ways back:
+  pick up where you left off (the schedule moves so the next unread day is today), or mark the missed days read
+  (read elsewhere). Both keep what was read and sync like any other change. The "behind" count is now exactly the
+  missed days (it was one short when today's reading was already done).
+- **All days:** every week of the plan with its dates, a progress ring and how many days were read; choosing a week
+  shows its first unread day in the strip. A list of weeks rather than a month grid: seven columns would make the
+  days smaller than a 48dp target on phones, and the Ethiopian calendar setting keeps working through the dates.
+- **Finishing a plan:** reading the last day opens a celebration with a square card to share (the plan's name and
+  length on the illuminated background, in the ornament frame) and "Choose another plan". The plan page keeps a
+  "Plan complete" card with Share.
+
 **Left for Phase 5:**
 
 - Save the verse image to the gallery: needs a native plugin and photo-library permissions on Android and iOS,
   tested on devices. Until then the share sheet offers saving on phones, and the web downloads the image.
 - An offline map card for places (a simplified coastline of Bible lands from Natural Earth, built by the content
   pipeline); for now the map opens online.
-- Plans: covers (illustrator), "Behind? Adjust the schedule", a month view, the completion celebration and card.
+- Plans: covers (illustrator).
 - Search: a passage preview beside the results on wide windows; Amharic stemming (pipeline).
 
 **Content gaps found:** people and places have English names only, so typing an Amharic name finds nothing; the

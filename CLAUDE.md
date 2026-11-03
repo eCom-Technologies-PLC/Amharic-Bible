@@ -111,7 +111,7 @@ All future UI work in this repository must follow this CLAUDE.md section.
 
 **Documented exceptions**
 
-- The share-image card (`VerseCard`) is a fixed 1080 px picture that must look the same in every theme, so it uses `ShareCardTokens` and its own palette rather than the app theme.
+- The share-image cards (`VerseCard`, `PlanCompleteCard`) are fixed 1080 px pictures that must look the same in every theme, so they use `ShareCardTokens` and their own palette rather than the app theme. Share them with `sharePng`.
 - `AppShell` (in `app.dart`) uses a plain `Scaffold`: it is the navigation shell (five tabs: Today · Read · Plans ·
   Search & Study · Me) that hosts the bottom bar, rail or sidebar, not a screen. Old `/me/plans…` and `/me/groups`
   addresses redirect to `/plans…`. Screens opened over the tabs (study, word, entity, timeline, Ask, group, player)

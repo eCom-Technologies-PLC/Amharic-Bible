@@ -63,27 +63,7 @@ class _ShareImageScreenState extends ConsumerState<ShareImageScreen> {
   Future<void> _share(String reference) async {
     setState(() => _busy = true);
     try {
-      final png = await renderCardPng(_cardKey);
-      if (kIsWeb) {
-        final name = 'verse_${DateTime.now().millisecondsSinceEpoch}.png';
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile.fromData(png, name: name, mimeType: 'image/png')],
-            fileNameOverrides: [name],
-            text: reference,
-          ),
-        );
-        return;
-      }
-      final dir = await getTemporaryDirectory();
-      final file = File(p.join(dir.path, 'verse_${DateTime.now().millisecondsSinceEpoch}.png'));
-      await file.writeAsBytes(png);
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path, mimeType: 'image/png')],
-          text: reference,
-        ),
-      );
+      await sharePng(_cardKey, reference, name: 'verse');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -356,6 +336,113 @@ class _OrnamentFrame extends CustomPainter {
 
   @override
   bool shouldRepaint(_OrnamentFrame old) => old.color != color;
+}
+
+/// Shares the picture under [key] (a RepaintBoundary) as a 1080 px PNG with
+/// [text], through the system share sheet; browsers without one download it.
+/// [name] starts the file's name ("verse", "plan").
+Future<void> sharePng(GlobalKey key, String text, {required String name}) async {
+  final png = await renderCardPng(key);
+  final file = '${name}_${DateTime.now().millisecondsSinceEpoch}.png';
+  if (kIsWeb) {
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile.fromData(png, name: file, mimeType: 'image/png')],
+        fileNameOverrides: [file],
+        text: text,
+      ),
+    );
+    return;
+  }
+  final path = p.join((await getTemporaryDirectory()).path, file);
+  await File(path).writeAsBytes(png);
+  await SharePlus.instance.share(
+    ShareParams(
+      files: [XFile(path, mimeType: 'image/png')],
+      text: text,
+    ),
+  );
+}
+
+/// The picture shared when a reading plan is finished: "Plan complete", the
+/// plan's name and length, on the illuminated background in the ornament
+/// frame. Square, laid out at 360 like [VerseCard].
+class PlanCompleteCard extends StatelessWidget {
+  const PlanCompleteCard({
+    super.key,
+    required this.eyebrow,
+    required this.title,
+    required this.detail,
+    required this.footer,
+  });
+
+  final String eyebrow;
+  final String title;
+  final String detail;
+  final String footer;
+
+  @override
+  Widget build(BuildContext context) {
+    const width = ShareCardTokens.canvasWidth;
+    const background = illuminatedCard;
+    final color = background.text;
+    return CustomPaint(
+      foregroundPainter: _OrnamentFrame(color.withValues(alpha: ShareCardTokens.frameOpacity)),
+      child: Container(
+        width: width,
+        height: width,
+        decoration: background.decoration,
+        padding: ShareCardTokens.framedPadding,
+        child: Column(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    eyebrow.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: AppFonts.sans,
+                      fontSize: ShareCardTokens.eyebrowSize,
+                      letterSpacing: ShareCardTokens.eyebrowSpacing,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: ShareCardTokens.referenceGap),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: AppFonts.serif,
+                      fontSize: ShareCardTokens.planTitleSize,
+                      fontWeight: FontWeight.w600,
+                      height: ShareCardTokens.planTitleHeight,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: ShareCardTokens.referenceGap),
+                  Text(
+                    detail,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: AppFonts.sans, fontSize: ShareCardTokens.referenceSize, color: color),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              footer,
+              style: TextStyle(
+                fontFamily: AppFonts.sans,
+                fontSize: ShareCardTokens.footerSize,
+                color: color.withValues(alpha: ShareCardTokens.footerOpacity),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Renders the widget under [key] (a RepaintBoundary) to PNG bytes at a

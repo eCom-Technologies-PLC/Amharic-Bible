@@ -135,6 +135,7 @@ Features:
 - **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
   60 days, with a strip of the plan's days and a "today's reading" card on Home (where a first plan starts in one
   tap). A day marks itself read once the end of each of its chapters has been on screen a few seconds, with Undo.
+  Behind? Pick up where you left off, or mark the missed days read. Finishing a plan brings a card to share.
 - **Share:** verses as text, or as an image card (9 backgrounds, square or story size, three text sizes, an
   optional ornament frame, with or without the version; a 1080 px PNG).
 - **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes, plans and your

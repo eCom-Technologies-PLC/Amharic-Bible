@@ -223,6 +223,100 @@ void main() {
     expect(await UserRepository(userDb).completedDays('test'), isEmpty);
   });
 
+  testWidgets('behind on a plan, the schedule can pick up where you left off or mark the missed days read', (
+    tester,
+  ) async {
+    // Started five days ago and never read: today is day 6, days 1-5 missed.
+    await tester.runAsync(
+      () =>
+          UserRepository(userDb, clock: () => DateTime.now().subtract(const Duration(days: 5))).startPlan('gospels-30'),
+    );
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/plans/gospels-30',
+    );
+    expect(find.text('Day 6 of 30'), findsOneWidget);
+    expect(find.text('5 days behind'), findsOneWidget);
+    await tester.tap(find.text('Adjust the schedule'));
+    await tester.pumpAndSettle();
+    expect(find.text("There are 5 days you haven't read."), findsOneWidget);
+    await tester.tap(find.text('Mark the 5 missed days read'));
+    await tester.pumpAndSettle();
+    expect(await UserRepository(userDb).completedDays('gospels-30'), {1, 2, 3, 4, 5});
+    expect(find.text('Schedule adjusted'), findsOneWidget);
+    expect(find.text('Adjust the schedule'), findsNothing);
+    // Behind again: day 6 is now yesterday's. Pick up instead: today becomes day 6.
+    await tester.runAsync(
+      () => UserRepository(
+        userDb,
+        clock: () => DateTime.now().subtract(const Duration(days: 6)),
+      ).rescheduleFrom('gospels-30', 1),
+    );
+    invalidateUserDataIn(ProviderScope.containerOf(tester.element(find.byType(Scaffold).first)));
+    await tester.pumpAndSettle();
+    expect(find.text('Day 7 of 30'), findsOneWidget);
+    await tester.tap(find.text('Adjust the schedule'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pick up where you left off'));
+    await tester.pumpAndSettle();
+    expect(find.text('Day 6 of 30'), findsOneWidget);
+    expect(find.text('Adjust the schedule'), findsNothing);
+  });
+
+  testWidgets('all days at a glance, by week; a week opens on its first unread day', (tester) async {
+    await tester.runAsync(() => UserRepository(userDb).startPlan('gospels-30'));
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/plans/gospels-30',
+    );
+    await tester.tap(find.text('All days'));
+    await tester.pumpAndSettle();
+    expect(find.text('Week 1'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Week 3'), 100, scrollable: find.byType(Scrollable).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Week 3'));
+    await tester.pumpAndSettle();
+    expect(find.text('Day 15'), findsOneWidget);
+  });
+
+  testWidgets('reading the last day of a plan celebrates it, with a card to share', (tester) async {
+    const plan = ReadingPlan(
+      id: 'short',
+      name: {'en': 'Two days'},
+      description: {'en': ''},
+      days: [
+        [PlanReading('JHN', 3, 3)],
+        [PlanReading('PSA', 23, 23)],
+      ],
+    );
+    await tester.runAsync(() async {
+      final repo = UserRepository(userDb);
+      await repo.startPlan('short');
+      await repo.setDayDone('short', 1, true);
+    });
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/plans/short',
+      overrides: [
+        plansProvider.overrideWith((ref) async => [plan]),
+      ],
+    );
+    await tester.tap(find.text('Mark as read'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlanCompleteCard), findsOneWidget);
+    expect(find.text('Plan complete. Well done!'), findsWidgets);
+    await tester.tapAt(const Offset(20, 20)); // close the sheet
+    await tester.pumpAndSettle();
+    // The plan's page keeps the celebration, with Share.
+    expect(find.byType(HeroCard), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButton, 'Share'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlanCompleteCard), findsOneWidget);
+  });
+
   testWidgets('a plan starts from Today in one tap', (tester) async {
     await pumpApp(tester, settings: const Settings(languageCode: 'en'));
     await tester.scrollUntilVisible(find.text('The Gospels in 30 days'), 200);

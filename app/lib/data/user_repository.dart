@@ -347,6 +347,47 @@ class UserRepository {
     return {for (final r in rows) r['day'] as int};
   }
 
+  /// Catching up: moves the plan's schedule so that [day] falls on today,
+  /// keeping what was read. The days after it move along with it.
+  Future<void> rescheduleFrom(String planId, int day) async {
+    final today = _clock();
+    final start = DateTime(today.year, today.month, today.day - (day - 1));
+    await db.transaction((tx) async {
+      await tx.update(
+        'plan',
+        {'started_at': start.millisecondsSinceEpoch, 'updated_at': _now},
+        where: 'plan_id = ? AND deleted_at IS NULL',
+        whereArgs: [planId],
+      );
+      await _outbox(tx, 'plan', planId, 'upsert');
+    });
+  }
+
+  /// Catching up: marks [days] read (read elsewhere, say); days already read
+  /// keep when they were read.
+  Future<void> markDaysDone(String planId, Iterable<int> days) async {
+    await db.transaction((tx) async {
+      final done = {
+        for (final r in await tx.query(
+          'plan_progress',
+          columns: ['day'],
+          where: 'plan_id = ? AND completed_at IS NOT NULL',
+          whereArgs: [planId],
+        ))
+          r['day'] as int,
+      };
+      for (final day in days.where((d) => !done.contains(d))) {
+        await tx.insert('plan_progress', {
+          'plan_id': planId,
+          'day': day,
+          'completed_at': _now,
+          'updated_at': _now,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+        await _outbox(tx, 'plan_progress', '$planId:$day', 'upsert');
+      }
+    });
+  }
+
   Future<void> setDayDone(String planId, int day, bool done) async {
     await db.transaction((tx) async {
       await tx.insert('plan_progress', {

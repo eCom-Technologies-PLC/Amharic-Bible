@@ -27,6 +27,12 @@ abstract final class ShareCardTokens {
   static const double frameDiamond = 5;
   static const double frameOpacity = 0.55;
 
+  /// The finished-plan card: a small capital line over the plan's name.
+  static const double eyebrowSize = 12;
+  static const double eyebrowSpacing = 1.5;
+  static const double planTitleSize = 26;
+  static const double planTitleHeight = 1.3;
+
   /// Padding inside the frame, so the reference and footer clear it.
   static const EdgeInsets framedPadding = EdgeInsets.fromLTRB(32, 36, 32, 28);
 
@@ -55,5 +61,8 @@ const cardBackgrounds = [
   CardBackground([Color(0xFF2E86AB), Color(0xFF6CC3D5)], Colors.white), // sky
   CardBackground([Colors.white], Color(0xFF1B1B1B)),
   CardBackground([Colors.black], Colors.white),
-  CardBackground([Color(0xFFF2DFB4), Color(0xFFFBF5E8)], Color(0xFF3B2F20)), // illuminated (verse of the day)
+  illuminatedCard,
 ];
+
+/// Gold to ivory, like the verse-of-the-day card; also the finished-plan card.
+const illuminatedCard = CardBackground([Color(0xFFF2DFB4), Color(0xFFFBF5E8)], Color(0xFF3B2F20));

@@ -33,6 +33,12 @@ void main() {
     expect(p.scheduledDay, 5);
     expect(p.nextDay, 3);
     expect(p.behind, 2); // days 3 and 5
+    expect(p.missed, [3]); // before today: what catching up is about
+    expect(p.weeks, 53);
+    expect(p.week(1), [1, 2, 3, 4, 5, 6, 7]);
+    expect(p.week(53), [365]);
+    expect(p.dateOf(1), DateTime(2026, 10, 1));
+    expect(p.dateOf(32), DateTime(2026, 11, 1));
     final gospels = plans.firstWhere((x) => x.id == 'gospels-30');
     final done = PlanProgress(
       plan: gospels,

@@ -63,6 +63,19 @@ void main() {
     expect(await repo.activePlans(), isEmpty);
   });
 
+  test('plans: catching up moves the schedule or marks missed days, keeping what was read', () async {
+    var now = DateTime(2026, 10, 1, 9);
+    final r = UserRepository(await openTestUserDb(), clock: () => now);
+    await r.startPlan('nt-90');
+    await r.setDayDone('nt-90', 1, true);
+    now = DateTime(2026, 10, 6, 20); // day 6 by the calendar; days 2-5 missed
+    await r.rescheduleFrom('nt-90', 2);
+    expect((await r.activePlans())['nt-90'], DateTime(2026, 10, 5)); // today is day 2
+    expect(await r.completedDays('nt-90'), {1});
+    await r.markDaysDone('nt-90', [1, 2, 3]);
+    expect(await r.completedDays('nt-90'), {1, 2, 3});
+  });
+
   test('schema migrates from version 1', () async {
     final db = await databaseFactory.openDatabase(
       inMemoryDatabasePath,

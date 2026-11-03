@@ -482,6 +482,26 @@ class S {
   String get textLarger => _('textLarger');
   String get showVersion => _('showVersion');
   String get ornamentFrame => _('ornamentFrame');
+  String get adjustSchedule => _('adjustSchedule');
+  String get catchUpTitle => _('catchUpTitle');
+  String missedDays(int n) => isAmharic
+      ? 'ያልተነበቡ ${days(n)} አሉ።'
+      : (n == 1 ? "There's 1 day you haven't read." : "There are $n days you haven't read.");
+  String get pickUp => _('pickUp');
+  String pickUpHint(int day) => isAmharic
+      ? 'ዛሬ ቀን $day ይሆናል፤ ከዚያ በኋላ ያሉት ቀናትም አብረው ይዛወራሉ።'
+      : 'Today becomes day $day; the days after it move along.';
+  String markMissed(int n) => isAmharic
+      ? 'ያመለጡትን ${days(n)} እንደተነበቡ ምልክት አድርግ'
+      : (n == 1 ? 'Mark the missed day read' : 'Mark the $n missed days read');
+  String get markMissedHint => _('markMissedHint');
+  String get scheduleAdjusted => _('scheduleAdjusted');
+  String get planCalendar => _('planCalendar');
+  String week(int n) => isAmharic ? 'ሳምንት $n' : 'Week $n';
+  String get planComplete => _('planComplete');
+  String planCompleteShare(String plan) =>
+      isAmharic ? 'የንባብ ዕቅዱን «$plan» ጨረስኩ። — $appName' : 'I finished the reading plan “$plan”. — $appName';
+  String get chooseAnotherPlan => _('chooseAnotherPlan');
   String get showOnMap => _('showOnMap');
   String get mapOpenFailed => _('mapOpenFailed');
 
@@ -1014,6 +1034,15 @@ const _am = {
   'textLarger': 'ትልቅ ፊደል',
   'showVersion': 'ትርጉሙን አሳይ',
   'ornamentFrame': 'የጌጥ ክፈፍ',
+  // Plans: catching up, calendar, completion
+  'adjustSchedule': 'መርሐ ግብሩን አስተካክል',
+  'catchUpTitle': 'ወደኋላ ቀርተዋል? መርሐ ግብሩን ያስተካክሉ',
+  'pickUp': 'ካቆሙበት ይቀጥሉ',
+  'markMissedHint': 'በሌላ ቦታ ካነበቧቸው',
+  'scheduleAdjusted': 'መርሐ ግብሩ ተስተካክሏል',
+  'planCalendar': 'የዕቅዱ ቀናት',
+  'planComplete': 'ዕቅዱ ተጠናቋል',
+  'chooseAnotherPlan': 'ሌላ ዕቅድ ይምረጡ',
   'showOnMap': 'በካርታ ላይ አሳይ',
   'mapOpenFailed': 'ካርታውን መክፈት አልተቻለም',
   'era.beginnings': 'ፍጥረትና የጥንቱ ዓለም',
@@ -1528,6 +1557,15 @@ const _en = {
   'textLarger': 'Larger text',
   'showVersion': 'Show the version',
   'ornamentFrame': 'Ornament frame',
+  // Plans: catching up, calendar, completion
+  'adjustSchedule': 'Adjust the schedule',
+  'catchUpTitle': 'Behind? Adjust the schedule',
+  'pickUp': 'Pick up where you left off',
+  'markMissedHint': 'If you read them elsewhere',
+  'scheduleAdjusted': 'Schedule adjusted',
+  'planCalendar': 'All days',
+  'planComplete': 'Plan complete',
+  'chooseAnotherPlan': 'Choose another plan',
   'showOnMap': 'Show on a map',
   'mapOpenFailed': "Couldn't open the map",
   'era.beginnings': 'Beginnings',

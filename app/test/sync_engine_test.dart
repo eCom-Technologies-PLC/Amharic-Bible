@@ -53,6 +53,20 @@ void main() {
     expect(await tablet.repo.pendingSyncCount(), 0);
   });
 
+  test('catching up on a plan reaches another device', () async {
+    await phone.repo.startPlan('nt-90');
+    await phone.engine.sync();
+    await tablet.engine.sync();
+    // Days later the phone catches up: two missed days read, then the schedule moved.
+    phone.now = DateTime(2026, 10, 6, 20);
+    await phone.repo.markDaysDone('nt-90', [1, 2]);
+    await phone.repo.rescheduleFrom('nt-90', 3);
+    await phone.engine.sync();
+    await tablet.engine.sync();
+    expect((await tablet.repo.activePlans())['nt-90'], DateTime(2026, 10, 4)); // day 3 is the 6th
+    expect(await tablet.repo.completedDays('nt-90'), {1, 2});
+  });
+
   test('deletes sync as tombstones', () async {
     await phone.repo.toggleBookmarks([1001001]);
     await phone.engine.sync();
