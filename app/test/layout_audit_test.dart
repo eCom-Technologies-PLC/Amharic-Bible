@@ -165,6 +165,9 @@ void main() {
   // Wide desktop windows: the sidebar, and the study panel beside the reader.
   group('desktop', () {
     const desktop = Device('1440 desktop', Size(1440, 900), 1.0);
+    // Well into the first verse's words, past its small number (a press
+    // between the two lands on neither).
+    const intoTheText = Offset(120, 20);
     for (final lang in ['am', 'en']) {
       testWidgets('$lang reader with the study panel and a verse selected', (tester) async {
         final errors = await render(
@@ -172,10 +175,37 @@ void main() {
           route: '/read?ref=JHN.3',
           device: desktop,
           settings: Settings(languageCode: lang),
-          interact: (t) => t.longPressAt(t.getTopLeft(find.byType(ParagraphView).first) + const Offset(40, 20)),
+          interact: (t) => t.longPressAt(t.getTopLeft(find.byType(ParagraphView).first) + intoTheText),
         );
         expect(errors, isEmpty);
       });
+
+      // Sheets open as popovers beside the control that opened them.
+      final popovers = <String, (String, Future<void> Function(WidgetTester))>{
+        'text settings under Aa': ('/read?ref=JHN.3', (t) => t.tap(find.byIcon(Icons.text_fields))),
+        'more actions above the selection bar': (
+          '/read?ref=JHN.3',
+          (t) async {
+            await t.longPressAt(t.getTopLeft(find.byType(ParagraphView).first) + intoTheText);
+            await t.pumpAndSettle();
+            await t.tap(find.byIcon(Icons.more_horiz));
+          },
+        ),
+        'a settings option list': ('/me/settings', (t) => t.tap(find.byIcon(Icons.view_column_outlined))),
+        'search filters': ('/search?q=God', (t) => t.tap(find.byIcon(Icons.tune))),
+      };
+      for (final MapEntry(key: name, value: (route, open)) in popovers.entries) {
+        testWidgets('$lang $name', (tester) async {
+          final errors = await render(
+            tester,
+            route: route,
+            device: desktop,
+            settings: Settings(languageCode: lang),
+            interact: open,
+          );
+          expect(errors, isEmpty);
+        });
+      }
     }
   });
 

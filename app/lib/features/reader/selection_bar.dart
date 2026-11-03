@@ -149,9 +149,10 @@ class SelectionBar extends ConsumerWidget {
   final VoidCallback onDone;
 
   /// The less frequent actions, in a sheet, so the bar stays one short row.
-  void _showMore(BuildContext context, S s, Iterable<VerseAction> more) {
+  void _showMore(BuildContext context, S s, Iterable<VerseAction> more, BuildContext button) {
     showAppBottomSheet<void>(
       context: context,
+      anchor: button,
       title: formatReference(book, chapter, selected.map((k) => k % 1000), amharic: s.isAmharic),
       builder: (sheet) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -245,10 +246,12 @@ class SelectionBar extends ConsumerWidget {
                 children: [
                   for (final a in actions.take(_onBar))
                     LabeledIconButton(icon: a.icon, label: a.label, onPressed: a.run),
-                  LabeledIconButton(
-                    icon: Icons.more_horiz,
-                    label: s.moreActions,
-                    onPressed: () => _showMore(context, s, actions.skip(_onBar)),
+                  Builder(
+                    builder: (button) => LabeledIconButton(
+                      icon: Icons.more_horiz,
+                      label: s.moreActions,
+                      onPressed: () => _showMore(context, s, actions.skip(_onBar), button),
+                    ),
                   ),
                 ],
               ),

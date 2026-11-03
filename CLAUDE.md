@@ -59,7 +59,7 @@ All future UI work in this repository must follow this CLAUDE.md section.
 | Elevation | flat 0 · card 1 · bar 3 · dialog 6 |
 | Icons | sm 18 · md 24 · lg 32 · xl 48 · hero 96 |
 | Heights | buttons 36 / 48 / 56 · input 56 · list tile 56 / 72 · app bar 56 · touch target 48 |
-| Layout | reading column max 680 (×2 side by side) · page content max 840 (`AppListView` / `ContentWidth` center it) · two columns from 600 · navigation rail from 600, sidebar from 1200 · reader study panel 360 wide from 1360 · compact app bars below 320 effective width (width ÷ text scale) |
+| Layout | reading column max 680 (×2 side by side) · page content max 840 (`AppListView` / `ContentWidth` center it) · Today a two-column dashboard from 840, max 1200 · two columns from 600 · navigation rail from 600, sidebar from 1200 · reader study panel 360 wide from 1360 · sheets become popovers (400 wide; centered ones max 560) on windows from 840 × 560 · compact app bars below 320 effective width (width ÷ text scale) |
 | Type (TextTheme) | display 40/36/32 · headline 30/26/24 · title 20/17/15 (w600) · body 17/15/13 · label 15/13/12. Line heights 1.25–1.4 for display/title, 1.5–1.55 for body (Ge'ez needs taller lines) |
 | Reading sizes | 15 · 17 · 19 (default) · 21 · 24 · 28; line heights 1.5 · 1.7 · 2.0 |
 | Motion | fast 150 ms · medium 250 ms · slow 400 ms · curve `easeOutCubic` · one page transition (`FadeForwardsPageTransitionsBuilder`) |
@@ -67,9 +67,11 @@ All future UI work in this repository must follow this CLAUDE.md section.
 **Shared widgets** (`app/lib/ui/widgets/`)
 
 - Structure: `AppScaffold` (`reading: true` puts the reader on the theme's paper color; `pageTitle` names the browser
-  tab on the web, default `title`), `AppListView` (centers content at 840 on wide windows), `ContentWidth` (the same
-  for bodies that aren't an `AppListView`), `Gutter` (screen padding), `SectionHeader`, `LabeledGroup`,
-  `BottomActionBar`.
+  tab on the web, default `title`; on wide windows its app bar lines up with the body's centered content, 840 by
+  default: pass `contentWidth` for another width, such as the reader's column or Today's 1200, and `endPanelWidth`
+  for a side panel), `AppListView` (centers content at 840 on wide windows), `ContentWidth` (the same for bodies
+  that aren't an `AppListView`; every body is centered one way or the other, so the app bar lines up),
+  `Gutter` (screen padding), `SectionHeader`, `LabeledGroup`, `BottomActionBar`.
 - Actions: `AppButton` (`.secondary/.outline/.ghost/.destructive`; `size`, `icon`, `iconAtEnd`, `loading`, `expand`, `tight`), `LabeledIconButton`, `SwatchButton`. Icon-only actions use `IconButton` (themed to 48dp) with a `tooltip`.
 - Forms & filters: `AppTextField`, `AppSearchField` (optional `focusNode`), `FilterBar` / `FilterOption`
   (`padding: EdgeInsets.zero` inside a sheet, which has its own).
@@ -80,12 +82,18 @@ All future UI work in this repository must follow this CLAUDE.md section.
   `AppListTile`, `StatusBadge` (`BadgeTone`), `ProgressRing`.
 - States: `AsyncView` (loading/error/data for any `AsyncValue`), `EmptyState`, `LoadingState`, `ErrorState` (friendly text + retry; never show exception text to readers), `InlineSpinner`.
 - Overlays: `showAppDialog`, `showConfirmDialog`, `showAppBottomSheet`, `showOptionPicker` / `PickerOption`,
-  `showAppSnack` (optional `actionLabel` / `onAction`, e.g. Undo).
+  `showAppSnack` (optional `actionLabel` / `onAction`, e.g. Undo), `LastPress` (wraps the app: remembers the press
+  that opens a sheet, see below).
   (These functions are this project's `AppDialog` / `AppBottomSheet`.)
 
 **Rules specific to this app**
 
 - Dialogs only confirm destructive or blocking actions (delete account, stop/restart a plan, download progress). Choices, pickers and details (versions, language, speed, sleep timer, footnotes, text settings) use bottom sheets via `showOptionPicker` / `showAppBottomSheet`.
+  On wide windows (desktop browsers, tablets on their side) these open as a popover beside the control that opened
+  them: pass `anchor:` (the button's context, via a `Builder`) for buttons in bars and toolbars; otherwise the spot
+  just pressed is used, and with nothing pressed (a keyboard shortcut) the sheet opens centered, as it does with
+  `centered: true` (a moment rather than a choice, such as finishing a plan). They sit on the root navigator there,
+  so close them with the builder's context (`Navigator.of(sheet).pop()`), never the screen's.
 - Reader gestures: on phones, press and hold selects a verse, and a tap adds to a selection, jumps the audio to the
   verse, or shows and hides the bars (`immersiveProvider`; the shell hides its navigation bar with it). On the web and
   with a screen reader, a tap selects. `ParagraphView.onLongPressVerse` carries the hold; keep both paths working.

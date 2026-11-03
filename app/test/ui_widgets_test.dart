@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:amharic_bible/core/strings.dart';
 import 'package:amharic_bible/ui/ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -148,5 +151,142 @@ void main() {
     );
     expect(find.text('3 days behind'), findsOneWidget);
     expect(find.text('Nothing here'), findsOneWidget);
+  });
+
+  group('sheets', () {
+    // A button that opens a sheet, at [alignment] in a window of [size].
+    Future<void> host(
+      WidgetTester tester,
+      Size size,
+      Future<void> Function(BuildContext button) open, {
+      Alignment alignment = Alignment.topLeft,
+    }) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildAppTheme(
+            mode: ReaderTheme.light,
+            platformBrightness: Brightness.light,
+            readingFontSize: 19,
+            readingLineHeight: 1.7,
+            serif: true,
+          ),
+          locale: const Locale('en'),
+          supportedLocales: S.supported,
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          builder: (context, child) => LastPress(child: child!),
+          home: Scaffold(
+            body: Align(
+              alignment: alignment,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxxl),
+                child: Builder(
+                  builder: (button) => AppButton(label: 'Open', onPressed: () => open(button)),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Rect popover(WidgetTester tester, String text) =>
+        tester.getRect(find.ancestor(of: find.text(text), matching: find.byType(Material)).first);
+
+    testWidgets('rise from the bottom on a phone', (tester) async {
+      await host(
+        tester,
+        const Size(400, 800),
+        (b) => showAppBottomSheet<void>(context: b, anchor: b, title: 'Details', builder: (_) => const Text('Body')),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Body'), findsOneWidget);
+    });
+
+    testWidgets('open under their control on a wide window, and close with Esc', (tester) async {
+      await host(
+        tester,
+        const Size(1280, 800),
+        (b) => showAppBottomSheet<void>(context: b, anchor: b, title: 'Details', builder: (_) => const Text('Body')),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      final button = tester.getRect(find.byType(AppButton));
+      final sheet = popover(tester, 'Body');
+      expect(sheet.top, button.bottom + AppSpacing.xs);
+      expect(sheet.left, button.left);
+      expect(sheet.width, AppDimens.popoverWidth);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Body'), findsNothing);
+    });
+
+    testWidgets('open above a control near the bottom, inside the window', (tester) async {
+      await host(
+        tester,
+        const Size(1280, 800),
+        (b) => showAppBottomSheet<void>(
+          context: b,
+          anchor: b,
+          title: 'More',
+          builder: (_) => const SizedBox(height: 300, child: Text('Body')),
+        ),
+        alignment: Alignment.bottomRight,
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      final button = tester.getRect(find.byType(AppButton));
+      final sheet = popover(tester, 'Body');
+      expect(sheet.bottom, button.top - AppSpacing.xs);
+      expect(sheet.right, lessThanOrEqualTo(1280 - AppSpacing.lg));
+    });
+
+    testWidgets('options open where they were pressed and return the choice', (tester) async {
+      String? chosen;
+      await host(tester, const Size(1280, 800), (b) async {
+        chosen = await showOptionPicker<String>(
+          context: b,
+          title: 'Language',
+          selected: 'am',
+          options: const [PickerOption('am', 'አማርኛ'), PickerOption('en', 'English')],
+        );
+      });
+      final spot = tester.getCenter(find.text('Open'));
+      await tester.tapAt(spot);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(popover(tester, 'English').topLeft, spot + const Offset(0, AppSpacing.xs));
+      await tester.tap(find.text('English'));
+      await tester.pumpAndSettle();
+      expect(chosen, 'en');
+      expect(find.text('English'), findsNothing);
+    });
+
+    testWidgets('open centered when nothing was pressed, or for a moment', (tester) async {
+      await host(
+        tester,
+        const Size(1280, 800),
+        (b) => showAppBottomSheet<void>(context: b, centered: true, title: 'Done!', builder: (_) => const Text('Body')),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+      Navigator.of(tester.element(find.text('Body'))).pop();
+      await tester.pumpAndSettle();
+
+      // Opened by a keyboard shortcut, just after that click: the key press
+      // means the click didn't open it, so there is nothing to point at.
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      final context = tester.element(find.text('Open'));
+      unawaited(showAppBottomSheet<void>(context: context, title: 'Go to', builder: (_) => const Text('Field')));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.text('Field'), findsOneWidget);
+    });
   });
 }

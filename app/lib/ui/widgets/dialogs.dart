@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../tokens/tokens.dart';
@@ -49,38 +52,52 @@ Future<bool> showConfirmDialog({
   return ok ?? false;
 }
 
-/// Bottom sheet with the standard handle, padding, title and safe area.
+/// A sheet with the standard padding, title and safe area: options, details
+/// and short forms.
+///
+/// It rises from the bottom on phones. On wide windows (desktop browsers,
+/// tablets on their side) it opens as a popover beside the control that
+/// opened it: [anchor] when given, otherwise the spot just pressed. It opens
+/// centered when nothing was pressed (a keyboard shortcut), or when
+/// [centered] (a moment rather than a choice, such as finishing a plan).
+/// Close it with the builder's context (`Navigator.of(sheet).pop()`).
 Future<T?> showAppBottomSheet<T>({
   required BuildContext context,
   String? title,
   required WidgetBuilder builder,
   bool scrollable = true,
-}) => showModalBottomSheet<T>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (context) => SafeArea(
-    child: Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, AppSpacing.xl),
-        physics: scrollable ? null : const NeverScrollableScrollPhysics(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (title != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: Text(title, style: context.text.titleMedium),
-              ),
-            builder(context),
-          ],
+  BuildContext? anchor,
+  bool centered = false,
+}) {
+  final physics = scrollable ? null : const NeverScrollableScrollPhysics();
+  if (!_wideWindow(context)) {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, AppSpacing.xl),
+            physics: physics,
+            child: _SheetBody(title: title, builder: builder),
+          ),
         ),
       ),
+    );
+  }
+  return _showBeside<T>(
+    context: context,
+    title: title,
+    anchor: centered ? null : _anchorOf(context, anchor),
+    builder: (context) => SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      physics: physics,
+      child: _SheetBody(title: title, builder: builder),
     ),
-  ),
-);
+  );
+}
 
 /// Brief confirmation message at the bottom of the screen. With [actionLabel]
 /// and [onAction] it offers one action, typically "Undo" after a removal, and
@@ -108,39 +125,308 @@ class PickerOption<T> {
   final String? subtitle;
 }
 
-/// Bottom sheet listing options with the current one checked; resolves to the
-/// chosen value (null when dismissed). Replaces dropdowns and segmented
-/// controls inside list rows, which do not fit narrow screens.
+/// Options with the current one checked, in a sheet (a popover on wide
+/// windows, as [showAppBottomSheet]); resolves to the chosen value (null when
+/// dismissed). Replaces dropdowns and segmented controls inside list rows,
+/// which do not fit narrow screens.
 Future<T?> showOptionPicker<T>({
   required BuildContext context,
   required String title,
   required List<PickerOption<T>> options,
   required T? selected,
-}) => showModalBottomSheet<T>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (context) => SafeArea(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, AppSpacing.sm),
-            child: Text(title, style: context.text.titleMedium),
-          ),
-          for (final o in options)
-            ListTile(
-              title: Text(o.label),
-              subtitle: o.subtitle != null ? Text(o.subtitle!) : null,
-              trailing: o.value == selected ? Icon(Icons.check, color: context.colors.primary) : null,
-              selected: o.value == selected,
-              onTap: () => Navigator.pop(context, o.value),
-            ),
-        ],
+  BuildContext? anchor,
+}) {
+  if (!_wideWindow(context)) {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => SafeArea(
+        child: _OptionList<T>(title: title, options: options, selected: selected, inSheet: true),
       ),
+    );
+  }
+  return _showBeside<T>(
+    context: context,
+    title: title,
+    anchor: _anchorOf(context, anchor),
+    builder: (context) => _OptionList<T>(title: title, options: options, selected: selected, inSheet: false),
+  );
+}
+
+/// Remembers where the pointer last went down, so that a sheet the press
+/// opens appears beside it on a wide window ([showAppBottomSheet]). Wraps the
+/// app.
+class LastPress extends StatefulWidget {
+  const LastPress({super.key, required this.child});
+
+  final Widget child;
+
+  /// The spot pressed just now (within [AppMotion.pressToSheet]), in global
+  /// coordinates; null when nothing was.
+  static Offset? recentOf(BuildContext context) => context.findAncestorStateOfType<_LastPressState>()?._recent;
+
+  @override
+  State<LastPress> createState() => _LastPressState();
+}
+
+class _LastPressState extends State<LastPress> {
+  Offset? _spot;
+  DateTime? _at;
+
+  Offset? get _recent {
+    final at = _at;
+    return at != null && DateTime.now().difference(at) <= AppMotion.pressToSheet ? _spot : null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    super.dispose();
+  }
+
+  /// A key pressed since (a shortcut, typing) means what opens next isn't the
+  /// press's doing.
+  bool _onKey(KeyEvent event) {
+    if (event is KeyDownEvent) _at = null;
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    behavior: HitTestBehavior.translucent,
+    onPointerDown: (event) {
+      _spot = event.position;
+      _at = DateTime.now();
+    },
+    child: widget.child,
+  );
+}
+
+/// Desktop browsers and tablets on their side: wide, and too tall to be a
+/// phone in landscape.
+bool _wideWindow(BuildContext context) {
+  final size = MediaQuery.sizeOf(context);
+  return size.width >= AppDimens.popoverMinWindowWidth && size.height >= AppDimens.popoverMinWindowHeight;
+}
+
+/// What a popover points to, in global coordinates: [anchor]'s box, or the
+/// spot just pressed; null to center it.
+Rect? _anchorOf(BuildContext context, BuildContext? anchor) {
+  final box = anchor != null && anchor.mounted ? anchor.findRenderObject() : null;
+  if (box is RenderBox && box.hasSize) return box.localToGlobal(Offset.zero) & box.size;
+  final spot = LastPress.recentOf(context);
+  return spot == null ? null : Rect.fromLTWH(spot.dx, spot.dy, 0, 0);
+}
+
+/// A sheet's content on a wide window: a popover pointing at [anchor], or a
+/// centered panel when there is none. Both sit on the root navigator, above
+/// the navigation rail or sidebar.
+Future<T?> _showBeside<T>({
+  required BuildContext context,
+  required String? title,
+  required Rect? anchor,
+  required WidgetBuilder builder,
+}) {
+  if (anchor == null) {
+    return showDialog<T>(
+      context: context,
+      builder: (context) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppDimens.centeredSheetMaxWidth),
+          child: _Named(title: title, child: builder(context)),
+        ),
+      ),
+    );
+  }
+  final navigator = Navigator.of(context, rootNavigator: true);
+  return navigator.push(
+    _PopoverRoute<T>(
+      anchor: anchor,
+      title: title,
+      builder: builder,
+      themes: InheritedTheme.capture(from: context, to: navigator.context),
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     ),
-  ),
-);
+  );
+}
+
+class _SheetBody extends StatelessWidget {
+  const _SheetBody({required this.title, required this.builder});
+
+  final String? title;
+  final WidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (title != null)
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: Text(title!, style: context.text.titleMedium),
+        ),
+      builder(context),
+    ],
+  );
+}
+
+class _OptionList<T> extends StatelessWidget {
+  const _OptionList({required this.title, required this.options, required this.selected, required this.inSheet});
+
+  final String title;
+  final List<PickerOption<T>> options;
+  final T? selected;
+
+  /// In a bottom sheet, under its drag handle; otherwise in a popover or
+  /// panel, which needs room above the title.
+  final bool inSheet;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: EdgeInsets.only(top: inSheet ? 0 : AppSpacing.lg, bottom: inSheet ? AppSpacing.lg : AppSpacing.sm),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, AppSpacing.sm),
+          child: Text(title, style: context.text.titleMedium),
+        ),
+        for (final o in options)
+          ListTile(
+            title: Text(o.label),
+            subtitle: o.subtitle != null ? Text(o.subtitle!) : null,
+            trailing: o.value == selected ? Icon(Icons.check, color: context.colors.primary) : null,
+            selected: o.value == selected,
+            onTap: () => Navigator.pop(context, o.value),
+          ),
+      ],
+    ),
+  );
+}
+
+/// Names a popover or panel for screen readers, as a dialog's title does.
+class _Named extends StatelessWidget {
+  const _Named({required this.title, required this.child});
+
+  final String? title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      Semantics(scopesRoute: true, namesRoute: title != null, explicitChildNodes: true, label: title, child: child);
+}
+
+/// A sheet beside its control on a wide window, like a menu: it closes when
+/// something else is clicked or with Esc.
+class _PopoverRoute<T> extends PopupRoute<T> {
+  _PopoverRoute({
+    required this.anchor,
+    required this.title,
+    required this.builder,
+    required this.themes,
+    required this.barrierLabel,
+  });
+
+  /// The control (or spot) it points to, in global coordinates.
+  final Rect anchor;
+  final String? title;
+  final WidgetBuilder builder;
+  final CapturedThemes themes;
+
+  @override
+  final String barrierLabel;
+
+  @override
+  Color? get barrierColor => null;
+
+  @override
+  bool get barrierDismissible => true;
+
+  @override
+  Duration get transitionDuration => AppMotion.fast;
+
+  @override
+  Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) =>
+      themes.wrap(
+        Builder(
+          builder: (context) => CustomSingleChildLayout(
+            delegate: _PopoverLayout(
+              anchor: anchor,
+              margins: MediaQuery.paddingOf(context) + const EdgeInsets.all(AppSpacing.lg),
+              textDirection: Directionality.of(context),
+            ),
+            child: _Named(
+              title: title,
+              child: Material(
+                color: Theme.of(context).dialogTheme.backgroundColor,
+                elevation: AppElevation.dialog,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                clipBehavior: Clip.antiAlias,
+                child: builder(context),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => MediaQuery.disableAnimationsOf(context)
+      ? child
+      : FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: AppMotion.curve),
+          child: child,
+        );
+}
+
+/// Places a popover under its anchor, or above it when there is more room
+/// there, starting at the anchor's leading edge and kept inside the window.
+class _PopoverLayout extends SingleChildLayoutDelegate {
+  _PopoverLayout({required this.anchor, required this.margins, required this.textDirection});
+
+  final Rect anchor;
+  final EdgeInsets margins;
+  final TextDirection textDirection;
+
+  static const _gap = AppSpacing.xs;
+
+  double _below(Size window) => window.height - margins.bottom - anchor.bottom - _gap;
+  double get _above => anchor.top - _gap - margins.top;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final width = math.min(AppDimens.popoverWidth, constraints.maxWidth - margins.horizontal);
+    final height = math.max(_below(constraints.biggest), _above);
+    return BoxConstraints.tightFor(width: math.max(0, width)).copyWith(maxHeight: math.max(0, height));
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final below = _below(size);
+    final y = childSize.height <= below || below >= _above
+        ? anchor.bottom + _gap
+        : anchor.top - _gap - childSize.height;
+    final start = textDirection == TextDirection.ltr ? anchor.left : anchor.right - childSize.width;
+    final x = start.clamp(margins.left, math.max(margins.left, size.width - margins.right - childSize.width));
+    final top = y.clamp(margins.top, math.max(margins.top, size.height - margins.bottom - childSize.height));
+    return Offset(x.toDouble(), top.toDouble());
+  }
+
+  @override
+  bool shouldRelayout(_PopoverLayout old) =>
+      anchor != old.anchor || margins != old.margins || textDirection != old.textDirection;
+}

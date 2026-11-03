@@ -1181,11 +1181,38 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
   it goes away once installed. The manifest gained an `id`, `scope`, `lang`, shortcuts (Read, Search, Plans), the
   page's color for the splash, and no longer locks the installed app to portrait.
 
+**Done (desktop web, after Phase 6):**
+
+- **Sheets adapt to the window:** bottom sheets on phones. On windows from 840 × 560 (desktop browsers, tablets on
+  their side), a popover beside the control that opened it: the Aa sheet under its button, a footnote at its marker,
+  an option list where it was clicked. Keyboard shortcuts, and moments such as finishing a plan, open a centered
+  panel instead. A click outside or Esc closes it. All 28 sheets in the app adapt, through `showAppBottomSheet` and
+  `showOptionPicker`.
+- **App bars line up with the content:** the back button and title start where the centered content starts, and the
+  actions end where it ends. The reader aligns with its reading column (beside the study panel), and Today with its
+  dashboard. The player and the note editor are centered like the other pages.
+- **Today on wide windows** is a two-column dashboard up to 1200 px: Continue reading and the verse of the day on
+  the left; the plan, streak, week and recent reading on the right.
+- **Lighthouse 12** (a fresh release build on a local server):
+  - The app: accessibility 100 on phones and desktop.
+  - Best practices 81–82, under the target of 90. The only failing audit is "Uses deprecated APIs": Flutter's web
+    engine reads `Intl.v8BreakIterator` to choose its smaller CanvasKit build. It isn't the app's code, and the full
+    build would avoid it at the cost of a larger download.
+  - First paint (the loading screen): 0.6 s on Lighthouse's default mobile profile (slow 4G, 4× CPU slowdown), within
+    the target. On a 3G profile with 300 ms round trips it is 1.3 s, the floor there: the 7 KB static chapter page
+    also paints at 1.3 s.
+  - Performance 62–78. A first visit downloads `main.dart.js` (4.7 MB; 1.3 MB gzipped or 1.0 MB with brotli, as hosts
+    serve it) and CanvasKit (1.6 MB), then parses the code on a slow CPU (2.4 s of blocking time). Repeat visits start
+    from the kept copy (Phase 6).
+  - Chapter pages: 100 for performance, accessibility, best practices and SEO.
+- **Found along the way:** the desktop layout-audit case "a verse selected" pressed between a verse's small number and
+  its words, so nothing was ever selected. It now presses the words, and new cases cover the popovers.
+
 **Left for Phase 4:**
 
-- Popovers instead of bottom sheets on desktop.
-- WebAssembly evaluation and deferred loading.
-- A two-column Today, and app bars aligned with the centered content on desktop.
+- WebAssembly evaluation and deferred loading: the way to cut the first visit's download and parse time.
+- The book picker as a popover (books in columns, chapters inline) attached to the reader's title on desktop; it is a
+  full-window screen today.
 
 **Left for later phases:**
 

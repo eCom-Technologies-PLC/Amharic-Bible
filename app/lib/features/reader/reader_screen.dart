@@ -12,6 +12,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
+import '../../domain/study.dart' show Word;
 import '../../state/providers.dart';
 import '../../state/read_aloud.dart';
 import '../../state/study.dart';
@@ -343,9 +344,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final immersive = _holdToSelect && ref.watch(immersiveProvider);
     _watchPlanDay();
 
+    final companions = content == null ? null : _companions(ref.watch(settingsProvider), version, content);
+    final sideBySide = companions != null && _sideBySide(companions.secondaryVersion, companions.words);
     final scaffold = AppScaffold(
       reading: true,
       appBarHidden: immersive,
+      contentWidth: AppDimens.readingMaxWidth * (sideBySide ? 2 : 1),
+      endPanelWidth: _studyPanelShown(context) ? AppDimens.studyPanelWidth + _panelDivider : 0,
       pageTitle: book != null ? '${book.shortName} ${r.chapter}' : null,
       titleWidget: _ChapterTitle(
         label: book != null ? '${book.shortName} ${formatNumber(r.chapter, ref.watch(settingsProvider))}' : r.bookCode,
@@ -353,10 +358,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ),
       actions: [
         _VersionMenu(current: version),
-        IconButton(
-          tooltip: s.textSize,
-          icon: const Icon(Icons.text_fields),
-          onPressed: () => showTextSettingsSheet(context),
+        Builder(
+          builder: (button) => IconButton(
+            tooltip: s.textSize,
+            icon: const Icon(Icons.text_fields),
+            onPressed: () => showTextSettingsSheet(context, anchor: button),
+          ),
         ),
         if (book != null) _PlayButton(version: version, book: book, chapter: r.chapter),
       ],
@@ -404,14 +411,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   /// Wide windows (desktop browsers) show the verse study beside the text,
   /// following the selection, like a study Bible's side column.
+  static bool _studyPanelShown(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= AppDimens.studyPanelMinWidth;
+
+  /// The line between the text and the study panel.
+  static const double _panelDivider = 1;
+
   Widget _withStudyPanel(BuildContext context, Widget chapter) {
-    if (MediaQuery.sizeOf(context).width < AppDimens.studyPanelMinWidth) return chapter;
+    if (!_studyPanelShown(context)) return chapter;
     final first = _selected.isEmpty ? null : _selected.reduce((a, b) => a < b ? a : b);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(child: chapter),
-        const VerticalDivider(),
+        const VerticalDivider(width: _panelDivider),
         SizedBox(
           width: AppDimens.studyPanelWidth,
           child: VerseStudyPanel(vkey: first),
@@ -419,6 +432,35 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ],
     );
   }
+
+  /// What the reader shows with [c]: the side-by-side version's chapter, and
+  /// interlinear words from the version itself or, failing that, from the
+  /// side-by-side version (e.g. Amharic text with the Hebrew words under it).
+  ({ChapterContent? secondary, BibleVersion? secondaryVersion, String? wordsSource, Map<int, List<Word>>? words})
+  _companions(Settings settings, BibleVersion version, ChapterContent c) {
+    final parallelId = settings.parallelVersionId;
+    final secondary = parallelId != null && parallelId != version.id
+        ? ref.watch(chapterProvider((versionId: parallelId, book: c.book.code, chapter: c.chapter))).value
+        : null;
+    final secondaryVersion = secondary != null
+        ? (ref.watch(versionsProvider).value ?? const <BibleVersion>[]).where((v) => v.id == parallelId).firstOrNull
+        : null;
+    final withWords = ref.watch(versionsWithWordsProvider).value ?? const <String>{};
+    final wordsSource = !settings.interlinear
+        ? null
+        : withWords.contains(version.id)
+        ? version.id
+        : (parallelId != null && withWords.contains(parallelId) ? parallelId : null);
+    final words = wordsSource == null
+        ? null
+        : ref.watch(chapterWordsProvider((versionId: wordsSource, book: c.book.num, chapter: c.chapter))).value;
+    return (secondary: secondary, secondaryVersion: secondaryVersion, wordsSource: wordsSource, words: words);
+  }
+
+  /// Two versions side by side (a column twice as wide), unless interlinear
+  /// words take the second version's place.
+  static bool _sideBySide(BibleVersion? secondaryVersion, Map<int, List<Word>>? words) =>
+      secondaryVersion != null && (words == null || words.isEmpty);
 
   Widget _buildChapter(BuildContext context, BibleVersion version, ChapterContent c, BibleRef r) {
     final settings = ref.watch(settingsProvider);
@@ -430,24 +472,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           ),
         ) ??
         ref.watch(readAloudProvider.select((r) => r.isChapter(version.id, c.book.code, c.chapter) ? r.verse : null));
-    final parallelId = settings.parallelVersionId;
-    final secondary = parallelId != null && parallelId != version.id
-        ? ref.watch(chapterProvider((versionId: parallelId, book: c.book.code, chapter: c.chapter))).value
-        : null;
-    final secondaryVersion = secondary != null
-        ? (ref.watch(versionsProvider).value ?? const <BibleVersion>[]).where((v) => v.id == parallelId).firstOrNull
-        : null;
-    // Interlinear: words from the version itself or, failing that, from the
-    // side-by-side version (e.g. Amharic text with the Hebrew words under it).
-    final withWords = ref.watch(versionsWithWordsProvider).value ?? const <String>{};
-    final wordsSource = !settings.interlinear
-        ? null
-        : withWords.contains(version.id)
-        ? version.id
-        : (parallelId != null && withWords.contains(parallelId) ? parallelId : null);
-    final words = wordsSource == null
-        ? null
-        : ref.watch(chapterWordsProvider((versionId: wordsSource, book: c.book.num, chapter: c.chapter))).value;
+    final (:secondary, :secondaryVersion, :wordsSource, :words) = _companions(settings, version, c);
     final interlinear = words != null && words.isNotEmpty;
     final wordsRtl = isRtlLanguage(
       (ref.watch(versionsProvider).value ?? const <BibleVersion>[])
@@ -512,7 +537,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
     final initial = r.verse != null ? layout.blockOfVerse[vkey(c.book.num, c.chapter, r.verse!)] : null;
     final s = S.of(context);
-    final twoVersions = secondaryVersion != null && !interlinear;
+    final twoVersions = secondaryVersion != null && !interlinear; // as _sideBySide
 
     final list = NotificationListener<UserScrollNotification>(
       onNotification: (n) {

@@ -193,11 +193,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen, vertical: AppSpacing.sm),
       child: Row(
         children: [
-          AppButton.outline(
-            label: s.filter,
-            icon: Icons.tune,
-            size: AppButtonSize.sm,
-            onPressed: () => _showFilters(s, version, books),
+          Builder(
+            builder: (button) => AppButton.outline(
+              label: s.filter,
+              icon: Icons.tune,
+              size: AppButtonSize.sm,
+              onPressed: () => _showFilters(s, version, books, button),
+            ),
           ),
           for (final c in [
             if (_book != null)
@@ -214,76 +216,78 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Future<void> _showFilters(S s, BibleVersion? version, List<Book> books) => showAppBottomSheet<void>(
-    context: context,
-    title: s.filter,
-    builder: (sheet) => StatefulBuilder(
-      builder: (sheet, setSheet) {
-        void change(void Function() update) {
-          _filter(update);
-          setSheet(() {});
-        }
+  Future<void> _showFilters(S s, BibleVersion? version, List<Book> books, BuildContext button) =>
+      showAppBottomSheet<void>(
+        context: context,
+        title: s.filter,
+        anchor: button,
+        builder: (sheet) => StatefulBuilder(
+          builder: (sheet, setSheet) {
+            void change(void Function() update) {
+              _filter(update);
+              setSheet(() {});
+            }
 
-        final book = books.where((b) => b.code == _book).firstOrNull;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            LabeledGroup(
-              label: s.testament,
-              child: FilterBar<TestamentFilter>(
-                padding: EdgeInsets.zero,
-                selected: _testament,
-                onSelected: (t) => change(() {
-                  _testament = t;
-                  // A book from the other testament no longer fits.
-                  if (book != null && !_inTestament(book, t)) _book = null;
-                }),
-                options: [
-                  FilterOption(TestamentFilter.all, s.all),
-                  FilterOption(TestamentFilter.oldTestament, s.oldTestament),
-                  FilterOption(TestamentFilter.newTestament, s.newTestament),
-                ],
-              ),
-            ),
-            LabeledGroup(
-              label: s.book,
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: AppButton.outline(
-                  label: book?.shortName ?? s.allBooks,
-                  icon: Icons.expand_more,
-                  iconAtEnd: true,
-                  onPressed: () async {
-                    final picked = await showOptionPicker<String>(
-                      context: sheet,
-                      title: s.book,
-                      selected: _book ?? '',
-                      options: [
-                        PickerOption('', s.allBooks),
-                        for (final b in books.where((b) => _inTestament(b, _testament)))
-                          PickerOption(b.code, b.shortName),
-                      ],
-                    );
-                    if (picked != null) change(() => _book = picked.isEmpty ? null : picked);
-                  },
+            final book = books.where((b) => b.code == _book).firstOrNull;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                LabeledGroup(
+                  label: s.testament,
+                  child: FilterBar<TestamentFilter>(
+                    padding: EdgeInsets.zero,
+                    selected: _testament,
+                    onSelected: (t) => change(() {
+                      _testament = t;
+                      // A book from the other testament no longer fits.
+                      if (book != null && !_inTestament(book, t)) _book = null;
+                    }),
+                    options: [
+                      FilterOption(TestamentFilter.all, s.all),
+                      FilterOption(TestamentFilter.oldTestament, s.oldTestament),
+                      FilterOption(TestamentFilter.newTestament, s.newTestament),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-            LabeledGroup(
-              label: s.version,
-              child: FilterBar<bool>(
-                padding: EdgeInsets.zero,
-                selected: _allVersions,
-                onSelected: (all) => change(() => _allVersions = all),
-                options: [FilterOption(false, version?.abbrev ?? s.version), FilterOption(true, s.allVersions)],
-              ),
-            ),
-          ],
-        );
-      },
-    ),
-  );
+                LabeledGroup(
+                  label: s.book,
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: AppButton.outline(
+                      label: book?.shortName ?? s.allBooks,
+                      icon: Icons.expand_more,
+                      iconAtEnd: true,
+                      onPressed: () async {
+                        final picked = await showOptionPicker<String>(
+                          context: sheet,
+                          title: s.book,
+                          selected: _book ?? '',
+                          options: [
+                            PickerOption('', s.allBooks),
+                            for (final b in books.where((b) => _inTestament(b, _testament)))
+                              PickerOption(b.code, b.shortName),
+                          ],
+                        );
+                        if (picked != null) change(() => _book = picked.isEmpty ? null : picked);
+                      },
+                    ),
+                  ),
+                ),
+                LabeledGroup(
+                  label: s.version,
+                  child: FilterBar<bool>(
+                    padding: EdgeInsets.zero,
+                    selected: _allVersions,
+                    onSelected: (all) => change(() => _allVersions = all),
+                    options: [FilterOption(false, version?.abbrev ?? s.version), FilterOption(true, s.allVersions)],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
 
   Widget _results(BuildContext context, S s, List<Book> books) {
     if (_loading && _hits == null) return const LoadingState();
@@ -471,10 +475,12 @@ class _Explore extends ConsumerWidget {
           vertical: AppSpacing.md,
           child: Align(
             alignment: AlignmentDirectional.centerStart,
-            child: AppButton.ghost(
-              label: s.searchTips,
-              icon: Icons.help_outline,
-              onPressed: () => _showSearchTips(context, english: language != 'amh'),
+            child: Builder(
+              builder: (button) => AppButton.ghost(
+                label: s.searchTips,
+                icon: Icons.help_outline,
+                onPressed: () => _showSearchTips(context, english: language != 'amh', anchor: button),
+              ),
             ),
           ),
         ),
@@ -518,7 +524,7 @@ class _ToolGrid extends StatelessWidget {
 }
 
 /// What can be typed in search, each with an example.
-void _showSearchTips(BuildContext context, {required bool english}) {
+void _showSearchTips(BuildContext context, {required bool english, BuildContext? anchor}) {
   final s = S.of(context);
   final tips = [
     ('ዮሐ 3፥16 · Jn 3:16', s.tipReference),
@@ -530,6 +536,7 @@ void _showSearchTips(BuildContext context, {required bool english}) {
   showAppBottomSheet<void>(
     context: context,
     title: s.searchTips,
+    anchor: anchor,
     builder: (sheet) => Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,

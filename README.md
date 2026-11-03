@@ -210,7 +210,9 @@ How it differs from the mobile app:
   texts show at once and offline.
 - **Wide windows:** a navigation rail from 600 px and a labeled sidebar from 1200 px replace the bottom bar, and
   stay beside the screens opened from the tabs (verse study, words, Ask, the player); from 1360 px the reader shows
-  the verse study beside the text. Ctrl+K (⌘K) opens "Go to".
+  the verse study beside the text. Ctrl+K (⌘K) opens "Go to". From 840 px, sheets open as popovers beside the
+  control that opened them (Aa, footnotes, option lists), Today becomes a two-column dashboard, and app bars line up
+  with the centered content.
 - **Servers:** browsers call the audio proxy and study assistant directly, so set `ALLOWED_ORIGINS` in each
   `wrangler.toml` to the web app's origin (CORS). Add the site's URL to Supabase Auth's allowed redirect URLs.
   The study assistant's app token is visible in the web app's JavaScript (as it can be extracted from an APK);

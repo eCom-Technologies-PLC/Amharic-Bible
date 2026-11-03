@@ -6,13 +6,16 @@ import '../../state/providers.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
 
-/// The Aa sheet. Settings leaves out Ge'ez numerals ([numerals]), which it
-/// shows under language and region instead.
-Future<void> showTextSettingsSheet(BuildContext context, {bool numerals = true}) => showAppBottomSheet<void>(
-  context: context,
-  title: S.of(context).readingLook,
-  builder: (_) => TextSettingsSheet(showDisplayOptions: true, showNumerals: numerals),
-);
+/// The Aa sheet (a popover under [anchor] on wide windows). Settings leaves
+/// out Ge'ez numerals ([numerals]), which it shows under language and region
+/// instead.
+Future<void> showTextSettingsSheet(BuildContext context, {bool numerals = true, BuildContext? anchor}) =>
+    showAppBottomSheet<void>(
+      context: context,
+      title: S.of(context).readingLook,
+      anchor: anchor,
+      builder: (_) => TextSettingsSheet(showDisplayOptions: true, showNumerals: numerals),
+    );
 
 String themeLabel(S s, ReaderTheme t) => switch (t) {
   ReaderTheme.system => s.themeSystem,

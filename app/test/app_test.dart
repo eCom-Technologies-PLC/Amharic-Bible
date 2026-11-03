@@ -719,6 +719,60 @@ void main() {
     expect(find.text('ዮሐንስ 3'), findsOneWidget);
   });
 
+  Future<void> desktopWindow(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpAndSettle();
+  }
+
+  Rect inAppBar(WidgetTester tester, Finder finder) =>
+      tester.getRect(find.descendant(of: find.byType(AppBar), matching: finder).first);
+
+  testWidgets('on a desktop window the reader lines its title up with the text, and Aa opens under its button', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/read?ref=JHN.3',
+    );
+    await desktopWindow(tester);
+    final text = tester.getRect(
+      find.descendant(of: find.byType(ParagraphView).first, matching: find.byType(RichText)).first,
+    );
+    expect(inAppBar(tester, find.text('ዮሐንስ 3')).left, text.left);
+
+    await tester.tap(find.byIcon(Icons.text_fields));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+    final button = inAppBar(tester, find.byIcon(Icons.text_fields));
+    final sheet = tester.getRect(
+      find.ancestor(of: find.text('Reading appearance'), matching: find.byType(Material)).first,
+    );
+    expect(sheet.top, greaterThan(button.bottom));
+    expect(sheet.right, lessThanOrEqualTo(1440));
+  });
+
+  testWidgets('Today is a two-column dashboard on a desktop window, under a title in line with it', (tester) async {
+    await pumpApp(tester, settings: const Settings(languageCode: 'en'));
+    await desktopWindow(tester);
+    final verse = tester.getRect(find.descendant(of: find.byType(HeroCard), matching: find.byType(Material)).first);
+    final week = tester.getRect(find.text('This week'));
+    expect(week.left, greaterThan(verse.right));
+    expect(week.top, lessThan(verse.bottom));
+    expect(inAppBar(tester, find.text('Today')).left, verse.left);
+  });
+
+  testWidgets('on a desktop window a page lines its back button up with its content', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/me/settings',
+    );
+    await desktopWindow(tester);
+    expect(inAppBar(tester, find.byType(BackButtonIcon)).left, tester.getRect(find.text('Language and region')).left);
+  });
+
   testWidgets('Search & Study opens on the study tools and searches to try', (tester) async {
     await pumpApp(
       tester,

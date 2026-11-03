@@ -147,19 +147,26 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         ],
         body: !_loaded
             ? const LoadingState()
-            : Padding(
-                padding: const EdgeInsets.all(AppSpacing.screen),
-                // The note field fills the space above the tags field and
-                // scrolls itself; the scaffold keeps both above the keyboard.
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: AppTextField(controller: _controller, hint: s.noteHint, autofocus: true, multiline: true),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    AppTextField(controller: _tags, label: s.tags, hint: s.tagsHint, prefixIcon: Icons.label_outline),
-                  ],
+            : ContentWidth(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.screen),
+                  // The note field fills the space above the tags field and
+                  // scrolls itself; the scaffold keeps both above the keyboard.
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: _controller,
+                          hint: s.noteHint,
+                          autofocus: true,
+                          multiline: true,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppTextField(controller: _tags, label: s.tags, hint: s.tagsHint, prefixIcon: Icons.label_outline),
+                    ],
+                  ),
                 ),
               ),
       ),

@@ -233,6 +233,8 @@ class AmharicBibleApp extends ConsumerWidget {
       supportedLocales: S.supported,
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       routerConfig: ref.watch(routerProvider),
+      // Sheets open beside the press that opened them on wide windows.
+      builder: (context, child) => LastPress(child: child ?? const SizedBox.shrink()),
     );
   }
 }

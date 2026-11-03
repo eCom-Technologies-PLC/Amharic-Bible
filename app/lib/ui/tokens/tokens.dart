@@ -104,6 +104,23 @@ abstract final class AppDimens {
   /// center it, so lines and rows stay readable on desktop.
   static const double contentMaxWidth = 840;
 
+  /// Today becomes a two-column dashboard from this width (the space beside
+  /// the navigation), and grows to [dashboardMaxWidth].
+  static const double dashboardMinWidth = 840;
+  static const double dashboardMaxWidth = 1200;
+
+  /// Window size from which sheets open beside the control that opened them
+  /// (or centered) instead of rising from the bottom: Material's "expanded"
+  /// width, on a window too tall to be a phone on its side.
+  static const double popoverMinWindowWidth = 840;
+  static const double popoverMinWindowHeight = 560;
+
+  /// Width of a sheet shown beside its control on a wide window.
+  static const double popoverWidth = 400;
+
+  /// Widest a sheet grows when it opens centered on a wide window.
+  static const double centeredSheetMaxWidth = 560;
+
   /// Widest the audio player's cover grows.
   static const double playerCoverMaxWidth = 280;
 
@@ -180,6 +197,10 @@ abstract final class AppMotion {
 
   /// Fling speed (logical px/s) that turns the page to the next chapter.
   static const double chapterSwipeVelocity = 400;
+
+  /// A sheet that opens this soon after a press opens beside it (wide
+  /// windows), as the press's result.
+  static const pressToSheet = Duration(seconds: 2);
 }
 
 abstract final class AppFonts {

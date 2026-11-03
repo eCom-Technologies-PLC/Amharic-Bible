@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,78 +81,111 @@ class HomeScreen extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
     final hasPlan = ref.watch(activePlansProvider).value?.isNotEmpty ?? false;
 
-    return AppScaffold(
-      title: s.today,
-      actions: [IconButton(tooltip: s.search, icon: const Icon(Icons.search), onPressed: () => context.go('/search'))],
-      body: AppListView(
-        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+    // Greeting and today's date (Ethiopian calendar by default).
+    final greeting = Gutter(
+      vertical: AppSpacing.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SampleBanner(),
-          // Greeting and today's date (Ethiopian calendar by default).
-          Gutter(
-            vertical: AppSpacing.md,
+          Text(s.greeting(now.hour), style: context.text.headlineSmall),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '${s.weekdayName(now.weekday)} · ${formatDate(now, settings, s)}',
+            style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+    // Picking up where the reader left off comes first.
+    final continueCard = AppCard(
+      onTap: () => context.go(last != null ? '/read?ref=${last.encode()}' : '/read'),
+      child: Row(
+        children: [
+          Icon(Icons.menu_book_outlined, color: context.colors.primary),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.greeting(now.hour), style: context.text.headlineSmall),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '${s.weekdayName(now.weekday)} · ${formatDate(now, settings, s)}',
-                  style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
-                ),
+                Text(last != null ? s.continueReading : s.startReading, style: context.text.titleMedium),
+                if (lastBook != null)
+                  Text(
+                    '${lastBook.shortName} ${formatNumber(last!.chapter, settings)}',
+                    style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+                  ),
               ],
             ),
           ),
-          // Picking up where the reader left off comes first.
-          AppCard(
-            onTap: () => context.go(last != null ? '/read?ref=${last.encode()}' : '/read'),
-            child: Row(
-              children: [
-                Icon(Icons.menu_book_outlined, color: context.colors.primary),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(last != null ? s.continueReading : s.startReading, style: context.text.titleMedium),
-                      if (lastBook != null)
-                        Text(
-                          '${lastBook.shortName} ${formatNumber(last!.chapter, settings)}',
-                          style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
-                        ),
-                    ],
-                  ),
-                ),
-                // Listeners can start the chapter from here (recorded audio,
-                // or the phone's voice).
-                if (lastBook != null && version != null)
-                  IconButton(
-                    tooltip: s.listenTo('${lastBook.shortName} ${formatNumber(last!.chapter, settings)}'),
-                    icon: Icon(Icons.play_circle_outline, color: context.colors.primary),
-                    onPressed: () => _listen(context, ref, version, lastBook, last.chapter),
-                  ),
-                const Icon(Icons.arrow_forward),
-              ],
+          // Listeners can start the chapter from here (recorded audio, or the
+          // phone's voice).
+          if (lastBook != null && version != null)
+            IconButton(
+              tooltip: s.listenTo('${lastBook.shortName} ${formatNumber(last!.chapter, settings)}'),
+              icon: Icon(Icons.play_circle_outline, color: context.colors.primary),
+              onPressed: () => _listen(context, ref, version, lastBook, last.chapter),
             ),
-          ),
-          switch (votd) {
-            AsyncData(value: final v?) => _VerseOfTheDayCard(votd: v, amharic: version?.language == 'amh'),
-            AsyncLoading() => const Padding(padding: EdgeInsets.all(AppSpacing.xxl), child: LoadingState()),
-            _ => const SizedBox.shrink(),
-          },
-          const TodaysReadingCards(),
-          if (!hasPlan) const _StartPlanCard(),
-          if (settings.streaks) const _StreakCard(),
-          const _WeekRhythm(),
-          const _RecentlyRead(),
-          Gutter(
-            vertical: AppSpacing.lg,
-            child: Text(
-              kIsWeb ? s.tapToSelectHint : s.holdToSelectHint,
-              style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
-            ),
-          ),
+          const Icon(Icons.arrow_forward),
         ],
+      ),
+    );
+    final verseCard = switch (votd) {
+      AsyncData(value: final v?) => _VerseOfTheDayCard(votd: v, amharic: version?.language == 'amh'),
+      AsyncLoading() => const Padding(padding: EdgeInsets.all(AppSpacing.xxl), child: LoadingState()),
+      _ => const SizedBox.shrink(),
+    };
+    final plansAndWeek = <Widget>[
+      const TodaysReadingCards(),
+      if (!hasPlan) const _StartPlanCard(),
+      if (settings.streaks) const _StreakCard(),
+      const _WeekRhythm(),
+      const _RecentlyRead(),
+    ];
+    final hint = Gutter(
+      vertical: AppSpacing.lg,
+      child: Text(
+        kIsWeb ? s.tapToSelectHint : s.holdToSelectHint,
+        style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
+      ),
+    );
+
+    return AppScaffold(
+      title: s.today,
+      contentWidth: AppDimens.dashboardMaxWidth,
+      actions: [IconButton(tooltip: s.search, icon: const Icon(Icons.search), onPressed: () => context.go('/search'))],
+      body: LayoutBuilder(
+        builder: (context, box) {
+          if (box.maxWidth < AppDimens.dashboardMinWidth) {
+            return AppListView(
+              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+              children: [const SampleBanner(), greeting, continueCard, verseCard, ...plansAndWeek, hint],
+            );
+          }
+          // Wide windows: a dashboard, with the way back into the text and the
+          // day's verse on the left, and plans, the week and recent reading on
+          // the right.
+          final side = math.max(0.0, (box.maxWidth - AppDimens.dashboardMaxWidth) / 2);
+          return ListView(
+            padding: EdgeInsets.fromLTRB(side, 0, side, AppSpacing.lg),
+            children: [
+              const SampleBanner(),
+              greeting,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [continueCard, verseCard, hint],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: plansAndWeek),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }

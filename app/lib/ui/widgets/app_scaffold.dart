@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +29,8 @@ class AppScaffold extends StatelessWidget {
     this.reading = false,
     this.pageTitle,
     this.appBarHidden,
+    this.contentWidth = AppDimens.contentMaxWidth,
+    this.endPanelWidth = 0,
   });
 
   final String? title;
@@ -53,23 +57,60 @@ class AppScaffold extends StatelessWidget {
   /// the bar slides away, keeping the status-bar strip; null for a fixed bar.
   final bool? appBarHidden;
 
+  /// On wide windows the app bar lines up with the body's centered content:
+  /// the back button and title start where the content starts, and the
+  /// actions end where it ends. This is that content's width: pages center at
+  /// [AppDimens.contentMaxWidth], Today at [AppDimens.dashboardMaxWidth], the
+  /// reader at its reading column.
+  final double contentWidth;
+
+  /// Room the body keeps at the end, beside its centered content, for a side
+  /// panel (the reader's study panel); the actions end before it.
+  final double endPanelWidth;
+
   @override
   Widget build(BuildContext context) {
     final scaffold = _scaffold(context);
     return kIsWeb ? _BrowserTitle(title: pageTitle ?? title, child: scaffold) : scaffold;
   }
 
-  Widget _scaffold(BuildContext context) {
+  Widget _scaffold(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final inset = math.max(0.0, (box.maxWidth - endPanelWidth - contentWidth) / 2);
+      return _scaffoldWith(context, inset);
+    },
+  );
+
+  /// [inset]: how far the body's centered content sits from each side (before
+  /// [endPanelWidth] at the end).
+  Widget _scaffoldWith(BuildContext context, double inset) {
     final paper = reading ? context.appColors.paper : null;
+    final route = ModalRoute.of(context);
+    // The back (or close) button AppBar would add, placed here so it can move
+    // in with the content.
+    final back =
+        leading ??
+        (inset > 0 && ((route?.canPop ?? false) || (route?.impliesAppBarDismissal ?? false))
+            ? (route is PageRoute && route.fullscreenDialog ? const CloseButton() : const BackButton())
+            : null);
     final appBar = AppBar(
       backgroundColor: paper,
-      leading: leading,
+      leading: back == null || inset == 0
+          ? back
+          : Padding(
+              padding: EdgeInsetsDirectional.only(start: inset),
+              child: back,
+            ),
+      leadingWidth: back == null || inset == 0 ? null : kToolbarHeight + inset,
+      titleSpacing: back == null ? NavigationToolbar.kMiddleSpacing + inset : null,
       title: titleWidget ?? (title != null ? Text(title!, maxLines: 1, overflow: TextOverflow.ellipsis) : null),
       actions: [
         ...?actions,
-        const SizedBox(width: AppSpacing.xs),
+        SizedBox(width: AppSpacing.xs + (inset == 0 ? 0 : inset + endPanelWidth)),
       ],
-      bottom: bottom,
+      bottom: bottom == null || inset == 0
+          ? bottom
+          : _InsetBottom(start: inset, end: inset + endPanelWidth, child: bottom!),
     );
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -87,6 +128,24 @@ class AppScaffold extends StatelessWidget {
       bottomNavigationBar: bottomBar,
     );
   }
+}
+
+/// An app bar's bottom (tabs) kept within the body's centered content.
+class _InsetBottom extends StatelessWidget implements PreferredSizeWidget {
+  const _InsetBottom({required this.start, required this.end, required this.child});
+
+  final double start;
+  final double end;
+  final PreferredSizeWidget child;
+
+  @override
+  Size get preferredSize => child.preferredSize;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsetsDirectional.only(start: start, end: end),
+    child: child,
+  );
 }
 
 /// An app bar that slides up out of view when [hidden], leaving the status-bar

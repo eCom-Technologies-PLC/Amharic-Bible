@@ -151,14 +151,17 @@ class _GroupHeader extends StatelessWidget {
               style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
             ),
           ),
-          AppButton.secondary(
-            label: s.invite,
-            icon: Icons.person_add_alt_1_outlined,
-            size: AppButtonSize.sm,
-            onPressed: () => showAppBottomSheet<void>(
-              context: context,
-              title: s.invite,
-              builder: (_) => _InviteCode(groupId: detail.group.id),
+          Builder(
+            builder: (button) => AppButton.secondary(
+              label: s.invite,
+              icon: Icons.person_add_alt_1_outlined,
+              size: AppButtonSize.sm,
+              onPressed: () => showAppBottomSheet<void>(
+                context: context,
+                title: s.invite,
+                anchor: button,
+                builder: (_) => _InviteCode(groupId: detail.group.id),
+              ),
             ),
           ),
         ],

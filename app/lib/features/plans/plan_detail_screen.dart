@@ -336,6 +336,8 @@ Future<void> showPlanComplete(BuildContext context, ReadingPlan plan) {
   return showAppBottomSheet<void>(
     context: context,
     title: s.planComplete,
+    // A moment to celebrate, in the middle of a wide window.
+    centered: true,
     builder: (sheet) => Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
