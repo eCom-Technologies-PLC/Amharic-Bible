@@ -35,6 +35,70 @@ void main() {
     test('rejects any other file', () {
       expect(() => BibleLandsMap.decode(ByteData(16)), throwsFormatException);
     });
+
+    test('knows land from water', () {
+      expect(map.onLand(31.78, 35.23), isTrue); // Jerusalem
+      expect(map.onLand(32.4, 33.6), isFalse); // the Mediterranean off Caesarea
+      expect(map.onLand(42.0, 50.5), isFalse); // the Caspian, a hole in the land
+    });
+  });
+
+  group('names on the map', () {
+    final map = BibleLandsMap.decode(ByteData.sublistView(File('assets/map/bible_lands.bin').readAsBytesSync()));
+    const jerusalem = (lat: 31.776667, lon: 35.234167);
+    // A phone's map, and names about as wide as 12 px letters.
+    MapView around(LatLon center) => MapView(center: center, degreesPerPixel: 0.0135, size: const Size(311, 194));
+    List<({MapLabel label, Rect box, Offset? dot})> placed(LatLon center) => placeMapLabels(
+      map: map,
+      view: around(center),
+      labels: mapLabels(S.en),
+      measure: (l) => Size(l.text.length * 7.0, 14),
+      pin: center,
+    );
+    List<String> names(LatLon center) => [for (final p in placed(center)) p.label.text];
+
+    test('around Jerusalem: the sea and both lakes, and no second mark under the pin', () {
+      expect(names(jerusalem), containsAll(['Mediterranean Sea', 'Dead Sea', 'Sea of Galilee']));
+      expect(names(jerusalem), isNot(contains('Jerusalem')));
+    });
+
+    test('from Galilee, Jerusalem is marked and named', () {
+      expect(names((lat: 32.7, lon: 35.3)), contains('Jerusalem'));
+    });
+
+    test("a sea's name sits wholly on open water, and no name covers another or the pin", () {
+      for (final center in [
+        jerusalem,
+        (lat: 32.53617, lon: 44.42082), // Babylon
+        (lat: 41.9, lon: 12.5), // Rome
+        (lat: 37.94, lon: 27.34), // Ephesus
+        (lat: 28.54, lon: 33.97), // Mount Sinai
+        (lat: 12.6, lon: 37.47), // Gondar, by Lake Tana
+        (lat: 33.3, lon: 44.4), // Baghdad, between the rivers
+      ]) {
+        final view = around(center);
+        final pin = view.toScreen(center.lat, center.lon);
+        final all = placed(center);
+        for (final (:label, :box, dot: _) in all) {
+          expect(box.inflate(1).contains(pin), isFalse, reason: '${label.text} on the pin at $center');
+          if (label.kind != MapLabelKind.sea) continue;
+          for (final corner in [box.topLeft, box.topRight, box.bottomLeft, box.bottomRight, box.center]) {
+            final at = view.toMap(corner);
+            expect(map.onLand(at.lat, at.lon), isFalse, reason: '${label.text} on land at $center');
+          }
+        }
+        for (var i = 0; i < all.length; i++) {
+          for (var j = i + 1; j < all.length; j++) {
+            expect(all[i].box.overlaps(all[j].box), isFalse, reason: '${all[i].label.text} / ${all[j].label.text}');
+          }
+        }
+      }
+    });
+
+    test('the names in both languages', () {
+      expect([for (final l in mapLabels(S.am)) l.text], containsAll(['ኢየሩሳሌም', 'ሙት ባሕር', 'ጣና ሐይቅ', 'ሜዲትራኒያን ባሕር']));
+      expect([for (final l in mapLabels(S.en)) l.text], containsAll(['Jerusalem', 'Dead Sea', 'Lake Tana', 'Red Sea']));
+    });
   });
 
   test('where a place lies from Jerusalem, as a person would say it', () {

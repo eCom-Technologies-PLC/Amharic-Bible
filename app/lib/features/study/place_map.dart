@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +26,23 @@ class BibleLandsMap {
   /// Whether [lat], [lon] is on the map (edges included).
   bool covers(double lat, double lon) =>
       lon >= region.left && lon <= region.right && lat >= region.top && lat <= region.bottom;
+
+  /// Whether [lat], [lon] is on land, lakes included (they lie within it).
+  bool onLand(double lat, double lon) {
+    var inside = false;
+    for (final part in land) {
+      final b = part.bounds;
+      // A ring around the point has the point inside its box.
+      if (lon < b.left || lon > b.right || lat < b.top || lat > b.bottom) continue;
+      final p = part.points;
+      final n = p.length ~/ 2;
+      for (var i = 0, j = n - 1; i < n; j = i++) {
+        final (xi, yi, xj, yj) = (p[i * 2], p[i * 2 + 1], p[j * 2], p[j * 2 + 1]);
+        if ((yi > lat) != (yj > lat) && lon < xi + (lat - yi) * (xj - xi) / (yj - yi)) inside = !inside;
+      }
+    }
+    return inside;
+  }
 
   static const _units = 100;
 
@@ -96,8 +114,40 @@ final bibleLandsMapProvider = FutureProvider<BibleLandsMap>(
   (ref) async => BibleLandsMap.decode(await rootBundle.load('assets/map/bible_lands.bin')),
 );
 
+typedef LatLon = ({double lat, double lon});
+
+/// A window on the map: [center] in the middle of a canvas of [size], at
+/// [degreesPerPixel] of latitude, with longitude flattened by the center's
+/// latitude (degrees of longitude shrink away from the equator).
+@immutable
+class MapView {
+  MapView({required this.center, required this.degreesPerPixel, required this.size})
+    : _k = math.cos(center.lat * math.pi / 180);
+
+  final LatLon center;
+  final double degreesPerPixel;
+  final Size size;
+  final double _k;
+
+  Offset toScreen(double lat, double lon) => Offset(
+    size.width / 2 + (lon - center.lon) * _k / degreesPerPixel,
+    size.height / 2 - (lat - center.lat) / degreesPerPixel,
+  );
+
+  LatLon toMap(Offset o) => (
+    lat: center.lat - (o.dy - size.height / 2) * degreesPerPixel,
+    lon: center.lon + (o.dx - size.width / 2) * degreesPerPixel / _k,
+  );
+
+  /// What the window shows: longitude west to east, latitude south to north.
+  Rect get bounds {
+    final (nw, se) = (toMap(Offset.zero), toMap(Offset(size.width, size.height)));
+    return Rect.fromLTRB(nw.lon, se.lat, se.lon, nw.lat);
+  }
+}
+
 /// Where Bible geography is told from: Jerusalem (Theographic's coordinates).
-const _jerusalem = (lat: 31.776667, lon: 35.234167);
+const LatLon _jerusalem = (lat: 31.776667, lon: 35.234167);
 
 /// How far and which way a place lies from Jerusalem: kilometres rounded as a
 /// person would say them, and one of eight compass points (0 north, 1
@@ -117,6 +167,163 @@ const _jerusalem = (lat: 31.776667, lon: 35.234167);
   final degrees = (bearing * 180 / math.pi + 360) % 360;
   final step = km < 20 ? 1 : (km < 100 ? 5 : (km < 1000 ? 10 : 50));
   return (km: (km / step).round() * step, direction: ((degrees + 22.5) ~/ 45) % 8);
+}
+
+/// What a name on the map names: a sea (written on open water), a lake
+/// (written beside it) or a town (a dot and its name).
+enum MapLabelKind { sea, lake, town }
+
+/// A name on the map and the spots it may go: a sea at the first that shows
+/// it on open water (nearest the middle first), a lake or a town beside its
+/// one spot.
+typedef MapLabel = ({String text, MapLabelKind kind, List<LatLon> spots});
+
+/// The names on a place's map, in the order they are placed (each only where
+/// there is room): Jerusalem as a reference point, the lakes, then the seas.
+List<MapLabel> mapLabels(S s) => [
+  (text: s.mapName('jerusalem'), kind: MapLabelKind.town, spots: const [_jerusalem]),
+  (text: s.mapName('galilee'), kind: MapLabelKind.lake, spots: const [(lat: 32.82, lon: 35.59)]),
+  (text: s.mapName('deadSea'), kind: MapLabelKind.lake, spots: const [(lat: 31.5, lon: 35.48)]),
+  (text: s.mapName('tana'), kind: MapLabelKind.lake, spots: const [(lat: 12.0, lon: 37.3)]),
+  (
+    text: s.mapName('mediterranean'),
+    kind: MapLabelKind.sea,
+    spots: const [
+      (lat: 32.4, lon: 33.6),
+      (lat: 33.7, lon: 34.2),
+      (lat: 32.3, lon: 31.0),
+      (lat: 33.8, lon: 27.5),
+      (lat: 33.6, lon: 22.5),
+      (lat: 35.2, lon: 19.5),
+      (lat: 37.8, lon: 5.0),
+    ],
+  ),
+  (
+    text: s.mapName('redSea'),
+    kind: MapLabelKind.sea,
+    spots: const [
+      (lat: 26.5, lon: 35.3),
+      (lat: 23.5, lon: 37.0),
+      (lat: 20.0, lon: 38.8),
+      (lat: 16.5, lon: 40.5),
+      (lat: 14.0, lon: 42.0),
+    ],
+  ),
+  (
+    text: s.mapName('aegean'),
+    kind: MapLabelKind.sea,
+    spots: const [(lat: 38.6, lon: 25.2), (lat: 39.8, lon: 24.6), (lat: 36.9, lon: 25.9)],
+  ),
+  (
+    text: s.mapName('adriatic'),
+    kind: MapLabelKind.sea,
+    spots: const [(lat: 43.0, lon: 15.6), (lat: 41.9, lon: 17.4), (lat: 44.6, lon: 13.2)],
+  ),
+  (
+    text: s.mapName('blackSea'),
+    kind: MapLabelKind.sea,
+    spots: const [(lat: 43.0, lon: 34.0), (lat: 42.5, lon: 30.0), (lat: 42.8, lon: 38.5)],
+  ),
+  (
+    text: s.mapName('caspian'),
+    kind: MapLabelKind.sea,
+    spots: const [(lat: 42.0, lon: 50.5), (lat: 39.0, lon: 51.2), (lat: 44.8, lon: 50.0)],
+  ),
+  (
+    text: s.mapName('persianGulf'),
+    kind: MapLabelKind.sea,
+    spots: const [(lat: 27.0, lon: 51.0), (lat: 28.8, lon: 49.8), (lat: 25.8, lon: 54.3)],
+  ),
+];
+
+/// The names placed on [view], each in a box of the size [measure] gives it:
+/// inside the map, clear of the pin at [pin] and of each other, and a sea's
+/// box wholly on open water. A town's [dot] is where to draw it. Names
+/// without room are left out.
+List<({MapLabel label, Rect box, Offset? dot})> placeMapLabels({
+  required BibleLandsMap map,
+  required MapView view,
+  required List<MapLabel> labels,
+  required Size Function(MapLabel) measure,
+  LatLon? pin,
+}) {
+  final inside = (Offset.zero & view.size).deflate(_labelMargin);
+  final taken = <Rect>[
+    if (pin != null)
+      Rect.fromCircle(center: view.toScreen(pin.lat, pin.lon), radius: _pinRadius + _pinEdge + _labelGap),
+  ];
+  bool fits(Rect r) =>
+      r.left >= inside.left && r.right <= inside.right && r.top >= inside.top && r.bottom <= inside.bottom;
+  bool free(Rect r) => fits(r) && !taken.any(r.overlaps);
+  bool onWater(Rect r) => [
+    r.topLeft,
+    r.topCenter,
+    r.topRight,
+    r.centerLeft,
+    r.center,
+    r.centerRight,
+    r.bottomLeft,
+    r.bottomCenter,
+    r.bottomRight,
+  ].map(view.toMap).every((p) => !map.onLand(p.lat, p.lon));
+
+  final placed = <({MapLabel label, Rect box, Offset? dot})>[];
+  for (final label in labels) {
+    final size = measure(label);
+    if (label.kind == MapLabelKind.sea) {
+      double away(LatLon p) {
+        final (dy, dx) = (p.lat - view.center.lat, p.lon - view.center.lon);
+        return dx * dx + dy * dy;
+      }
+
+      for (final spot in [...label.spots]..sort((a, b) => away(a).compareTo(away(b)))) {
+        final at = view.toScreen(spot.lat, spot.lon);
+        if (!inside.contains(at)) continue;
+        // Kept near its spot: moved at most half its size to fit the map.
+        final box = _shiftedInside(Rect.fromCenter(center: at, width: size.width, height: size.height), inside);
+        if (box == null || !free(box) || !onWater(box)) continue;
+        taken.add(box);
+        placed.add((label: label, box: box, dot: null));
+        break;
+      }
+      continue;
+    }
+    final spot = label.spots.first;
+    final at = view.toScreen(spot.lat, spot.lon);
+    final town = label.kind == MapLabelKind.town;
+    final dot = town ? Rect.fromCircle(center: at, radius: _townDot) : null;
+    // A town under the pin (the place itself, or close by) goes unnamed.
+    if (dot != null ? !free(dot) : !inside.contains(at)) continue;
+    // Beside the town's dot, or beside the lake's shore (not over its water).
+    final (left, right) = town ? (at.dx - _townDot, at.dx + _townDot) : _shores(map, view, spot, at);
+    final top = at.dy - size.height / 2;
+    final box = [
+      Rect.fromLTWH(right + _labelGap, top, size.width, size.height),
+      Rect.fromLTWH(left - _labelGap - size.width, top, size.width, size.height),
+    ].where(free).firstOrNull;
+    if (box == null) continue;
+    taken.addAll([box, ?dot]);
+    placed.add((label: label, box: box, dot: dot?.center));
+  }
+  return placed;
+}
+
+/// How far a lake reaches west and east on [view], on screen: the lake
+/// around [spot] (the Dead Sea's northern basin, not its southern one), or a
+/// few pixels either side of [at] when none is.
+(double, double) _shores(BibleLandsMap map, MapView view, LatLon spot, Offset at) {
+  final lake = map.lakes.where((l) => l.bounds.contains(Offset(spot.lon, spot.lat))).firstOrNull;
+  if (lake == null) return (at.dx - _lakeGap, at.dx + _lakeGap);
+  final b = lake.bounds;
+  return (view.toScreen(spot.lat, b.left).dx, view.toScreen(spot.lat, b.right).dx);
+}
+
+/// [box] moved to lie within [area], or null when it doesn't fit.
+Rect? _shiftedInside(Rect box, Rect area) {
+  if (box.width > area.width || box.height > area.height) return null;
+  final dx = box.left < area.left ? area.left - box.left : (box.right > area.right ? area.right - box.right : 0.0);
+  final dy = box.top < area.top ? area.top - box.top : (box.bottom > area.bottom ? area.bottom - box.bottom : 0.0);
+  return box.shift(Offset(dx, dy));
 }
 
 /// Latitude degrees per logical pixel on a place's map: about 2.6° from top
@@ -175,6 +382,8 @@ class PlaceMapCard extends ConsumerWidget {
                           degreesPerPixel: _degreesPerPixel,
                           colors: colors,
                           pin: (lat: lat, lon: lon),
+                          labels: mapLabels(s),
+                          textScaler: MediaQuery.textScalerOf(context),
                         ),
                       ),
                     ),
@@ -264,15 +473,20 @@ class _MapColors {
     required this.river,
     required this.pin,
     required this.pinEdge,
+    required this.waterName,
+    required this.townName,
   });
 
-  /// Water in the reading theme's info tone, land a step from the card.
+  /// Water in the reading theme's info tone, land a step from the card; names
+  /// of water in the water's own deeper tone.
   factory _MapColors.of(BuildContext context) => _MapColors(
     water: context.appColors.infoContainer,
     land: context.colors.surfaceContainerHigh,
     river: context.appColors.info,
     pin: context.colors.tertiary,
     pinEdge: context.colors.surfaceContainerLowest,
+    waterName: context.text.labelSmall?.copyWith(color: context.appColors.info),
+    townName: context.text.labelSmall?.copyWith(color: context.colors.onSurface),
   );
 
   final Color water;
@@ -280,6 +494,8 @@ class _MapColors {
   final Color river;
   final Color pin;
   final Color pinEdge;
+  final TextStyle? waterName;
+  final TextStyle? townName;
 
   @override
   bool operator ==(Object other) =>
@@ -288,17 +504,17 @@ class _MapColors {
       other.land == land &&
       other.river == river &&
       other.pin == pin &&
-      other.pinEdge == pinEdge;
+      other.pinEdge == pinEdge &&
+      other.waterName == waterName &&
+      other.townName == townName;
 
   @override
-  int get hashCode => Object.hash(water, land, river, pin, pinEdge);
+  int get hashCode => Object.hash(water, land, river, pin, pinEdge, waterName, townName);
 }
 
-typedef _LatLon = ({double lat, double lon});
-
-/// Draws the map around [center] at [degreesPerPixel] (latitude), longitude
-/// flattened by the center's latitude: water, land, rivers, lakes, then a pin
-/// at [pin] or a frame around [frame]'s window on a place's map.
+/// Draws the map around [center] at [degreesPerPixel]: water, land, rivers,
+/// lakes, the [labels] that have room, then a pin at [pin] or a frame around
+/// [frame]'s window on a place's map.
 class _MapPainter extends CustomPainter {
   _MapPainter({
     required this.map,
@@ -307,39 +523,34 @@ class _MapPainter extends CustomPainter {
     required this.colors,
     this.pin,
     this.frame,
+    this.labels = const [],
+    this.textScaler = TextScaler.noScaling,
   });
 
   final BibleLandsMap map;
-  final _LatLon center;
+  final LatLon center;
   final double degreesPerPixel;
   final _MapColors colors;
-  final _LatLon? pin;
-  final _LatLon? frame;
+  final LatLon? pin;
+  final LatLon? frame;
+  final List<MapLabel> labels;
+  final TextScaler textScaler;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final k = math.cos(center.lat * math.pi / 180);
-    final scale = 1 / degreesPerPixel;
-    Offset at(double lon, double lat) =>
-        Offset(size.width / 2 + (lon - center.lon) * k * scale, size.height / 2 - (lat - center.lat) * scale);
-    final halfWidth = size.width / 2 / (k * scale), halfHeight = size.height / 2 / scale;
-    final view = Rect.fromLTRB(
-      center.lon - halfWidth,
-      center.lat - halfHeight,
-      center.lon + halfWidth,
-      center.lat + halfHeight,
-    );
+    final view = MapView(center: center, degreesPerPixel: degreesPerPixel, size: size);
+    final shown = view.bounds;
 
     Path path(List<MapPart> parts, {required bool closed}) {
       final p = Path()..fillType = PathFillType.evenOdd;
       for (final part in parts) {
         // A ring wholly off the map can't change what is filled on it.
-        if (!_meets(part.bounds, view)) continue;
+        if (!_meets(part.bounds, shown)) continue;
         final xy = part.points;
-        final first = at(xy[0], xy[1]);
+        final first = view.toScreen(xy[1], xy[0]);
         p.moveTo(first.dx, first.dy);
         for (var i = 2; i < xy.length; i += 2) {
-          final o = at(xy[i], xy[i + 1]);
+          final o = view.toScreen(xy[i + 1], xy[i]);
           p.lineTo(o.dx, o.dy);
         }
         if (closed) p.close();
@@ -361,17 +572,43 @@ class _MapPainter extends CustomPainter {
     );
     canvas.drawPath(path(map.lakes, closed: true), Paint()..color = colors.water);
 
+    if (labels.isNotEmpty) {
+      final texts = {
+        for (final l in labels)
+          l: TextPainter(
+            text: TextSpan(text: l.text, style: l.kind == MapLabelKind.town ? colors.townName : colors.waterName),
+            textDirection: TextDirection.ltr,
+            textScaler: textScaler,
+          )..layout(),
+      };
+      final placed = placeMapLabels(map: map, view: view, labels: labels, measure: (l) => texts[l]!.size, pin: pin);
+      for (final (:label, :box, :dot) in placed) {
+        // Names on land sit on a plate of the land's color, over the rivers.
+        if (label.kind != MapLabelKind.sea) {
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(box.inflate(_plateMargin), const Radius.circular(_plateMargin)),
+            Paint()..color = colors.land.withValues(alpha: AppOpacity.plate),
+          );
+        }
+        if (dot != null) canvas.drawCircle(dot, _townDot, Paint()..color = colors.townName?.color ?? colors.river);
+        texts[label]!.paint(canvas, box.topLeft);
+      }
+      for (final t in texts.values) {
+        t.dispose();
+      }
+    }
+
     if (pin case final p?) {
-      final o = at(p.lon, p.lat);
+      final o = view.toScreen(p.lat, p.lon);
       canvas.drawCircle(o, _pinRadius + _pinEdge, Paint()..color = colors.pinEdge);
       canvas.drawCircle(o, _pinRadius, Paint()..color = colors.pin);
     }
     if (frame case final f?) {
       // The window of a phone-sized map of the place, at least a few pixels.
-      final h = math.max(_framePixels, _phoneMapHeight * _degreesPerPixel * scale);
+      final h = math.max(_framePixels, _phoneMapHeight * _degreesPerPixel / degreesPerPixel);
       final w = math.max(_framePixels, h * _aspect);
       canvas.drawRect(
-        Rect.fromCenter(center: at(f.lon, f.lat), width: w, height: h),
+        Rect.fromCenter(center: view.toScreen(f.lat, f.lon), width: w, height: h),
         Paint()
           ..color = colors.pin
           ..style = PaintingStyle.stroke
@@ -391,17 +628,24 @@ class _MapPainter extends CustomPainter {
       old.degreesPerPixel != degreesPerPixel ||
       old.colors != colors ||
       old.pin != pin ||
-      old.frame != frame;
+      old.frame != frame ||
+      old.textScaler != textScaler ||
+      !listEquals(old.labels, labels);
 }
 
 /// The smallest frame drawn on the locator, in pixels.
 const _framePixels = 6.0;
 
-/// Line widths and the pin, in pixels.
+/// A place's map on a phone, in pixels high (a 16:10 map in a card).
+const _phoneMapHeight = 200.0;
+
+/// Line widths, the pin and the names, in pixels.
 const _riverWidth = 1.25;
 const _frameWidth = 1.5;
 const _pinRadius = 6.0;
 const _pinEdge = 2.0;
-
-/// A place's map on a phone, in pixels high (a 16:10 map in a card).
-const _phoneMapHeight = 200.0;
+const _townDot = 2.5;
+const _labelGap = 4.0;
+const _lakeGap = 8.0;
+const _labelMargin = 4.0;
+const _plateMargin = 2.0;

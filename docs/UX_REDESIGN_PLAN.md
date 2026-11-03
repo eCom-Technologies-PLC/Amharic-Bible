@@ -1443,6 +1443,10 @@ explore page lists them to browse instead. Amharic names belong in the content p
     which way the place lies from Jerusalem, which screen readers hear with the map.
   - Colors come from each reading theme (water in its info tone); "Larger map" opens OpenStreetMap online. Places
     beyond the map show their coordinates, as before. About credits Natural Earth.
+  - Names in the app's language: the seas (Mediterranean, Red, Aegean, Adriatic, Black, Caspian, the Persian Gulf),
+    each written only where its whole name lies on open water, at the nearest of a few spots; the Sea of Galilee, the
+    Dead Sea and Lake Tana beside their shores; and Jerusalem as a dot and its name, unless it is under the pin. Names
+    never cover the pin or each other, and are left out where there is no room.
   - Tests: the pipeline's clipping, simplifying and encoding, and the checked-in file (land at Jerusalem, Patmos and
     Addis Ababa, sea in the Mediterranean and the Caspian, the Sea of Galilee, the Dead Sea and Lake Tana); in the
     app, decoding, distances and directions, and the place page. The layout audit already renders a place.

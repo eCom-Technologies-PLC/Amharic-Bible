@@ -49,6 +49,9 @@ abstract final class AppOpacity {
 
   /// Hairline borders on cards.
   static const double border = 0.6;
+
+  /// Behind names written on a map: the ground shows through a little.
+  static const double plate = 0.8;
 }
 
 abstract final class AppIconSize {

@@ -126,8 +126,9 @@ Features:
   with a Strong's number (`G25 morph:V-AAI`).
 - **Timeline:** dated biblical events in order, grouped into eras (Search & Study → Bible timeline).
 - **Places on a map, offline:** a place's page shows it on a map of Bible lands (land, lakes and rivers from
-  Natural Earth, from Spain to Ophir and south past Ethiopia), with a small map of the whole region and how far and
-  which way it lies from Jerusalem ("About 870 km east of Jerusalem"). A larger map opens online.
+  Natural Earth, from Spain to Ophir and south past Ethiopia), with the seas and lakes named in the app's language,
+  Jerusalem marked when it is in view, a small map of the whole region, and how far and which way the place lies from
+  Jerusalem ("About 870 km east of Jerusalem"). A larger map opens online.
 - **Study groups (needs accounts):** create a group or join with an 8-character code (Invite, at the top of the
   group, shares or copies it); discuss as a conversation, follow a shared reading plan with everyone's progress,
   and teachers give assignments (passage, task, due date) that members mark done. Members see each other's chosen

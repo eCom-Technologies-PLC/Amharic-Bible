@@ -525,6 +525,9 @@ class S {
   String get mapCredit => _('mapCredit');
   String get mapSource => _('mapSource');
 
+  /// A name written on the map of Bible lands (a sea, a lake, a town).
+  String mapName(String key) => _m['map.$key'] ?? _en['map.$key'] ?? key;
+
   /// What a place's map shows, for screen readers.
   String mapOf(String place) => isAmharic ? '$place እና አካባቢውን የሚያሳይ ካርታ' : 'Map of $place and the lands around it';
 
@@ -1092,6 +1095,17 @@ const _am = {
   'largerMap': 'ትልቅ ካርታ',
   'mapCredit': 'የካርታ መረጃ፦ Natural Earth',
   'mapSource': 'የመጽሐፍ ቅዱስ ምድር ካርታ የብስ፣ ሐይቆችና ወንዞች (የሕዝብ ንብረት)',
+  'map.jerusalem': 'ኢየሩሳሌም',
+  'map.galilee': 'የገሊላ ባሕር',
+  'map.deadSea': 'ሙት ባሕር',
+  'map.tana': 'ጣና ሐይቅ',
+  'map.mediterranean': 'ሜዲትራኒያን ባሕር',
+  'map.redSea': 'ቀይ ባሕር',
+  'map.aegean': 'ኤጂያን ባሕር',
+  'map.adriatic': 'አድሪያቲክ ባሕር',
+  'map.blackSea': 'ጥቁር ባሕር',
+  'map.caspian': 'ካስፒያን ባሕር',
+  'map.persianGulf': 'የፋርስ ባሕረ ሰላጤ',
   'mapOpenFailed': 'ካርታውን መክፈት አልተቻለም',
   'era.beginnings': 'ፍጥረትና የጥንቱ ዓለም',
   'era.patriarchs': 'የአበው ዘመን',
@@ -1631,6 +1645,17 @@ const _en = {
   'largerMap': 'Larger map',
   'mapCredit': 'Map data: Natural Earth',
   'mapSource': 'Land, lakes and rivers on the map of Bible lands (public domain)',
+  'map.jerusalem': 'Jerusalem',
+  'map.galilee': 'Sea of Galilee',
+  'map.deadSea': 'Dead Sea',
+  'map.tana': 'Lake Tana',
+  'map.mediterranean': 'Mediterranean Sea',
+  'map.redSea': 'Red Sea',
+  'map.aegean': 'Aegean Sea',
+  'map.adriatic': 'Adriatic Sea',
+  'map.blackSea': 'Black Sea',
+  'map.caspian': 'Caspian Sea',
+  'map.persianGulf': 'Persian Gulf',
   'mapOpenFailed': "Couldn't open the map",
   'era.beginnings': 'Beginnings',
   'era.patriarchs': 'The patriarchs',
