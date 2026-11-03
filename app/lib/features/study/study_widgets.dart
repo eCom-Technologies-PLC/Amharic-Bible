@@ -27,6 +27,23 @@ String languageLabel(S s, LexLanguage l) => switch (l) {
 
 void openWordStudy(BuildContext context, String strongs) => context.push('/word/$strongs');
 
+/// A lexicon word in a list: its Strong's number, the word and its
+/// transliteration, and a short meaning; opens its word study.
+class WordTile extends StatelessWidget {
+  const WordTile({super.key, required this.word});
+
+  final LexEntry word;
+
+  @override
+  Widget build(BuildContext context) => AppListTile(
+    leading: StatusBadge(word.id),
+    title: [word.lemma, word.translit].where((x) => x.isNotEmpty).join(' · '),
+    subtitle: word.meaning,
+    chevron: true,
+    onTap: () => openWordStudy(context, word.id),
+  );
+}
+
 /// One word's parsing and gloss, with a link to its word study.
 Future<void> showWordSheet(BuildContext context, Word word) {
   final s = S.of(context);

@@ -76,6 +76,10 @@ class _WordStudy extends ConsumerWidget {
                   style: context.text.titleMedium,
                 ),
               ],
+              if (entry.gloss case final gloss?) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(gloss, style: context.text.titleLarge?.copyWith(color: context.colors.primary)),
+              ],
               if (count != null) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(s.occurrenceCount(count), style: context.text.bodyMedium),

@@ -67,9 +67,11 @@ All future UI work in this repository must follow this CLAUDE.md section.
   for bodies that aren't an `AppListView`), `Gutter` (screen padding), `SectionHeader`, `LabeledGroup`,
   `BottomActionBar`.
 - Actions: `AppButton` (`.secondary/.outline/.ghost/.destructive`; `size`, `icon`, `iconAtEnd`, `loading`, `expand`, `tight`), `LabeledIconButton`, `SwatchButton`. Icon-only actions use `IconButton` (themed to 48dp) with a `tooltip`.
-- Forms & filters: `AppTextField`, `AppSearchField`, `FilterBar` / `FilterOption`.
+- Forms & filters: `AppTextField`, `AppSearchField` (optional `focusNode`), `FilterBar` / `FilterOption`
+  (`padding: EdgeInsets.zero` inside a sheet, which has its own).
 - Data: `AppCard` (eyebrow → content → actions), `HeroCard` (the one featured card of a screen, e.g. the verse of the
   day) with `OrnamentRule` (placeholder for the illustrated haräg ornament), `StatTile` (a count and label),
+  `ToolTile` (a tool to open: icon, title and a line of description; a row of them shares its height),
   `AppListTile`, `StatusBadge` (`BadgeTone`), `ProgressRing`.
 - States: `AsyncView` (loading/error/data for any `AsyncValue`), `EmptyState`, `LoadingState`, `ErrorState` (friendly text + retry; never show exception text to readers), `InlineSpinner`.
 - Overlays: `showAppDialog`, `showConfirmDialog`, `showAppBottomSheet`, `showOptionPicker` / `PickerOption`,
@@ -83,7 +85,9 @@ All future UI work in this repository must follow this CLAUDE.md section.
   verse, or shows and hides the bars (`immersiveProvider`; the shell hides its navigation bar with it). On the web and
   with a screen reader, a tap selects. `ParagraphView.onLongPressVerse` carries the hold; keep both paths working.
 - Reading-plan links open the reader with `plan` and `day` query parameters, which show the plan bar; the reader keeps
-  them when it moves between chapters.
+  them when it moves between chapters. The day marks itself read once the end of each of its chapters has been on
+  screen for `AppMotion.readEndDwell`, with Undo in the snack bar. A verse opened from a link or search
+  (`ref=JHN.3.16`) is tinted for `AppMotion.verseFlash` (`VerseDecor.flash`).
 - Share text through `shareText` (`features/common.dart`): on browsers without a share sheet it copies the text and
   says so, instead of opening an email. Web addresses are clean paths (`usePathUrlStrategy`), so links built in code
   never contain `#`.

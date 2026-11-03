@@ -5,10 +5,13 @@ import 'package:amharic_bible/app.dart';
 import 'package:amharic_bible/data/audio_repository.dart';
 import 'package:amharic_bible/data/user_repository.dart';
 import 'package:amharic_bible/domain/models.dart';
+import 'package:amharic_bible/domain/plans.dart';
 import 'package:amharic_bible/features/reader/paragraph_view.dart';
 import 'package:amharic_bible/features/reader/reader_screen.dart';
 import 'package:amharic_bible/features/reader/selection_bar.dart';
 import 'package:amharic_bible/features/share/share_image_screen.dart';
+import 'package:amharic_bible/features/study/ask_screen.dart';
+import 'package:amharic_bible/features/study/entity_screen.dart';
 import 'package:amharic_bible/features/study/study_widgets.dart';
 import 'package:amharic_bible/features/study/verse_study_screen.dart';
 import 'package:amharic_bible/features/study/word_study_screen.dart';
@@ -19,6 +22,7 @@ import 'package:amharic_bible/ui/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -43,6 +47,7 @@ void main() {
     Settings settings = const Settings(),
     String initial = '/home',
     AccountService? account,
+    List<Override> overrides = const [],
   }) async {
     tester.view.physicalSize = const Size(1080, 2340);
     tester.view.devicePixelRatio = 2.75;
@@ -56,6 +61,7 @@ void main() {
           accountServiceProvider.overrideWithValue(account),
           audioRepositoryProvider.overrideWithValue(AudioRepository(baseUrl: '', storageDir: Directory.systemTemp)),
           routerProvider.overrideWithValue(buildRouter(initialLocation: initial)),
+          ...overrides,
         ],
         child: const AmharicBibleApp(),
       ),
@@ -166,9 +172,64 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Day 1'), findsOneWidget);
     expect(await UserRepository(userDb).activePlans(), contains('gospels-30'));
-    await tester.tap(find.byType(Checkbox).first);
+    await tester.tap(find.text('Mark as read'));
     await tester.pumpAndSettle();
     expect(await UserRepository(userDb).completedDays('gospels-30'), {1});
+    // The next day to read comes up; another day can be chosen in the strip,
+    // and "Today's reading" comes back to it.
+    expect(find.text('Day 2'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Day 4'));
+    await tester.pumpAndSettle();
+    expect(find.text('Day 4'), findsOneWidget);
+    await tester.tap(find.text("Today's reading"));
+    await tester.pumpAndSettle();
+    expect(find.text('Day 2'), findsOneWidget);
+  });
+
+  testWidgets('a plan day completes itself once its chapters are read to the end, with Undo', (tester) async {
+    // A plan of chapters the sample text has.
+    const plan = ReadingPlan(
+      id: 'test',
+      name: {'en': 'Test plan'},
+      description: {'en': ''},
+      days: [
+        [PlanReading('JHN', 3, 3)],
+        [PlanReading('PSA', 23, 23)],
+      ],
+    );
+    await UserRepository(userDb).startPlan('test');
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/read?ref=JHN.3&plan=test&day=1',
+      overrides: [
+        plansProvider.overrideWith((ref) async => [plan]),
+      ],
+    );
+    // Time alone doesn't count: the end of the chapter isn't in view yet.
+    await tester.pump(AppMotion.readEndDwell);
+    await tester.pumpAndSettle();
+    expect(await UserRepository(userDb).completedDays('test'), isEmpty);
+    // Read on to the end, and stay there a moment.
+    await tester.drag(find.byType(ParagraphView).first, const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.pump(AppMotion.readEndDwell);
+    await tester.pumpAndSettle();
+    expect(await UserRepository(userDb).completedDays('test'), {1});
+    expect(find.text('Day 1 done'), findsOneWidget);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(await UserRepository(userDb).completedDays('test'), isEmpty);
+  });
+
+  testWidgets('a plan starts from Today in one tap', (tester) async {
+    await pumpApp(tester, settings: const Settings(languageCode: 'en'));
+    await tester.scrollUntilVisible(find.text('The Gospels in 30 days'), 200);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start plan'));
+    await tester.pumpAndSettle();
+    expect(await UserRepository(userDb).activePlans(), contains('gospels-30'));
+    expect(find.text("Today's reading"), findsOneWidget);
   });
 
   testWidgets('verse image card renders to a 1080 px PNG', (tester) async {
@@ -337,12 +398,12 @@ void main() {
     await tester.enterText(find.byType(TextField), 'H7225');
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
-    expect(find.text('Words'), findsOneWidget);
+    expect(find.text('Words · 1'), findsOneWidget);
     expect(find.textContaining('רֵאשִׁית'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'Laban');
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
-    expect(find.text('People, places and events'), findsOneWidget);
+    expect(find.text('People & places · 1'), findsOneWidget);
     expect(find.text('Laban'), findsWidgets);
   });
 
@@ -472,6 +533,120 @@ void main() {
     expect(find.text('ዮሐንስ 3'), findsOneWidget);
   });
 
+  testWidgets('Search & Study opens on the study tools and searches to try', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', recentSearches: ['ሰላም']),
+      initial: '/search',
+    );
+    expect(find.text('Study tools'), findsOneWidget);
+    for (final tool in ['Word study', 'People & places', 'Bible timeline', 'Ask AI']) {
+      expect(find.text(tool), findsOneWidget);
+    }
+    expect(find.text('Recent searches'), findsOneWidget);
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recent searches'), findsNothing);
+    // Suggestions follow the version being searched (Amharic here); a
+    // reference offers the passage.
+    await tester.scrollUntilVisible(
+      find.text('ዮሐ 3፥16'),
+      200,
+      scrollable: find.descendant(of: find.byType(AppListView), matching: find.byType(Scrollable)).first,
+    );
+    await tester.tap(find.text('ዮሐ 3፥16'));
+    await tester.pumpAndSettle();
+    expect(find.text('Go to'), findsOneWidget);
+  });
+
+  testWidgets('search narrows to a book from the Filter sheet, and the filter can be removed', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/search?q=God',
+    );
+    expect(find.text('Genesis 1:1'), findsOneWidget);
+    await tester.tap(find.text('Filter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All books'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('John').last);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20)); // close the sheet
+    await tester.pumpAndSettle();
+    expect(find.text('Genesis 1:1'), findsNothing);
+    expect(find.text('John 3:16'), findsOneWidget);
+    await tester.tap(find.byTooltip('Remove filter'));
+    await tester.pumpAndSettle();
+    expect(find.text('Genesis 1:1'), findsOneWidget);
+  });
+
+  testWidgets('word study is two taps from Search & Study', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/search',
+    );
+    await tester.tap(find.text('Word study'));
+    await tester.pumpAndSettle();
+    expect(find.text('Greek (New Testament)'), findsOneWidget);
+    // Meanings come from the glosses, not the first KJV rendering ("exceeding" for θεός).
+    expect(find.text('word'), findsOneWidget);
+    expect(find.text('exceeding'), findsNothing);
+    await tester.tap(find.textContaining('λόγος'));
+    await tester.pumpAndSettle();
+    expect(find.byType(WordStudyScreen), findsOneWidget);
+  });
+
+  testWidgets('people and places can be browsed by kind and opened', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/search',
+    );
+    await tester.tap(find.text('People & places'));
+    await tester.pumpAndSettle();
+    expect(find.text('Most mentioned'), findsOneWidget);
+    expect(find.text('God'), findsOneWidget);
+    await tester.tap(find.text('Places'));
+    await tester.pumpAndSettle();
+    expect(find.text('God'), findsNothing);
+    await tester.tap(find.text('Galeed'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EntityScreen), findsOneWidget);
+  });
+
+  testWidgets('Ask from Search & Study first asks which passage', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/search',
+    );
+    await tester.tap(find.text('Ask AI'));
+    await tester.pumpAndSettle();
+    expect(find.text('Which passage?'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'not a passage');
+    await tester.testTextInput.receiveAction(TextInputAction.go);
+    await tester.pumpAndSettle();
+    expect(find.text("That doesn't look like a Bible reference"), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'Jn 3:16');
+    await tester.testTextInput.receiveAction(TextInputAction.go);
+    await tester.pumpAndSettle();
+    expect(find.byType(AskScreen), findsOneWidget);
+  });
+
+  testWidgets('a verse opened from a link is tinted for a moment', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en', versionId: 'WEB'),
+      initial: '/read?ref=JHN.3.16',
+    );
+    Iterable<int?> flashes() => tester.widgetList<ParagraphView>(find.byType(ParagraphView)).map((p) => p.decor.flash);
+    expect(flashes(), contains(43003016));
+    await tester.pump(AppMotion.verseFlash);
+    expect(flashes().whereType<int>(), isEmpty);
+  });
+
   testWidgets('a search link runs its query', (tester) async {
     await pumpApp(
       tester,
@@ -533,11 +708,19 @@ void main() {
       settings: const Settings(languageCode: 'en', versionId: 'WEB'),
       initial: '/search',
     );
-    await tester.tap(find.text('All versions'));
     await tester.enterText(find.byType(TextField), 'λογοσ');
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
-    expect(find.text('John 1:1 · RP2018'), findsOneWidget);
+    // Not in this (English) version; the filter widens the search.
+    await tester.tap(find.text('Filter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All versions'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20)); // close the sheet
+    await tester.pumpAndSettle();
+    expect(find.text('All versions'), findsOneWidget); // the filter, as a removable chip
+    expect(find.text('John 1:1'), findsOneWidget);
+    expect(find.text('RP2018'), findsOneWidget); // the version's badge
   });
 
   testWidgets('notes take tags, and the notes list filters by tag', (tester) async {

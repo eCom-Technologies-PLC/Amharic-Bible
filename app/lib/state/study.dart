@@ -79,6 +79,32 @@ final studyResourcesProvider = FutureProvider<List<StudyResource>>(
   (ref) => ref.watch(studyRepositoryProvider).resources(),
 );
 
+/// The most-mentioned people, places and events of a kind (all when null).
+final topEntitiesProvider = FutureProvider.family<List<Entity>, EntityKind?>(
+  (ref, kind) => ref.watch(studyRepositoryProvider).topEntities(kind: kind),
+);
+
+final entitySearchProvider = FutureProvider.family<List<Entity>, ({String query, EntityKind? kind})>(
+  (ref, q) => ref.watch(studyRepositoryProvider).searchEntities(q.query, kind: q.kind, limit: 40),
+);
+
+final lexiconSearchProvider = FutureProvider.family<List<LexEntry>, String>(
+  (ref, q) => ref.watch(studyRepositoryProvider).searchLexicon(q, limit: 40),
+);
+
+/// Strong's numbers of key words (love, faith, grace, peace…), Greek then
+/// Hebrew, for the word-study page; those missing from the lexicon are skipped.
+const keyWordIds = [
+  'G26', 'G25', 'G4102', 'G5485', 'G1515', 'G1680', 'G3056', 'G2222', //
+  'G225', 'G4991', 'G932', 'G4151', 'G1343', 'G2316', 'G2889', //
+  'H2617', 'H7965', 'H430', 'H3068', 'H1285', 'H6666', 'H7307', 'H539', 'H1254', 'H7225', //
+];
+
+final keyWordsProvider = FutureProvider<List<LexEntry>>((ref) async {
+  final repo = ref.watch(studyRepositoryProvider);
+  return [for (final id in keyWordIds) ?await repo.lexicon(id)];
+});
+
 /// Book names for references: the current version's names, filled in from
 /// other versions for books it doesn't cover (e.g. the Hebrew OT has no NT).
 final refBooksProvider = FutureProvider<List<Book>>((ref) async {

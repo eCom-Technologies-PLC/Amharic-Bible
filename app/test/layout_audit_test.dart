@@ -48,6 +48,9 @@ const routes = [
   '/entity/place%3Agaleed_432',
   '/ask?v=43003016',
   '/timeline',
+  '/search?q=God', // results of several kinds, with their chips
+  '/people',
+  '/words',
 ];
 
 class Device {

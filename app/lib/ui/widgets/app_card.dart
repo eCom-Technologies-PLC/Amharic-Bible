@@ -98,6 +98,43 @@ class StatTile extends StatelessWidget {
   );
 }
 
+/// A tool or destination to open: an icon, a title and a line saying what it
+/// is for (the study tools on the Search & Study page). Tiles in a row should
+/// share its height (`IntrinsicHeight` + `CrossAxisAlignment.stretch`).
+class ToolTile extends StatelessWidget {
+  const ToolTile({super.key, required this.icon, required this.title, required this.description, this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: context.colors.secondary),
+            const SizedBox(height: AppSpacing.sm),
+            Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: context.text.titleSmall),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              description,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 /// List row with consistent height, padding, leading size and typography.
 class AppListTile extends StatelessWidget {
   const AppListTile({

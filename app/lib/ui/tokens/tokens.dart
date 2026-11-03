@@ -114,6 +114,10 @@ abstract final class AppDimens {
   /// Width of the study panel beside the reader.
   static const double studyPanelWidth = 360;
 
+  /// Width of one day in a reading plan's day strip (a touch target with room
+  /// for a three-digit day).
+  static const double dayCell = 56;
+
   /// Thin progress line (mini player).
   static const double progressThin = 2;
 
@@ -154,6 +158,14 @@ abstract final class AppMotion {
 
   /// Audio follow-along does not auto-scroll this soon after the user scrolls.
   static const userScrollGrace = Duration(seconds: 5);
+
+  /// How long a verse opened from search or a link stays tinted, so the eye
+  /// finds it.
+  static const verseFlash = Duration(seconds: 2);
+
+  /// How long the end of a reading plan's chapter stays on screen before the
+  /// chapter counts as read (a plan day completes when all of its have).
+  static const readEndDwell = Duration(seconds: 5);
 
   /// Fling speed (logical px/s) that turns the page to the next chapter.
   static const double chapterSwipeVelocity = 400;

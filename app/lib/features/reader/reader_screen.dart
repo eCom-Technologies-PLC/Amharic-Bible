@@ -46,26 +46,140 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   final _positions = ItemPositionsListener.create();
   DateTime _lastUserScroll = DateTime.fromMillisecondsSinceEpoch(0);
 
+  /// The verse a link or search opened, tinted for [AppMotion.verseFlash]
+  /// once its chapter is on screen.
+  BibleRef? _flash;
+  Timer? _flashTimer;
+
+  // A reading plan's day completes itself once the end of each of its
+  // chapters has stayed on screen for [AppMotion.readEndDwell].
+  Set<String> _dayChapters = const {}; // "JHN.3"
+  final _dayChaptersRead = <String>{};
+  bool _dayDone = true;
+  bool _lastPlanDay = false;
+  Timer? _endTimer;
+  String? _endTimerFor;
+
   @override
   void initState() {
     super.initState();
     _ref = widget.target;
+    _flash = widget.target?.verse != null ? widget.target : null;
+    _positions.itemPositions.addListener(_checkPlanDay);
+  }
+
+  @override
+  void dispose() {
+    _positions.itemPositions.removeListener(_checkPlanDay);
+    _flashTimer?.cancel();
+    _endTimer?.cancel();
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(ReaderScreen old) {
     super.didUpdateWidget(old);
+    if (widget.planId != old.planId || widget.planDay != old.planDay) {
+      _dayChaptersRead.clear();
+      _endTimer?.cancel();
+      _endTimer = null;
+      _endTimerFor = null;
+    }
     if (widget.target != null && widget.target != old.target) {
       _goTo(widget.target!);
     }
   }
 
+  /// The chapters of the plan day being read (from the plan's bar), and
+  /// whether the day is already done.
+  void _watchPlanDay() {
+    final planId = widget.planId, day = widget.planDay;
+    final progress = planId == null ? null : ref.watch(planProgressProvider(planId)).value;
+    if (progress == null || day == null || day < 1 || day > progress.plan.length) {
+      _dayDone = true;
+      return;
+    }
+    _dayDone = progress.completed.contains(day);
+    _lastPlanDay = progress.completed.length == progress.plan.length - 1;
+    _dayChapters = {
+      for (final r in progress.plan.readingsFor(day))
+        for (var c = r.from; c <= r.to; c++) '${r.book}.$c',
+    };
+    // The end may already be on screen (a short chapter) before the plan loads.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkPlanDay();
+    });
+  }
+
+  /// Starts the wait when the end of one of the day's chapters is on screen,
+  /// and stops it when the reader scrolls away.
+  void _checkPlanDay() {
+    final shown = _shown;
+    final key = shown == null ? null : '${shown.book.code}.${shown.chapter}';
+    final last = shown?.layout.blocks.length ?? 0; // list index of the last paragraph
+    final atEnd =
+        key != null &&
+        !_dayDone &&
+        _dayChapters.contains(key) &&
+        !_dayChaptersRead.contains(key) &&
+        _positions.itemPositions.value.any((p) => p.index > last || (p.index == last && p.itemTrailingEdge <= 1));
+    if (!atEnd) {
+      _endTimer?.cancel();
+      _endTimer = null;
+      _endTimerFor = null;
+    } else if (_endTimerFor != key) {
+      _endTimer?.cancel();
+      _endTimerFor = key;
+      _endTimer = Timer(AppMotion.readEndDwell, () => _chapterRead(key));
+    }
+  }
+
+  /// Counts [chapter] as read; once all of the day's are, marks the day done
+  /// and offers Undo.
+  Future<void> _chapterRead(String chapter) async {
+    _endTimer = null;
+    _endTimerFor = null;
+    final planId = widget.planId, day = widget.planDay;
+    if (!mounted || planId == null || day == null || _dayDone) return;
+    _dayChaptersRead.add(chapter);
+    if (!_dayChapters.every(_dayChaptersRead.contains)) return;
+    _dayDone = true;
+    final s = S.of(context);
+    final container = ProviderScope.containerOf(context);
+    final repo = ref.read(userRepositoryProvider);
+    await repo.setDayDone(planId, day, true);
+    invalidateUserDataIn(container);
+    if (!mounted) return;
+    showAppSnack(
+      context,
+      _lastPlanDay ? s.planFinished : s.dayDone(day),
+      actionLabel: s.undo,
+      onAction: () async {
+        await repo.setDayDone(planId, day, false);
+        invalidateUserDataIn(container);
+      },
+    );
+  }
+
   void _goTo(BibleRef r) {
+    _flashTimer?.cancel();
+    _flashTimer = null;
     setState(() {
       _ref = r;
+      _flash = r.verse != null ? r : null;
       _selected.clear();
       _scroll = ItemScrollController(); // new list, new initial position
     });
+  }
+
+  /// The flashing verse's key if it is in chapter [c]; starts its timer.
+  int? _flashIn(ChapterContent c) {
+    final f = _flash;
+    if (f == null || f.bookCode != c.book.code || f.chapter != c.chapter) return null;
+    _flashTimer ??= Timer(AppMotion.verseFlash, () {
+      if (mounted) setState(() => _flash = null);
+    });
+    return vkey(c.book.num, c.chapter, f.verse!);
   }
 
   void _savePosition(String versionId, BibleRef r, int bookNum) {
@@ -182,6 +296,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final book = content?.book;
     _holdToSelect = !kIsWeb && !MediaQuery.accessibleNavigationOf(context);
     final immersive = _holdToSelect && ref.watch(immersiveProvider);
+    _watchPlanDay();
 
     final scaffold = AppScaffold(
       reading: true,
@@ -348,6 +463,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       },
       selected: _selected,
       playing: playing,
+      flash: _flashIn(c),
     );
     final initial = r.verse != null ? layout.blockOfVerse[vkey(c.book.num, c.chapter, r.verse!)] : null;
     final s = S.of(context);

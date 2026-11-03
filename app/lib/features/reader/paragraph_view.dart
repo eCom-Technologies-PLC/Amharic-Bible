@@ -17,6 +17,7 @@ class VerseDecor {
     this.notes = const {},
     this.selected = const {},
     this.playing,
+    this.flash,
   });
 
   final Map<int, HighlightColor> highlights;
@@ -24,6 +25,7 @@ class VerseDecor {
   final Set<int> notes;
   final Set<int> selected;
   final int? playing; // verse being read aloud
+  final int? flash; // verse just opened from search or a link, tinted for a moment
 }
 
 /// Reading options that change what is shown (not how it is styled — styles
@@ -149,6 +151,7 @@ class _ParagraphViewState extends State<ParagraphView> {
       // A highlight keeps its color while selected (the underline marks the
       // selection); plain selected verses get a soft tint so they stand out.
       Color? bg = hl != null ? context.appColors.highlight(hl) : (selected ? context.appColors.selection : null);
+      if (d.flash == k) bg = context.appColors.selection;
       if (d.playing == k) bg = context.appColors.playing;
       final style = base.copyWith(
         backgroundColor: bg,

@@ -41,8 +41,6 @@ class MeScreen extends ConsumerWidget {
               ],
             ),
           ),
-          SectionHeader(s.study),
-          tile(Icons.timeline, s.timeline, '/timeline'),
           SectionHeader(s.appSection),
           // The web streams everything: no offline downloads.
           if (!kIsWeb) tile(Icons.download_outlined, s.downloads, '/me/downloads'),

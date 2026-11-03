@@ -1180,8 +1180,45 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 
 **Left for later phases:**
 
-- The Search & Study explore page, where the study tools (now under Me) move (Phase 5).
 - The other two contextual tips from §7.1: swipe for the next chapter, and tap a verse to play from there.
+
+### Phase 5 (started 2026-11-03)
+
+**Done (part 1: Search & Study, Plans):**
+
+- **Explore page:** before anything is typed, Search & Study shows:
+  - The study tools: Word study, People & places, the Bible timeline (moved from Me), and Ask AI, which asks which
+    passage first.
+  - Recent searches, which can be cleared.
+  - Searches to try, in the language of the version being searched.
+  - Search tips (references, words, phrases in quotes, Strong's numbers, grammar codes).
+- **Word study page** (`/words`): key Greek and Hebrew words (love, faith, grace, peace, word, life, spirit…) and a
+  lookup by word, meaning or Strong's number. Word study is two taps from the Search tab (exit criterion: ≤3).
+- **People & places page** (`/people`): the most-mentioned people, places and events, by kind, with a name search.
+- **Filters:** one Filter button opens a sheet (testament, book, all versions); filters in use show as removable
+  chips.
+- **Results, one kind at a time:** chips with counts (Verses · 87, Words · 6, People & places · 1, Dictionary · 1)
+  replace stacked sections, because a 200-verse list would push collapsed sections out of reach. The "Go to"
+  card stays first; all-versions results carry the version as a badge.
+- **Arrival tint:** a verse opened from search or a link is tinted for two seconds.
+- **Plans:**
+  - A plan day marks itself read once the end of each of its chapters has been on screen for five seconds, with
+    Undo (approved in §15).
+  - The plan page shows a strip of its days (read ones checked, the next one outlined) and the chosen day's readings
+    with Mark as read, instead of 365 checkbox rows.
+  - Today offers *The Gospels in 30 days* with a one-tap Start (exit criterion: plan start ≤2 taps).
+- **Fixed along the way:** word lists showed the first KJV rendering as the meaning (θεός "exceeding", λόγος
+  "account"); they now use the STEPBible glosses, also shown on the word study page.
+
+**Left for Phase 5:**
+
+- Study screens (§7.6): verse study tabs, a map card for places, timeline era bands, the Ask composer.
+- Plans: covers (illustrator), "Behind? Adjust the schedule", a month view, the completion celebration and card.
+- Groups polish (§7.13), Settings regrouping (§7.11), share-image additions (§7.12).
+- Search: a passage preview beside the results on wide windows; Amharic stemming (pipeline).
+
+**Content gaps found:** people and places have English names only, so typing an Amharic name finds nothing; the
+explore page lists them to browse instead. Amharic names belong in the content pipeline.
 
 ---
 

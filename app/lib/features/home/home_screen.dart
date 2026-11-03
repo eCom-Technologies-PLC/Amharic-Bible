@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/strings.dart';
 import '../../core/vkey.dart';
 import '../../domain/models.dart';
+import '../../domain/plans.dart';
 import '../../state/providers.dart';
 import '../../state/study.dart';
 import '../../ui/ui.dart';
@@ -167,29 +168,44 @@ Future<void> _listen(BuildContext context, WidgetRef ref, BibleVersion version, 
   if (err != null && context.mounted) showAppSnack(context, audioErrorText(S.of(context), err));
 }
 
-/// Invitation to start a plan, while the reader has none.
-class _StartPlanCard extends StatelessWidget {
+/// The plan offered to someone who has none: short, and at the heart of it.
+const _firstPlanId = 'gospels-30';
+
+/// Invitation to start a plan, while the reader has none: one tap starts a
+/// short plan (the card itself shows what it is), or all plans are a tap away.
+class _StartPlanCard extends ConsumerWidget {
   const _StartPlanCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
+    final plans = ref.watch(plansProvider).value ?? const <ReadingPlan>[];
+    final plan = plans.where((p) => p.id == _firstPlanId).firstOrNull ?? plans.firstOrNull;
+    final muted = context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant);
     return AppCard(
-      onTap: () => context.go('/plans'),
-      child: Row(
-        children: [
-          Icon(Icons.event_note_outlined, color: context.colors.secondary),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(s.startAPlan, style: context.text.titleMedium),
-                Text(s.startPlanHint, style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant)),
-              ],
-            ),
+      eyebrow: s.startAPlan,
+      onTap: () => context.go(plan != null ? '/plans/${plan.id}' : '/plans'),
+      actions: [
+        if (plan != null)
+          AppButton(
+            label: s.startPlan,
+            icon: Icons.play_arrow,
+            onPressed: () async {
+              await ref.read(userRepositoryProvider).startPlan(plan.id);
+              invalidateUserData(ref);
+            },
           ),
-          const Icon(Icons.arrow_forward),
+        AppButton.ghost(label: s.seeAllPlans, onPressed: () => context.go('/plans')),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (plan != null) ...[
+            Text(plan.nameFor(s.locale.languageCode), style: context.text.titleMedium),
+            Text(s.days(plan.length), style: muted),
+            const SizedBox(height: AppSpacing.xs),
+          ],
+          Text(s.startPlanHint, style: muted),
         ],
       ),
     );

@@ -79,6 +79,7 @@ class LexEntry {
     required this.derivation,
     required this.usage,
     required this.resourceId,
+    this.gloss,
   });
 
   final String id;
@@ -91,7 +92,14 @@ class LexEntry {
   final String usage; // KJV renderings
   final String resourceId;
 
+  /// A short gloss (STEPBible), when the content has one.
+  final String? gloss;
+
   bool get isRtl => language != LexLanguage.greek;
+
+  /// What the word means, in a few words: the gloss, or else the first KJV
+  /// rendering (which can mislead: θεός's first is "exceeding").
+  String? get meaning => gloss ?? shortGloss(usage, definition);
 
   factory LexEntry.fromRow(Map<String, Object?> r) => LexEntry(
     id: r['id'] as String,
@@ -107,6 +115,7 @@ class LexEntry {
     derivation: r['derivation'] as String? ?? '',
     usage: r['usage'] as String? ?? '',
     resourceId: r['resource_id'] as String? ?? '',
+    gloss: r['gloss'] as String?,
   );
 }
 

@@ -101,13 +101,14 @@ Features:
   narration and speech turn red as a whole until a source with its own `\wj` markup is used).
 - **Side by side:** any two versions (e.g. Amharic + English), in columns on tablets and interleaved on phones.
 - **Personal study:** highlights, bookmarks and notes; offline search with reference jumps ("ዮሐ 3፥16", "Jn 3:16"),
-  exact phrases in quotes ("so loved", «ዓለምን ወደደ»), and a switch to search every version at once.
+  exact phrases in quotes ("so loved", «ዓለምን ወደደ»), and a Filter sheet to narrow by testament or book, or to
+  search every version at once. Results come one kind at a time: verses, words, people and places, dictionary.
 - **Compare:** the selected verses in every installed version, from the selection bar.
 - **Notes:** tags work as notebooks (filter the notes list by tag); export notes as Markdown with each passage
   quoted and the version cited.
 - **Grammar search:** `morph:V-AAI` (Greek aorist active indicative), `@HVqw` (Hebrew Qal wayyiqtol), optionally
   with a Strong's number (`G25 morph:V-AAI`).
-- **Timeline:** dated biblical events in order (Me → Bible timeline).
+- **Timeline:** dated biblical events in order (Search & Study → Bible timeline).
 - **Study groups (needs accounts):** create a group or join with an 8-character code; discuss, follow a shared
   reading plan with everyone's progress, and teachers give assignments (passage, task, due date) that members
   mark done. Members see each other's chosen display names, never emails.
@@ -121,11 +122,14 @@ Features:
 - **Word and verse study:** Strong's entries with every occurrence (a concordance); per verse, the original
   words, textual variants, cross-references, people/places/events and attributed commentary marked "Not Scripture".
   Search also finds words by Strong's number, lemma or meaning, and people, places and dictionary entries.
+  Search & Study opens on the study tools: key Greek and Hebrew words, the most-mentioned people, places and
+  events, the timeline, and Ask about a passage.
 - **AI study assistant (optional):** explain, summarize, study questions, sermon help or a free question, at a
   simple or scholar level, in Amharic or English, with an optional tradition. See below.
 - **Audio:** follow-along verse highlighting, background playback, speed, sleep timer and book downloads.
 - **Reading plans:** Bible in a year, New Testament in 90 days, Gospels in 30 days, Psalms and Proverbs in
-  60 days, with daily progress and a "today's reading" card on Home.
+  60 days, with a strip of the plan's days and a "today's reading" card on Home (where a first plan starts in one
+  tap). A day marks itself read once the end of each of its chapters has been on screen a few seconds, with Undo.
 - **Share:** verses as text, or as an image card (8 backgrounds, square or story size, 1080 px PNG).
 - **Accounts (optional):** sign in with an emailed code to sync highlights, bookmarks, notes, plans and your
   reading position across devices. Export your data as JSON, or delete your account, from inside the app.

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../core/strings.dart';
 import '../../domain/plans.dart';
@@ -112,20 +111,37 @@ class _NotStarted extends StatelessWidget {
   }
 }
 
-class _DayList extends ConsumerWidget {
+/// A started plan: how far along it is, a strip of its days, and the chosen
+/// day's readings (the next one to read, at first).
+class _DayList extends ConsumerStatefulWidget {
   const _DayList({required this.progress});
 
   final PlanProgress progress;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DayList> createState() => _DayListState();
+}
+
+class _DayListState extends ConsumerState<_DayList> {
+  /// The day chosen in the strip; null follows the next day to read.
+  int? _chosen;
+
+  @override
+  Widget build(BuildContext context) {
     final s = S.of(context);
+    final progress = widget.progress;
     final plan = progress.plan;
-    final focus = progress.nextDay ?? plan.length;
+    final next = progress.nextDay ?? plan.length;
+    final day = _chosen ?? next;
+    final done = progress.completed.contains(day);
     final settings = ref.watch(settingsProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    Future<void> mark(bool read) async {
+      await ref.read(userRepositoryProvider).setDayDone(plan.id, day, read);
+      invalidateUserData(ref);
+    }
+
+    return AppListView(
       children: [
         Gutter(
           vertical: AppSpacing.md,
@@ -152,29 +168,172 @@ class _DayList extends ConsumerWidget {
             ],
           ),
         ),
-        const Divider(),
-        Expanded(
-          child: ScrollablePositionedList.builder(
-            initialScrollIndex: (focus - 2).clamp(0, plan.length - 1),
-            itemCount: plan.length,
-            itemBuilder: (context, i) {
-              final day = i + 1;
-              final isToday = day == progress.scheduledDay;
-              return CheckboxListTile(
-                tileColor: isToday ? context.colors.primaryContainer.withValues(alpha: AppOpacity.tint) : null,
-                value: progress.completed.contains(day),
-                controlAffinity: ListTileControlAffinity.leading,
-                title: Text(s.day(day), style: isToday ? context.text.titleSmall : null),
-                subtitle: ReadingChips(readings: plan.readingsFor(day), planId: plan.id, day: day),
-                onChanged: (v) async {
-                  await ref.read(userRepositoryProvider).setDayDone(plan.id, day, v ?? false);
-                  invalidateUserData(ref);
-                },
-              );
-            },
+        _DayStrip(progress: progress, chosen: day, next: next, onChosen: (d) => setState(() => _chosen = d)),
+        Gutter(
+          vertical: AppSpacing.md,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(s.day(day), style: context.text.titleMedium),
+                  if (day == next && !progress.finished) StatusBadge(s.todaysReading, tone: BadgeTone.info),
+                  if (done) StatusBadge(s.dayComplete, icon: Icons.check, tone: BadgeTone.success),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ReadingChips(readings: plan.readingsFor(day), planId: plan.id, day: day),
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  done
+                      ? AppButton.secondary(label: s.markAsUnread, icon: Icons.undo, onPressed: () => mark(false))
+                      : AppButton(label: s.markAsRead, icon: Icons.check, onPressed: () => mark(true)),
+                  if (day != next)
+                    AppButton.ghost(
+                      label: s.todaysReading,
+                      icon: Icons.today_outlined,
+                      onPressed: () => setState(() => _chosen = null),
+                    ),
+                ],
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The plan's days in a row that scrolls sideways, starting near the chosen
+/// day: each shows its number and whether it was read; the next day to read
+/// is outlined and the chosen one filled.
+class _DayStrip extends ConsumerStatefulWidget {
+  const _DayStrip({required this.progress, required this.chosen, required this.next, required this.onChosen});
+
+  final PlanProgress progress;
+  final int chosen;
+  final int next;
+  final ValueChanged<int> onChosen;
+
+  @override
+  ConsumerState<_DayStrip> createState() => _DayStripState();
+}
+
+class _DayStripState extends ConsumerState<_DayStrip> {
+  // Opens with a couple of days before the chosen one in view.
+  late final _scroll = ScrollController(
+    initialScrollOffset: ((widget.chosen - 3).clamp(0, widget.progress.plan.length) * AppDimens.dayCell).toDouble(),
+  );
+
+  @override
+  void didUpdateWidget(_DayStrip old) {
+    super.didUpdateWidget(old);
+    // "Today's reading" brings the next day back into view.
+    if (widget.chosen != old.chosen && _scroll.hasClients) {
+      final target = ((widget.chosen - 3) * AppDimens.dayCell).clamp(0.0, _scroll.position.maxScrollExtent);
+      final visible =
+          _scroll.offset <= (widget.chosen - 1) * AppDimens.dayCell &&
+          (widget.chosen * AppDimens.dayCell) <= _scroll.offset + _scroll.position.viewportDimension;
+      if (!visible) _scroll.animateTo(target, duration: AppMotion.medium, curve: AppMotion.curve);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final settings = ref.watch(settingsProvider);
+    final scheme = context.colors;
+    final progress = widget.progress;
+    return SingleChildScrollView(
+      controller: _scroll,
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+      child: Row(
+        children: [
+          for (var d = 1; d <= progress.plan.length; d++)
+            _DayCell(
+              label: formatNumber(d, settings),
+              semanticsLabel: s.dayCell(d, done: progress.completed.contains(d)),
+              done: progress.completed.contains(d),
+              chosen: d == widget.chosen,
+              next: d == widget.next && !progress.finished,
+              scheme: scheme,
+              onTap: () => widget.onChosen(d),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    required this.label,
+    required this.semanticsLabel,
+    required this.done,
+    required this.chosen,
+    required this.next,
+    required this.scheme,
+    required this.onTap,
+  });
+
+  final String label;
+  final String semanticsLabel;
+  final bool done;
+  final bool chosen;
+  final bool next;
+  final ColorScheme scheme;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadius.md);
+    return Semantics(
+      button: true,
+      selected: chosen,
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: Ink(
+          width: AppDimens.dayCell,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: chosen ? scheme.primaryContainer : null,
+            borderRadius: radius,
+            border: next && !chosen ? Border.all(color: scheme.primary) : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                style: context.text.titleSmall?.copyWith(color: chosen ? scheme.onPrimaryContainer : null),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Icon(
+                done ? Icons.check_circle : Icons.circle_outlined,
+                size: AppIconSize.sm,
+                color: done ? scheme.primary : scheme.outline,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

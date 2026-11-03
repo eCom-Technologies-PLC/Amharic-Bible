@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +15,7 @@ import '../core/strings.dart';
 import '../core/vkey.dart';
 import '../domain/models.dart';
 import '../state/providers.dart';
+import '../state/study.dart';
 import '../ui/ui.dart';
 
 /// Compresses verse numbers into ranges: [1,2,3,5] -> "1-3, 5".
@@ -77,37 +80,72 @@ Future<void> shareText(BuildContext context, String text, {String? subject}) asy
 /// The "Go to" box (Ctrl+K or ⌘K): a reference ("ዮሐ 3፥16", "Jn 3:16") opens
 /// the reader there; anything else opens search with it.
 Future<void> showGoTo(BuildContext context, WidgetRef ref) {
+  final s = S.of(context);
   return showAppBottomSheet<void>(
     context: context,
-    title: S.of(context).goTo,
-    builder: (sheet) => _GoToField(
+    title: s.goTo,
+    builder: (sheet) => _ReferenceField(
+      hint: s.goToHint,
       onSubmitted: (q) async {
         final r = (await ref.read(referenceParserProvider.future)).parse(q);
         if (sheet.mounted) Navigator.of(sheet).pop();
-        if (!context.mounted) return;
+        if (!context.mounted) return null;
         context.go(
           r != null
               ? '/read?ref=${BibleRef(r.bookCode, r.chapter, r.verse).encode()}'
               : Uri(path: '/search', queryParameters: {'q': q}).toString(),
         );
+        return null;
       },
     ),
   );
 }
 
-/// The Go-to box's field; it owns its controller, which must outlive the
-/// sheet's closing animation.
-class _GoToField extends StatefulWidget {
-  const _GoToField({required this.onSubmitted});
-
-  final ValueChanged<String> onSubmitted;
-
-  @override
-  State<_GoToField> createState() => _GoToFieldState();
+/// Asks which passage to put to the study assistant ("ዮሐ 3፥16", "Jn 3:16-18"),
+/// then opens Ask about it.
+Future<void> showAskForPassage(BuildContext context, WidgetRef ref) {
+  final s = S.of(context);
+  return showAppBottomSheet<void>(
+    context: context,
+    title: s.whichPassage,
+    builder: (sheet) => _ReferenceField(
+      hint: s.passageHint,
+      onSubmitted: (q) async {
+        final r = (await ref.read(referenceParserProvider.future)).parse(q);
+        final books = await ref.read(refBooksProvider.future);
+        final book = r == null ? null : books.where((b) => b.code == r.bookCode).firstOrNull;
+        if (r == null || book == null) return s.notAReference;
+        if (sheet.mounted) Navigator.of(sheet).pop();
+        if (context.mounted) {
+          final end = r.verseEnd;
+          unawaited(
+            context.push(
+              '/ask?v=${vkey(book.num, r.chapter, r.verse ?? 1)}${end == null ? '' : '&end=${vkey(book.num, r.chapter, end)}'}',
+            ),
+          );
+        }
+        return null;
+      },
+    ),
+  );
 }
 
-class _GoToFieldState extends State<_GoToField> {
+/// A field for a reference in a sheet. [onSubmitted] returns an error to show
+/// under it, or null once handled. It owns its controller, which must outlive
+/// the sheet's closing animation.
+class _ReferenceField extends StatefulWidget {
+  const _ReferenceField({required this.hint, required this.onSubmitted});
+
+  final String hint;
+  final Future<String?> Function(String text) onSubmitted;
+
+  @override
+  State<_ReferenceField> createState() => _ReferenceFieldState();
+}
+
+class _ReferenceFieldState extends State<_ReferenceField> {
   final _controller = TextEditingController();
+  String? _error;
 
   @override
   void dispose() {
@@ -118,13 +156,16 @@ class _GoToFieldState extends State<_GoToField> {
   @override
   Widget build(BuildContext context) => AppTextField(
     controller: _controller,
-    hint: S.of(context).goToHint,
+    hint: widget.hint,
+    error: _error,
     autofocus: true,
     prefixIcon: Icons.search,
     textInputAction: TextInputAction.go,
-    onSubmitted: (text) {
+    onSubmitted: (text) async {
       final q = text.trim();
-      if (q.isNotEmpty) widget.onSubmitted(q);
+      if (q.isEmpty) return;
+      final error = await widget.onSubmitted(q);
+      if (mounted) setState(() => _error = error);
     },
   );
 }

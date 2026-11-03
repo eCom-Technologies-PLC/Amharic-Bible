@@ -264,6 +264,8 @@ class SettingsNotifier extends Notifier<Settings> {
 
   Future<void> addRecentSearch(String q) =>
       update((s) => s.copyWith(recentSearches: [q, ...s.recentSearches.where((x) => x != q)].take(10).toList()));
+
+  Future<void> clearRecentSearches() => update((s) => s.copyWith(recentSearches: const []));
 }
 
 final settingsProvider = NotifierProvider<SettingsNotifier, Settings>(SettingsNotifier.new);

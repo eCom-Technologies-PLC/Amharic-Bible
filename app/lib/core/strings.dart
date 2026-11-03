@@ -339,6 +339,37 @@ class S {
   String get scriptureFrom => _('scriptureFrom');
   String get grammarMatches => _('grammarMatches');
   String get timeline => _('timeline');
+  String get studyTools => _('studyTools');
+  String get timelineHint => _('timelineHint');
+  String get peopleAndPlaces => _('peopleAndPlaces');
+  String get peopleHint => _('peopleHint');
+  String get wordStudyHint => _('wordStudyHint');
+  String get askAiHint => _('askAiHint');
+  String get trySearching => _('trySearching');
+  String get searchTips => _('searchTips');
+  String get tipReference => _('tipReference');
+  String get tipWords => _('tipWords');
+  String get tipPhrase => _('tipPhrase');
+  String get tipStrongs => _('tipStrongs');
+  String get tipGrammar => _('tipGrammar');
+  String get filter => _('filter');
+  String get testament => _('testament');
+  String get book => _('book');
+  String get allBooks => _('allBooks');
+  String get removeFilter => _('removeFilter');
+  String get verses => _('verses');
+  String get dictionary => _('dictionary');
+  String get whichPassage => _('whichPassage');
+  String get passageHint => _('passageHint');
+  String get notAReference => _('notAReference');
+  String get peopleSearchHint => _('peopleSearchHint');
+  String get mostMentioned => _('mostMentioned');
+  String get people => _('people');
+  String get places => _('places');
+  String get events => _('events');
+  String get wordsSearchHint => _('wordsSearchHint');
+  String get greekWords => _('greekWords');
+  String get hebrewWords => _('hebrewWords');
   String exportNotesHint(int n) =>
       isAmharic ? '$n ማስታወሻዎች፣ ከጥቅሶቻቸው ጋር' : (n == 1 ? '1 note, with its passage' : '$n notes, with their passages');
   String grammarMatchCount(int shown, int total) =>
@@ -422,6 +453,14 @@ class S {
   String selected(int n) => isAmharic ? '$n ተመርጠዋል' : '$n selected';
   String day(int n) => isAmharic ? 'ቀን $n' : 'Day $n';
   String dayOf(int n, int total) => isAmharic ? 'ቀን $n ከ$total' : 'Day $n of $total';
+  String dayDone(int n) => isAmharic ? 'የቀን $n ንባብ ተጠናቋል' : 'Day $n done';
+
+  /// A day in a plan's day strip, for screen readers.
+  String dayCell(int n, {required bool done}) =>
+      isAmharic ? (done ? 'ቀን $n፣ ተነቧል' : 'ቀን $n') : (done ? 'Day $n, read' : 'Day $n');
+  String get markAsUnread => _('markAsUnread');
+  String get seeAllPlans => _('seeAllPlans');
+  String get dayComplete => _('dayComplete');
   String dayRange(int a, int b) => isAmharic ? 'ቀን $a–$b' : 'Days $a–$b';
   String days(int n) => isAmharic ? (n == 1 ? '1 ቀን' : '$n ቀናት') : (n == 1 ? '1 day' : '$n days');
   String behind(int n) => isAmharic ? '${days(n)} ወደኋላ' : '${days(n)} behind';
@@ -891,6 +930,42 @@ const _am = {
   'v.NA27/28': 'ኔስትሌ-አላንድ 27/28',
   'v.ECM': 'ኤዲቲዮ ክሪቲካ ማዮር',
   'v.Byz': 'የባይዛንታይን ቅጂዎች',
+  // Search & Study
+  'studyTools': 'የጥናት መሣሪያዎች',
+  'timelineHint': 'የመጽሐፍ ቅዱስ ታሪክ በዘመን ቅደም ተከተል',
+  'peopleAndPlaces': 'ሰዎችና ቦታዎች',
+  'peopleHint': 'በመጽሐፍ ቅዱስ ውስጥ ያሉ ሰዎች፣ ቦታዎችና ክስተቶች',
+  'wordStudyHint': 'የዕብራይስጥና የግሪክ ቃላትና ትርጉማቸው',
+  'askAiHint': 'ስለ አንድ የመጽሐፍ ቅዱስ ክፍል ይጠይቁ',
+  'trySearching': 'እነዚህን ይሞክሩ',
+  'searchTips': 'የፍለጋ ምክሮች',
+  'tipReference': 'ክፍሉን በቀጥታ ይከፍታል',
+  'tipWords': 'ሁሉንም ቃላት የያዙ ጥቅሶችን ያገኛል፤ የቃሉ መጀመሪያ ብቻ በቂ ነው',
+  'tipPhrase': 'ቃላቱን አብረው፣ በዚህ ቅደም ተከተል ያገኛል',
+  'tipStrongs': 'የዕብራይስጥ ወይም የግሪክ ቃልን በስትሮንግ ቁጥሩ ያገኛል',
+  'tipGrammar': 'ጥቅሶችን በሰዋስው መልክ ያገኛል',
+  'filter': 'ማጣሪያ',
+  'testament': 'ኪዳን',
+  'book': 'መጽሐፍ',
+  'allBooks': 'ሁሉም መጻሕፍት',
+  'removeFilter': 'ማጣሪያውን አስወግድ',
+  'verses': 'ጥቅሶች',
+  'dictionary': 'መዝገበ ቃላት',
+  'whichPassage': 'ስለ የትኛው ክፍል መጠየቅ ይፈልጋሉ?',
+  'passageHint': 'ለምሳሌ ዮሐ 3፥16 ወይም Jn 3:16',
+  'notAReference': 'ይህ የመጽሐፍ ቅዱስ ጥቅስ አይመስልም',
+  'peopleSearchHint': 'ስም ይፈልጉ (በእንግሊዝኛ)',
+  'mostMentioned': 'በብዛት የተጠቀሱ',
+  'people': 'ሰዎች',
+  'places': 'ቦታዎች',
+  'events': 'ክስተቶች',
+  'wordsSearchHint': 'ቃል፣ ትርጉም ወይም የስትሮንግ ቁጥር (G26)',
+  'greekWords': 'ግሪክ (አዲስ ኪዳን)',
+  'hebrewWords': 'ዕብራይስጥ (ብሉይ ኪዳን)',
+  // Plans
+  'markAsUnread': 'እንዳልተነበበ ምልክት አድርግ',
+  'seeAllPlans': 'ሁሉንም ዕቅዶች ይመልከቱ',
+  'dayComplete': 'ተነቧል',
 };
 
 const _en = {
@@ -1335,4 +1410,40 @@ const _en = {
   'v.NA27/28': 'Nestle-Aland 27/28',
   'v.ECM': 'Editio Critica Maior',
   'v.Byz': 'Byzantine manuscripts',
+  // Search & Study
+  'studyTools': 'Study tools',
+  'timelineHint': 'Bible history, era by era',
+  'peopleAndPlaces': 'People & places',
+  'peopleHint': 'Who, where and what happened',
+  'wordStudyHint': 'Hebrew and Greek words and what they mean',
+  'askAiHint': 'Ask about a passage',
+  'trySearching': 'Try searching',
+  'searchTips': 'Search tips',
+  'tipReference': 'Opens the passage',
+  'tipWords': 'Finds verses with every word; the start of a word is enough',
+  'tipPhrase': 'Finds the words together, in this order',
+  'tipStrongs': "Finds a Hebrew or Greek word by its Strong's number",
+  'tipGrammar': 'Finds verses by grammatical form',
+  'filter': 'Filter',
+  'testament': 'Testament',
+  'book': 'Book',
+  'allBooks': 'All books',
+  'removeFilter': 'Remove filter',
+  'verses': 'Verses',
+  'dictionary': 'Dictionary',
+  'whichPassage': 'Which passage?',
+  'passageHint': 'For example ዮሐ 3፥16 or Jn 3:16',
+  'notAReference': "That doesn't look like a Bible reference",
+  'peopleSearchHint': 'Search a name',
+  'mostMentioned': 'Most mentioned',
+  'people': 'People',
+  'places': 'Places',
+  'events': 'Events',
+  'wordsSearchHint': "A word, a meaning or a Strong's number (G26)",
+  'greekWords': 'Greek (New Testament)',
+  'hebrewWords': 'Hebrew (Old Testament)',
+  // Plans
+  'markAsUnread': 'Mark as unread',
+  'seeAllPlans': 'See all plans',
+  'dayComplete': 'Done',
 };

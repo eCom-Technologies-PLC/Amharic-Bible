@@ -234,9 +234,11 @@ class ContentRepository {
   Future<List<SearchHit>> searchAll(
     String query, {
     TestamentFilter testament = TestamentFilter.all,
+    String? bookCode,
     int limitPerVersion = 100,
   }) async => [
-    for (final v in await versions()) ...await search(v.id, query, testament: testament, limit: limitPerVersion),
+    for (final v in await versions())
+      ...await search(v.id, query, testament: testament, bookCode: bookCode, limit: limitPerVersion),
   ];
 }
 

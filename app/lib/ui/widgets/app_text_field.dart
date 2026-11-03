@@ -94,6 +94,8 @@ class AppSearchField extends StatelessWidget {
     this.onClear,
     this.clearTooltip,
     this.icon = Icons.search,
+    this.focusNode,
+    this.autofocus = false,
   });
 
   final TextEditingController controller;
@@ -103,12 +105,16 @@ class AppSearchField extends StatelessWidget {
   final VoidCallback? onClear;
   final String? clearTooltip;
   final IconData icon;
+  final FocusNode? focusNode;
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) => ValueListenableBuilder(
     valueListenable: controller,
     builder: (context, value, _) => TextField(
       controller: controller,
+      focusNode: focusNode,
+      autofocus: autofocus,
       textInputAction: TextInputAction.search,
       style: context.text.bodyLarge,
       onChanged: onChanged,
@@ -138,16 +144,25 @@ class AppSearchField extends StatelessWidget {
 
 /// A horizontal row of choice chips (search filters, highlight colors).
 class FilterBar<T> extends StatelessWidget {
-  const FilterBar({super.key, required this.options, required this.selected, required this.onSelected});
+  const FilterBar({
+    super.key,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+    this.padding = const EdgeInsets.symmetric(horizontal: AppSpacing.screen, vertical: AppSpacing.sm),
+  });
 
   final List<FilterOption<T>> options;
   final T selected;
   final ValueChanged<T> onSelected;
 
+  /// Screen padding by default; [EdgeInsets.zero] inside a sheet, which has its own.
+  final EdgeInsetsGeometry padding;
+
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
     scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen, vertical: AppSpacing.sm),
+    padding: padding,
     child: Row(
       children: [
         for (var i = 0; i < options.length; i++) ...[

@@ -25,9 +25,11 @@ import 'features/search/search_screen.dart';
 import 'features/share/share_image_screen.dart';
 import 'features/study/ask_screen.dart';
 import 'features/study/entity_screen.dart';
+import 'features/study/people_screen.dart';
 import 'features/study/timeline_screen.dart';
 import 'features/study/verse_study_screen.dart';
 import 'features/study/word_study_screen.dart';
+import 'features/study/words_screen.dart';
 import 'features/settings/about_screen.dart';
 import 'features/settings/account_screen.dart';
 import 'features/settings/downloads_screen.dart';
@@ -159,6 +161,8 @@ GoRouter buildRouter({String initialLocation = '/home'}) {
       }),
       inShell('/groups/:id', (state) => GroupScreen(groupId: state.pathParameters['id']!)),
       inShell('/timeline', (_) => const TimelineScreen()),
+      inShell('/people', (_) => const PeopleScreen()),
+      inShell('/words', (_) => const WordsScreen()),
       inShell('/word/:id', (state) => WordStudyScreen(strongs: state.pathParameters['id']!)),
       inShell('/entity/:id', (state) => EntityScreen(id: state.pathParameters['id']!)),
       GoRoute(

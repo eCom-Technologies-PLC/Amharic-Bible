@@ -135,7 +135,11 @@ class StudyRepository {
 
   Future<LexEntry?> lexicon(String id) async {
     final r = (await _lexiconRows([id]))[id];
-    return r == null ? null : LexEntry.fromRow(r);
+    if (r == null) return null;
+    return LexEntry.fromRow({
+      ...r,
+      'gloss': (await _glosses({id}))[id],
+    });
   }
 
   Future<int> occurrenceCount(String strongs) async {
@@ -262,9 +266,10 @@ class StudyRepository {
     ];
     final ids = {...byLemma.take(limit), ...rows.map((r) => r['id'] as String)}.take(limit).toList();
     final found = await _lexiconRows(ids);
+    final glosses = await _glosses(ids.toSet());
     return [
       for (final id in ids)
-        if (found[id] case final r?) LexEntry.fromRow(r),
+        if (found[id] case final r?) LexEntry.fromRow({...r, 'gloss': glosses[id]}),
     ];
   }
 
@@ -321,15 +326,34 @@ class StudyRepository {
     return ({for (final r in rows) r['vkey'] as int}.toList()..sort()).take(limit).toList();
   }
 
-  Future<List<Entity>> searchEntities(String query, {int limit = 20}) async {
+  Future<List<Entity>> searchEntities(String query, {EntityKind? kind, int limit = 20}) async {
     final q = query.trim();
     if (q.length < 2) return [];
     final rows = await _fromEach(
       sources.forTable('entity'),
-      (s) => 'SELECT * FROM $s.entity WHERE name LIKE ? ORDER BY verse_count DESC LIMIT $limit',
-      ['$q%'],
+      (s) =>
+          'SELECT * FROM $s.entity WHERE name LIKE ?${kind == null ? '' : ' AND kind = ?'} '
+          'ORDER BY verse_count DESC LIMIT $limit',
+      ['$q%', ?kind?.name],
     );
-    return (rows.map(Entity.fromRow).toList()..sort((a, b) => b.verseCount.compareTo(a.verseCount)))
+    return _mostMentioned(rows, limit);
+  }
+
+  /// The most-mentioned people, places and events (or only [kind]), to browse
+  /// before anything is typed.
+  Future<List<Entity>> topEntities({EntityKind? kind, int limit = 40}) async {
+    final rows = await _fromEach(
+      sources.forTable('entity'),
+      (s) => 'SELECT * FROM $s.entity${kind == null ? '' : ' WHERE kind = ?'} ORDER BY verse_count DESC LIMIT $limit',
+      [?kind?.name],
+    );
+    return _mostMentioned(rows, limit);
+  }
+
+  static List<Entity> _mostMentioned(List<Map<String, Object?>> rows, int limit) {
+    final seen = <String>{};
+    return (rows.map(Entity.fromRow).where((e) => seen.add(e.id)).toList()
+          ..sort((a, b) => b.verseCount.compareTo(a.verseCount)))
         .take(limit)
         .toList();
   }
