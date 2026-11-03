@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -98,6 +99,12 @@ class _VerseStudyBody extends ConsumerWidget {
                 Text(s.getStudyPacksHint, style: context.text.bodyMedium),
               ],
             ),
+          ),
+        // The web can't download study packs: say where to find them.
+        if (study.words.isEmpty && kIsWeb)
+          AppCard(
+            eyebrow: s.studyPacks,
+            child: Text(s.studyPacksAppOnly, style: context.text.bodyMedium),
           ),
         if (study.isEmpty) EmptyState(message: s.noStudyData, icon: Icons.school_outlined),
         if (study.words.isNotEmpty) ...[

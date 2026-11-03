@@ -99,6 +99,9 @@ class S {
 
   String get readingLook => _('readingLook');
   String get openInReader => _('openInReader');
+  String get copiedForSharing => _('copiedForSharing');
+  String get noVoiceBrowser => _('noVoiceBrowser');
+  String get studyPacksAppOnly => _('studyPacksAppOnly');
   String get planDayRead => _('planDayRead');
 
   /// "Listen to ዮሐንስ 3".
@@ -495,6 +498,9 @@ const _am = {
   'gotIt': 'ገባኝ',
   'readingLook': 'የንባብ ገጽታ',
   'openInReader': 'በንባብ ገጹ ክፈት',
+  'copiedForSharing': 'ተቀድቷል። ለማጋራት በሚፈልጉት ቦታ ይለጥፉት።',
+  'noVoiceBrowser': 'ይህ ብራውዘር ለዚህ ቋንቋ ድምፅ የለውም። ሌላ ብራውዘር ወይም የስልኩን መተግበሪያ ይሞክሩ።',
+  'studyPacksAppOnly': 'የዕብራይስጥና የግሪክ ጽሑፎች፣ መዝገበ ቃላትና ሌሎች የጥናት ጥቅሎች በAndroid እና iOS መተግበሪያው ውስጥ ይገኛሉ።',
   'planDayRead': 'የዕለቱ ንባብ ተጠናቋል',
   'moreActions': 'ተጨማሪ',
   'holdToSelectHint': 'ለማድመቅ፣ ለማጋራት ወይም ማስታወሻ ለመጻፍ ጥቅሱን ተጭነው ይያዙ',
@@ -933,6 +939,10 @@ const _en = {
   'gotIt': 'Got it',
   'readingLook': 'Reading appearance',
   'openInReader': 'Open in reader',
+  'copiedForSharing': 'Copied. Paste it wherever you want to share it.',
+  'noVoiceBrowser': 'This browser has no voice for this language. Try another browser or the phone app.',
+  'studyPacksAppOnly':
+      'Hebrew and Greek texts, the lexicon and the other study packs are available in the Android and iOS app.',
   'planDayRead': "This day's reading is done",
   'moreActions': 'More',
   'holdToSelectHint': 'Press and hold a verse to highlight, share or add a note',

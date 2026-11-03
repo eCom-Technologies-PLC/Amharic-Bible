@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/strings.dart';
 import '../../core/vkey.dart';
@@ -276,7 +275,7 @@ class _VerseOfTheDayCard extends StatelessWidget {
         IconButton(
           tooltip: s.share,
           icon: const Icon(Icons.share_outlined),
-          onPressed: () => SharePlus.instance.share(ShareParams(text: '${v.text}\n— $reference')),
+          onPressed: () => shareText(context, '${v.text}\n— $reference'),
         ),
       ],
       child: Column(

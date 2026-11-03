@@ -145,8 +145,18 @@ flutter build web --release               # static site in app/build/web
 ```
 
 `app/build/web` is a static site: host it on any static host (Cloudflare Pages, GitHub Pages, Netlify, Firebase
-Hosting). URLs use `#/` routes (for example `/#/read`), so the host needs no rewrite rules. If the site is not at
-the domain root, build with `--base-href /path/`. CI builds it on every push as the `web-sample-content` artifact.
+Hosting). URLs are clean paths (for example `/read?ref=JHN.3.16`), so the host must serve `index.html` for every
+path:
+
+| Host | What to do |
+|---|---|
+| Cloudflare Pages | Nothing: without a top-level `404.html` it already serves `index.html` |
+| Netlify | Add a `_redirects` file containing `/*  /index.html  200` |
+| Firebase Hosting | Add a rewrite of `**` to `/index.html` in `firebase.json` |
+| GitHub Pages | No rewrites: copy `index.html` to `404.html` when deploying |
+
+Old `/#/…` links (from earlier builds) are moved to the new addresses when the page loads. If the site is not at the
+domain root, build with `--base-href /path/`. CI builds it on every push as the `web-sample-content` artifact.
 
 How it differs from the mobile app:
 

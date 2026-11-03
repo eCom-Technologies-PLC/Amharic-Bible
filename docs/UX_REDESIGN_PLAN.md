@@ -1136,6 +1136,28 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 - Illustrated covers for the player and the plans (illustrator).
 - Automatically completing a plan day (Phase 5, approved).
 
+### Phase 4 (started 2026-11-03)
+
+**Done:**
+
+- **Keyboard in the reader:** ← and → change chapter, Esc clears a selection, and `/` opens search.
+- **Mouse on the web:** dragging selects and copies Scripture; chapter swiping is touch-only, so a drag no longer
+  flips the page; a click still selects a verse.
+- **Clean addresses:** `/read?ref=JHN.3` instead of `/#/read…`. Old `#/` links are moved over on load, and README
+  lists what each host needs.
+- **Honest web behavior:**
+  - Share copies the text where the browser has no share sheet, instead of opening an email.
+  - Read-aloud explains a missing *browser* voice.
+  - Verse study says the study packs are in the Android and iOS app.
+
+**Left for Phase 4:**
+
+- The three-pane desktop reader with a study panel, and the full-window screens opened inside the shell.
+- Popovers instead of bottom sheets on desktop.
+- A Ctrl+K "Go to" palette, hover states and right-click.
+- An offline app shell, bundled Hebrew and Greek fonts, the install prompt.
+- WebAssembly evaluation and deferred loading.
+
 **Left for later phases:**
 
 - The Search & Study explore page, where the study tools (now under Me) move (Phase 5).

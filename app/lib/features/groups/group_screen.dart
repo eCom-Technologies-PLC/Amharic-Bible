@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/strings.dart';
 import '../../core/vkey.dart';
@@ -496,7 +495,7 @@ class _Members extends ConsumerWidget {
             IconButton(
               tooltip: s.share,
               icon: const Icon(Icons.share_outlined),
-              onPressed: () => SharePlus.instance.share(ShareParams(text: s.inviteMessage(g.name, g.inviteCode))),
+              onPressed: () => shareText(context, s.inviteMessage(g.name, g.inviteCode)),
             ),
             if (g.isTeacher)
               IconButton(

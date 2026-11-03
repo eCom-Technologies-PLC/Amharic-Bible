@@ -1,6 +1,11 @@
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
+
+/// Whether this browser has a share sheet (the Web Share API). Most desktop
+/// browsers don't, and share_plus would open an email instead.
+bool webCanShare() => web.window.navigator.has('share');
 
 String? webStorageRead(String key) => web.window.localStorage.getItem(key);
 

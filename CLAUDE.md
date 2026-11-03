@@ -82,6 +82,9 @@ All future UI work in this repository must follow this CLAUDE.md section.
   with a screen reader, a tap selects. `ParagraphView.onLongPressVerse` carries the hold; keep both paths working.
 - Reading-plan links open the reader with `plan` and `day` query parameters, which show the plan bar; the reader keeps
   them when it moves between chapters.
+- Share text through `shareText` (`features/common.dart`): on browsers without a share sheet it copies the text and
+  says so, instead of opening an email. Web addresses are clean paths (`usePathUrlStrategy`), so links built in code
+  never contain `#`.
 - Removing something the reader made: offer Undo (`showAppSnack` with an action) when it can be restored, otherwise
   confirm with `showConfirmDialog(destructive: true)`. Back never silently discards typing (`PopScope`).
 - Colors are defined only in `app_theme.dart` (a `ColorScheme` per reading theme) and `AppColors`.

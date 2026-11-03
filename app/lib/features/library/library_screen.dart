@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/strings.dart';
 import '../../core/vkey.dart';
@@ -240,7 +239,7 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
       ),
       now: DateTime.now(),
     );
-    await SharePlus.instance.share(ShareParams(text: md, subject: s.notesExportTitle));
+    if (mounted) await shareText(context, md, subject: s.notesExportTitle);
   }
 
   static List<int> _keys(Note n) => n.vkeyStart ~/ 1000 == n.vkeyEnd ~/ 1000

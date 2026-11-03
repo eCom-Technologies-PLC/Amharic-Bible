@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../core/ethiopian_calendar.dart';
+import '../core/web/web_storage.dart';
 import '../core/geez.dart';
 import '../core/strings.dart';
 import '../core/vkey.dart';
@@ -56,6 +60,18 @@ String formatNumber(int n, Settings s) => s.geezNumerals ? intToGeez(n) : '$n';
 String formatDate(DateTime d, Settings s, S strings) {
   if (s.ethiopianCalendar) return EthiopianDate.fromGregorian(d.toLocal()).format(amharic: strings.isAmharic);
   return DateFormat.yMMMd(strings.locale.languageCode).format(d.toLocal());
+}
+
+/// Shares [text] with the system share sheet. Browsers without one (most
+/// desktop browsers) would open an email instead, so there the text is copied
+/// and the reader is told.
+Future<void> shareText(BuildContext context, String text, {String? subject}) async {
+  if (kIsWeb && !webCanShare()) {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) showAppSnack(context, S.of(context).copiedForSharing);
+    return;
+  }
+  await SharePlus.instance.share(ShareParams(text: text, subject: subject));
 }
 
 /// Shown for a link that matches no screen (a typo, or an old address).

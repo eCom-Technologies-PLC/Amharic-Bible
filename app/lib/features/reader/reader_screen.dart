@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
@@ -333,81 +334,102 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final s = S.of(context);
     final twoVersions = secondaryVersion != null && !interlinear;
 
+    final list = NotificationListener<UserScrollNotification>(
+      onNotification: (n) {
+        _lastUserScroll = DateTime.now();
+        // Reading down hides the bars; scrolling back up brings them back.
+        if (_holdToSelect && _selected.isEmpty && n.direction != ScrollDirection.idle) {
+          ref.read(immersiveProvider.notifier).set(n.direction == ScrollDirection.reverse);
+        }
+        return false;
+      },
+      child: ScrollablePositionedList.builder(
+        key: ValueKey('${version.id}/${secondary?.versionId}/$interlinear/${c.book.code}/${c.chapter}'),
+        itemScrollController: _scroll,
+        itemPositionsListener: _positions,
+        initialScrollIndex: initial ?? 0,
+        initialAlignment: initial != null ? _initialVerseAlignment : 0,
+        padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xl),
+        itemCount: layout.blocks.length + 2,
+        itemBuilder: (context, i) {
+          final Widget child;
+          if (i == 0) {
+            // Chapter header, then (once) the gesture tip: inside the list,
+            // so on small screens it scrolls away instead of crowding the text.
+            child = Column(
+              children: [
+                _ChapterHeader(book: c.book.name, chapter: formatNumber(c.chapter, settings)),
+                if (_holdToSelect && !settings.readerTipSeen) const _GestureTip(),
+                if (twoVersions) _ParallelHeader(left: version.abbrev, right: secondaryVersion.abbrev),
+              ],
+            );
+          } else if (i == layout.blocks.length + 1) {
+            child = _ChapterNav(
+              onPrevious: () => _changeChapter(version, c.book, c.chapter, -1),
+              onNext: () => _changeChapter(version, c.book, c.chapter, 1),
+              strings: s,
+            );
+          } else {
+            final block = layout.blocks[i - 1];
+            child = switch (block) {
+              HeadingBlock(:final heading) => _HeadingView(heading: heading),
+              ParaBlock() => ParagraphView(
+                block: block,
+                options: options,
+                decor: decor,
+                onTapVerse: _onTapVerse,
+                onTapFootnote: _showFootnote,
+                onLongPressVerse: onHold,
+              ),
+              PairBlock() => _PairView(
+                block: block,
+                options: options,
+                secondaryRtl: isRtlLanguage(secondaryVersion?.language ?? ''),
+                decor: decor,
+                onTapVerse: _onTapVerse,
+                onTapFootnote: _showFootnote,
+                onLongPressVerse: onHold,
+              ),
+              InterlinearBlock() => _InterlinearView(
+                block: block,
+                options: options,
+                wordsRtl: wordsRtl,
+                decor: decor,
+                onTapVerse: _onTapVerse,
+                onTapFootnote: _showFootnote,
+                onLongPressVerse: onHold,
+              ),
+            };
+          }
+          return _ReadingColumn(wide: twoVersions, child: child);
+        },
+      ),
+    );
+
     return GestureDetector(
+      // Swiping changes chapter on touch screens; with a mouse, dragging
+      // selects text instead (see SelectionArea below).
+      supportedDevices: const {PointerDeviceKind.touch, PointerDeviceKind.stylus, PointerDeviceKind.invertedStylus},
       onHorizontalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
         if (v.abs() < AppMotion.chapterSwipeVelocity) return;
         _changeChapter(version, c.book, c.chapter, v < 0 ? 1 : -1);
       },
-      child: NotificationListener<UserScrollNotification>(
-        onNotification: (n) {
-          _lastUserScroll = DateTime.now();
-          // Reading down hides the bars; scrolling back up brings them back.
-          if (_holdToSelect && _selected.isEmpty && n.direction != ScrollDirection.idle) {
-            ref.read(immersiveProvider.notifier).set(n.direction == ScrollDirection.reverse);
-          }
-          return false;
-        },
-        child: ScrollablePositionedList.builder(
-          key: ValueKey('${version.id}/${secondary?.versionId}/$interlinear/${c.book.code}/${c.chapter}'),
-          itemScrollController: _scroll,
-          itemPositionsListener: _positions,
-          initialScrollIndex: initial ?? 0,
-          initialAlignment: initial != null ? _initialVerseAlignment : 0,
-          padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xl),
-          itemCount: layout.blocks.length + 2,
-          itemBuilder: (context, i) {
-            final Widget child;
-            if (i == 0) {
-              // Chapter header, then (once) the gesture tip: inside the list,
-              // so on small screens it scrolls away instead of crowding the text.
-              child = Column(
-                children: [
-                  _ChapterHeader(book: c.book.name, chapter: formatNumber(c.chapter, settings)),
-                  if (_holdToSelect && !settings.readerTipSeen) const _GestureTip(),
-                  if (twoVersions) _ParallelHeader(left: version.abbrev, right: secondaryVersion.abbrev),
-                ],
-              );
-            } else if (i == layout.blocks.length + 1) {
-              child = _ChapterNav(
-                onPrevious: () => _changeChapter(version, c.book, c.chapter, -1),
-                onNext: () => _changeChapter(version, c.book, c.chapter, 1),
-                strings: s,
-              );
-            } else {
-              final block = layout.blocks[i - 1];
-              child = switch (block) {
-                HeadingBlock(:final heading) => _HeadingView(heading: heading),
-                ParaBlock() => ParagraphView(
-                  block: block,
-                  options: options,
-                  decor: decor,
-                  onTapVerse: _onTapVerse,
-                  onTapFootnote: _showFootnote,
-                  onLongPressVerse: onHold,
-                ),
-                PairBlock() => _PairView(
-                  block: block,
-                  options: options,
-                  secondaryRtl: isRtlLanguage(secondaryVersion?.language ?? ''),
-                  decor: decor,
-                  onTapVerse: _onTapVerse,
-                  onTapFootnote: _showFootnote,
-                  onLongPressVerse: onHold,
-                ),
-                InterlinearBlock() => _InterlinearView(
-                  block: block,
-                  options: options,
-                  wordsRtl: wordsRtl,
-                  decor: decor,
-                  onTapVerse: _onTapVerse,
-                  onTapFootnote: _showFootnote,
-                  onLongPressVerse: onHold,
-                ),
-              };
-            }
-            return _ReadingColumn(wide: twoVersions, child: child);
+      // Keyboards (desktop browsers, tablets): the arrows change chapter, Esc
+      // clears a selection and "/" opens search.
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.arrowRight): () => _changeChapter(version, c.book, c.chapter, 1),
+          const SingleActivator(LogicalKeyboardKey.arrowLeft): () => _changeChapter(version, c.book, c.chapter, -1),
+          const SingleActivator(LogicalKeyboardKey.escape): () {
+            if (_selected.isNotEmpty) setState(_selected.clear);
           },
+          const CharacterActivator('/'): () => context.go('/search'),
+        },
+        child: Focus(
+          autofocus: true,
+          // On the web, Scripture can be selected and copied with the mouse.
+          child: kIsWeb ? SelectionArea(child: list) : list,
         ),
       ),
     );
@@ -938,7 +960,10 @@ Future<void> startReadAloud(
   int fromVerse = 1,
 }) async {
   final result = await ref.read(readAloudProvider.notifier).readChapter(version, book, chapter, fromVerse: fromVerse);
-  if (result == ReadAloudResult.noVoice && context.mounted) showAppSnack(context, S.of(context).noVoice);
+  if (result == ReadAloudResult.noVoice && context.mounted) {
+    final s = S.of(context);
+    showAppSnack(context, kIsWeb ? s.noVoiceBrowser : s.noVoice);
+  }
 }
 
 class _ReadAloudButton extends ConsumerWidget {

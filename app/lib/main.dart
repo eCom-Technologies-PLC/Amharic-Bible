@@ -4,6 +4,7 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path/path.dart' as p;
@@ -28,6 +29,10 @@ import 'state/providers.dart';
 import 'state/read_aloud.dart';
 
 Future<void> main() async {
+  // Clean web addresses (/read?ref=JHN.3.16) instead of /#/read…; web/index.html
+  // moves old #/ links over, and the host serves index.html for every path
+  // (see README → Web app). A no-op on phones.
+  usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
   // On the web the browser handles background playback and media controls.
   if (!kIsWeb) {

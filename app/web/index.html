@@ -15,6 +15,14 @@
     the `--base-href` argument provided to `flutter build`.
   -->
   <base href="$FLUTTER_BASE_HREF">
+  <script>
+    // Addresses used to look like /#/read?ref=JHN.3; they are now /read?ref=JHN.3.
+    // Move old links (shared, bookmarked) over before the app starts.
+    if (location.hash.indexOf('#/') === 0) {
+      var base = (document.querySelector('base') || {}).href || '/';
+      history.replaceState(null, '', new URL(location.hash.slice(2), base).href);
+    }
+  </script>
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
