@@ -153,7 +153,20 @@ cd app
 flutter run -d chrome                     # development
 flutter build web --release               # static site in app/build/web
 # The same --dart-define options as the mobile build (audio, accounts, assistant)
+cd ..
+python pipeline/build_site.py --db app/assets/content/content.db --out app/build/web --site-url https://bible.example.org
 ```
+
+`pipeline/build_site.py` finishes the build. Run it once after every `flutter build web` (use the full content
+database for a real release):
+
+- **Chapter pages:** a plain HTML page for every chapter at `bible/<version>/<book>/<chapter>/` (for example
+  `/bible/web/jhn/3/#v16`), with indexes of versions and books. Search engines and link previews can read them,
+  they open at once on a slow connection, and "Open in the app" leads into the reader. With `--site-url` it also
+  writes canonical links, `sitemap.xml` and `robots.txt`. Versions whose license still says "verify" are left out
+  unless `--allow-unverified` is given, as in `build_db.py`.
+- **The release's file list** is stamped into the built `sw.js`, so a repeat visit starts from the kept copy (see
+  Offline below). `--skip-pages` does only this.
 
 `app/build/web` is a static site: host it on any static host (Cloudflare Pages, GitHub Pages, Netlify, Firebase
 Hosting). URLs are clean paths (for example `/read?ref=JHN.3.16`), so the host must serve `index.html` for every
@@ -167,7 +180,8 @@ path:
 | GitHub Pages | No rewrites: copy `index.html` to `404.html` when deploying |
 
 Old `/#/…` links (from earlier builds) are moved to the new addresses when the page loads. If the site is not at the
-domain root, build with `--base-href /path/`. CI builds it on every push as the `web-sample-content` artifact.
+domain root, build with `--base-href /path/`. CI builds it, with the chapter pages and the stamp, on every push as
+the `web-sample-content` artifact.
 
 How it differs from the mobile app:
 
@@ -178,10 +192,16 @@ How it differs from the mobile app:
   After upgrading `sqflite_common_ffi_web`, run `dart run sqflite_common_ffi_web:setup` in `app/` to refresh
   those two files.
 - **Offline:** after one visit the app opens without a connection. `web/sw.js` (registered in `web/index.html`)
-  keeps the page, the app's files, CanvasKit and the fallback fonts. It fetches the app's own files network-first, so
-  a new release arrives on the next online visit. `web/flutter_bootstrap.js` starts the app without Flutter's
-  deprecated service worker, which would replace `sw.js`. To check offline behavior, serve a release build, visit
-  once, then stop the server and reload.
+  keeps the page, the app's files, CanvasKit and the fallback fonts.
+  - With the file list stamped by `build_site.py`, it keeps the whole release when it installs, and the app starts
+    from that copy without waiting for the network. A new release downloads in the background during a visit and
+    takes over the next time the app starts in a tab of its own (or once the app's tabs have closed), so an open
+    app never mixes two releases.
+  - Without the stamp (a plain `flutter build web`), it fetches the page and the app's files network-first, so a
+    new release arrives on the next online visit.
+
+  `web/flutter_bootstrap.js` starts the app without Flutter's deprecated service worker, which would replace
+  `sw.js`. To check offline behavior, serve a stamped release build, visit once, then stop the server and reload.
 - **Not on the web:** offline audio downloads and study-pack downloads (audio streams instead), and the daily
   reminder (browsers cannot schedule notifications while the page is closed). The menu items are hidden.
 - **Sharing:** verse images and the data export use the browser's share sheet, or download the file.

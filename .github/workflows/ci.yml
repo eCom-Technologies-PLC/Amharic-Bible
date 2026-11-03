@@ -112,6 +112,11 @@ jobs:
           channel: stable
           cache: true
       - run: flutter build web --release
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Chapter pages and the service worker's file list
+        run: python ../pipeline/build_site.py --db assets/content/content.db --out build/web
       - uses: actions/upload-artifact@v4
         with:
           name: web-sample-content

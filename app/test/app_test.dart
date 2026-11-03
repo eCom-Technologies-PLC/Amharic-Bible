@@ -881,6 +881,16 @@ void main() {
     expect(find.byType(SelectionBar), findsNothing);
   });
 
+  testWidgets('the address of a static chapter page opens the reader there', (tester) async {
+    await pumpApp(
+      tester,
+      settings: const Settings(languageCode: 'en'),
+      initial: '/bible/amh1962/jhn/3/',
+    );
+    expect(find.byType(ReaderScreen), findsOneWidget);
+    expect(find.text('ዮሐንስ 3'), findsOneWidget);
+  });
+
   testWidgets('a search link runs its query', (tester) async {
     await pumpApp(
       tester,

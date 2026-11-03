@@ -182,15 +182,77 @@
       splash.classList.add('done');
       setTimeout(function () { splash.remove(); }, 300);
     });
-  </script>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async></script>
+    // Start the app: flutter_bootstrap.js (web/flutter_bootstrap.js) loads
+    // Flutter and the app's code. A new release waits while the app is open
+    // (web/sw.js). When this is the only tab, it takes over first, before any
+    // of the app has loaded, and the page starts again from the new release.
+    function startApp() {
+      var script = document.createElement('script');
+      script.src = 'flutter_bootstrap.js';
+      document.body.appendChild(script);
+    }
+    // True once the waiting release is taking over; false when the app should
+    // start as it is (another tab is open, or no answer in time). Only a page
+    // still holding the app back says "go", so a late answer changes nothing.
+    function askToTakeOver(waiting) {
+      return new Promise(function (resolve) {
+        var channel = new MessageChannel();
+        var decided = false;
+        var decide = function (taken) {
+          if (decided) return;
+          decided = true;
+          if (taken) {
+            channel.port1.postMessage('go');
+            nudge(6);
+          }
+          resolve(taken);
+        };
+        channel.port1.onmessage = function (event) { decide(event.data === true); };
+        waiting.postMessage({ takeOver: true }, [channel.port2]);
+        setTimeout(function () { decide(false); }, 3000);
+      });
+    }
+    // The new release takes over once the old one has stopped, which the old
+    // one does when it is idle; Chrome checks that at the end of an event, so
+    // the page sends it a few empty messages.
+    function nudge(times) {
+      var controller = navigator.serviceWorker.controller;
+      if (!controller || times <= 0) return;
+      controller.postMessage({});
+      setTimeout(function () { nudge(times - 1); }, 500);
+    }
+    // When a takeover tried in this tab didn't complete, it is tried once more,
+    // then the app starts as it is.
+    function triedRecently() {
+      try {
+        return Date.now() - Number(sessionStorage.getItem('ab-took-over') || 0) < 30000;
+      } catch (_) {
+        return false;
+      }
+    }
+    ('serviceWorker' in navigator ? navigator.serviceWorker.getRegistration() : Promise.resolve())
+      .then(function (registration) {
+        if (!registration || !registration.waiting) return startApp();
+        var reload = function () { location.reload(); };
+        navigator.serviceWorker.addEventListener('controllerchange', reload);
+        return askToTakeOver(registration.waiting).then(function (taken) {
+          if (!taken) {
+            navigator.serviceWorker.removeEventListener('controllerchange', reload);
+            return startApp();
+          }
+          // The page reloads once the new release controls it. If that takes
+          // too long, a reload (a navigation) lets it take over.
+          var retry = !triedRecently();
+          try { sessionStorage.setItem('ab-took-over', String(Date.now())); } catch (_) {}
+          setTimeout(function () {
+            if (retry) return reload();
+            navigator.serviceWorker.removeEventListener('controllerchange', reload);
+            startApp();
+          }, 5000);
+        });
+      })
+      .catch(startApp);
+  </script>
 </body>
 </html>

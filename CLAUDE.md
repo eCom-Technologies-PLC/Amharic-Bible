@@ -7,10 +7,14 @@ Amharic Bible: an offline-first Flutter app for Android, iOS and the web (`app/`
 ## Commands
 
 - App: `cd app && flutter analyze && flutter test` (format: `dart format lib test`, page width 120)
-- Web app: `cd app && flutter build web --release` (or `flutter run -d chrome`). Platform-only features are gated
-  with `kIsWeb` (no file system, notifications or background-audio plugin on the web). Offline support is
-  `web/sw.js` (registered in `web/index.html`; `web/flutter_bootstrap.js` keeps Flutter's deprecated service worker
-  out): check changes to it in a release build, offline, with the server stopped
+- Web app: `cd app && flutter build web --release` (or `flutter run -d chrome`), then
+  `python pipeline/build_site.py --db app/assets/content/content.db --out app/build/web`: static chapter pages under
+  `bible/` (the app's `/bible/…` routes redirect into the reader) and the release's file list, stamped into the built
+  `sw.js` over its `const RELEASE = null;` line (keep that line). Platform-only features are gated with `kIsWeb` (no
+  file system, notifications or background-audio plugin on the web). Offline support is `web/sw.js` (registered in
+  `web/index.html`, which also lets a waiting release take over before the app loads; `web/flutter_bootstrap.js`
+  keeps Flutter's deprecated service worker out): check changes to it in a stamped release build, offline with the
+  server stopped, and across two releases
 - Pipeline: `python -m unittest discover -s pipeline/tests`
 - Audio proxy: `node --test server/audio-proxy/proxy.test.mjs`
 - Study assistant: `cd server/study-assistant && npm ci && npm test`

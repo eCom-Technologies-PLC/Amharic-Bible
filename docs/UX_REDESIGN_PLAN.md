@@ -1186,8 +1186,6 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 - Popovers instead of bottom sheets on desktop.
 - WebAssembly evaluation and deferred loading.
 - A two-column Today, and app bars aligned with the centered content on desktop.
-- Faster repeat visits: a file list generated at build time would let the worker start the app from its copy without
-  checking each file first (a post-build step, best added with the static chapter pages in Phase 6).
 
 **Left for later phases:**
 
@@ -1283,6 +1281,48 @@ audit and goldens green, and a manual check on Android, iOS and Chrome.
 
 **Content gaps found:** people and places have English names only, so typing an Amharic name finds nothing; the
 explore page lists them to browse instead. Amharic names belong in the content pipeline.
+
+### Phase 6 (started 2026-11-03)
+
+**Done:**
+
+- **Static chapter pages:** `pipeline/build_site.py` runs after `flutter build web` and writes a plain HTML page for
+  every chapter (`bible/<version>/<book>/<chapter>/`), with indexes of versions, books and chapters.
+  - Each page has the chapter with its headings, poetry indents, words of Jesus in red and footnotes, an anchor per
+    verse (`…/jhn/3/#v16`), the previous and next chapters, the version's credit, and "Open in the app", which opens
+    the reader at that chapter.
+  - The page's own words are in Amharic for Amharic versions and in English otherwise; Hebrew reads right to left.
+  - With the site's address it adds canonical links, a sitemap and `robots.txt`; every page has link-preview tags.
+  - The pages use the app's reading colors, light and dark, and need no script.
+  - Only versions whose license is confirmed get pages, as in the database build.
+  - Offline, a chapter page's address opens the app's reader at that chapter.
+- **Repeat visits start from the kept copy:** the same script stamps the release's file list, with content hashes,
+  into the built `sw.js`.
+  - When the worker installs, it keeps the whole release and its page, and the app starts from that copy: a repeat
+    visit asks the network for none of the app's files and doesn't wait for the page, however slow the connection.
+  - A new release downloads in the background and waits, so an open app never mixes two releases. It takes over the
+    next time the app starts in a tab of its own (the page asks before loading the app), or once the app's tabs have
+    closed.
+  - CanvasKit copies for older engines are dropped.
+  - A plain `flutter build web` (no stamp) behaves as in Phase 4.
+- CI adds the pages and the stamp to the `web-sample-content` artifact.
+- **Checked in Chrome** against a local server's request log:
+  - A repeat visit to `/read` made one request, the browser's routine check of `sw.js`, and the app started in
+    about 0.7 s.
+  - A new release downloaded in the background, costing a "not modified" answer for each unchanged file, and took
+    over at the next start in about 1.8 s. The extra second is Chrome's own pause before it activates a new worker.
+  - With a second tab open, the old release kept running and the new one waited.
+  - Offline, a link to John 3:16 and a chapter page's address both opened the reader.
+  - Online, the chapter page came from the server, and "Open in the app" opened the reader from the kept copy.
+
+  Found while checking: a takeover that starts while the app is loading can leave the app stuck on its loading
+  screen, so the page says "go" only while it is still holding the app back.
+
+**Waiting:**
+
+- The Amharic pages, which matter most for search ("ዮሐንስ 3:16"), are left out until the Amharic text's license is
+  settled (it still says "verify"; see Phase 1).
+- A link-preview image for the pages and the app, once the logo exists.
 
 ---
 

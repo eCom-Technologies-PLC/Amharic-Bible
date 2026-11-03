@@ -142,6 +142,23 @@ GoRouter buildRouter({String initialLocation = '/home'}) {
           ),
         ],
       ),
+      // The static chapter pages (pipeline/build_site.py) live at
+      // /bible/<version>/<book>/<chapter>/. When the app is asked for one
+      // (offline, or on a host without the pages), it opens the reader there.
+      GoRoute(path: '/bible', redirect: (_, _) => '/read'),
+      GoRoute(path: '/bible/:version', redirect: (_, _) => '/read'),
+      GoRoute(
+        path: '/bible/:version/:book',
+        redirect: (_, state) => '/read?ref=${state.pathParameters['book']!.toUpperCase()}.1',
+      ),
+      GoRoute(
+        path: '/bible/:version/:book/:chapter',
+        redirect: (_, state) {
+          final p = state.pathParameters;
+          final chapter = int.tryParse(p['chapter']!) ?? 1;
+          return '/read?ref=${p['book']!.toUpperCase()}.$chapter';
+        },
+      ),
       // Focused tasks (welcome, choosing a book, an image, a note) cover the
       // whole window; the rest keep the navigation beside them on wide windows.
       GoRoute(path: '/welcome', parentNavigatorKey: _rootKey, builder: (_, _) => const WelcomeScreen()),
