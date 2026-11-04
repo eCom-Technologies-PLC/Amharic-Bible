@@ -201,7 +201,13 @@ abstract final class AppMotion {
 
   /// Search-as-you-type debounce.
   static const debounce = Duration(milliseconds: 300);
+
+  /// A snack bar's shortest time on screen (a confirmation such as "Day 1
+  /// done"), and its longest: a longer message stays up a second for every
+  /// [snackBarReadingRate] characters (an explanation, something to do).
   static const snackBar = Duration(seconds: 2);
+  static const snackBarLongest = Duration(seconds: 8);
+  static const snackBarReadingRate = 12;
 
   /// A snack bar offering "Undo" stays up long enough to reach the button.
   static const undoSnackBar = Duration(seconds: 5);

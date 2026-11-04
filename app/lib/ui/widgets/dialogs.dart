@@ -112,9 +112,20 @@ void showAppSnack(BuildContext context, String message, {String? actionLabel, Vo
       SnackBar(
         content: Text(message),
         action: action,
-        duration: action != null ? AppMotion.undoSnackBar : AppMotion.snackBar,
+        duration: action != null ? AppMotion.undoSnackBar : snackDuration(message),
       ),
     );
+}
+
+/// How long a snack bar stays up: long enough to read [message], from
+/// [AppMotion.snackBar] for a few words up to [AppMotion.snackBarLongest]. A
+/// message telling the reader what to do ("Install a text-to-speech voice in
+/// your phone's settings") was gone in 2 seconds, before it could be read.
+Duration snackDuration(String message) {
+  final reading = Duration(milliseconds: message.length * 1000 ~/ AppMotion.snackBarReadingRate);
+  return reading < AppMotion.snackBar
+      ? AppMotion.snackBar
+      : (reading > AppMotion.snackBarLongest ? AppMotion.snackBarLongest : reading);
 }
 
 /// One choice in [showOptionPicker].

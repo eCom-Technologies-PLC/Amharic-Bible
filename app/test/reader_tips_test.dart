@@ -106,6 +106,38 @@ void main() {
     expect(find.text(_audioTip), findsNothing);
   });
 
+  testWidgets("read aloud says so when the phone has no voice for the version's language", (tester) async {
+    final user = userDb;
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.75;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          contentDbProvider.overrideWithValue(contentDb),
+          userDbProvider.overrideWithValue(user),
+          initialSettingsProvider.overrideWithValue(const Settings(languageCode: 'en', versionId: 'WEB')),
+          audioRepositoryProvider.overrideWithValue(AudioRepository(baseUrl: '', storageDir: Directory.systemTemp)),
+          speechEngineProvider.overrideWithValue(FakeSpeech(voices: const {})),
+          routerProvider.overrideWithValue(buildRouter(initialLocation: '/read?ref=JHN.3')),
+        ],
+        child: const AmharicBibleApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Read aloud'));
+    await tester.pumpAndSettle(); // its timer starts once it is in place
+    final message = find.textContaining('Your phone has no voice for this language');
+    expect(message, findsOneWidget);
+    // Long enough to read what to do about it (it was gone in 2 seconds).
+    await tester.pump(const Duration(seconds: 5));
+    expect(message, findsOneWidget);
+    // At most 8 seconds.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    expect(message, findsNothing);
+  });
+
   test('the first tip used to mention swiping: whoever dismissed it has read that', () {
     expect(Settings.fromMap(const {'reader_tip_seen': 'true'}).swipeTipSeen, isTrue);
     expect(Settings.fromMap(const {'reader_tip_seen': 'false'}).swipeTipSeen, isFalse);
