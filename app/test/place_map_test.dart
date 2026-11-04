@@ -163,6 +163,34 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('in Amharic, what screen readers hear of the map ends its sentences with ።', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: buildAppTheme(
+            mode: ReaderTheme.light,
+            platformBrightness: Brightness.light,
+            readingFontSize: 19,
+            readingLineHeight: 1.7,
+            serif: true,
+          ),
+          locale: const Locale('am'),
+          supportedLocales: S.supported,
+          localizationsDelegates: appLocalizationsDelegates,
+          home: Scaffold(
+            body: ListView(
+              children: [PlaceMapCard(name: 'Galeed', lat: 32.56526757, lon: 36.00555931, onOpenOnline: () {})],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Galeed እና አካባቢውን የሚያሳይ ካርታ። ከኢየሩሳሌም በስተ ሰሜን ምሥራቅ 110 ኪ.ሜ. ገደማ'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets('a place beyond the map gives its coordinates and the online map', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

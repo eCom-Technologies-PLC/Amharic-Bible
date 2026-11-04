@@ -386,7 +386,8 @@ class PlaceMapCard extends ConsumerWidget {
                 return Semantics(
                   container: true,
                   image: true,
-                  label: [s.mapOf(name), ?where].join('. '),
+                  // Sentences end with ። in Amharic.
+                  label: [s.mapOf(name), ?where].join(s.isAmharic ? '። ' : '. '),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                     child: SizedBox(
